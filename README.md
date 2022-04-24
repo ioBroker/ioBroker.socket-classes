@@ -1,48 +1,66 @@
-# ioBroker.ws.server
+# @iobroker/socket-classes
 
-This library is used for communication with front-end via pure web-sockets.
+This library is used for following adapters:
+- [iobroker.admin](https://github.com/ioBroker/ioBroker.admin)
+- [iobroker.cloud](https://github.com/ioBroker/ioBroker.cloud)
+- [iobroker.socketio](https://github.com/ioBroker/ioBroker.socketio)
+- [iobroker.ws](https://github.com/ioBroker/ioBroker.ws)
+- [iobroker.rest-api](https://github.com/ioBroker/ioBroker.rest-api)
+- [iobroker.iot](https://github.com/ioBroker/ioBroker.iot)
 
-It simulates socket.io interface.
-
-It is used normally together with @iobroker/ws on browser side, and it is not compatible with socket.io.client library 
-
-## Usage
+## Usage as admin
 ```
-const http = require('http');
-const socket = require('@iobroker/ws-server');
+const TTL_SEC      = 3600;
 
-const requestListener = function (req, res) {
-  res.writeHead(200);
-  res.end('Hello, World!');
-};
+const SocketAdmin  = require('./lib/socketAdmin');
+const ws           = require('@iobroker/ws-server');
+const session      = require('express-session');
+const utils 	   = require('@iobroker/adapter-core'); // Get common adapter utils
+const AdapterStore = require(utils.controllerDir + '/lib/session.js')(session, TTL_SEC);
 
-// create web server
-const webServer    = http.createServer(requestListener);
-// create web socket server
-const socketServer = socket.listen(webServer);
+const store = new AdapterStore({adapter});
 
-// install event handlers on socket connection
-function onConnection(socket, initDone) {
-    console.log('==> Connected IP: ' + socket.connection.remoteAddress);
-    
-    socket.on('message', function (data, cb) {
-        console.log('Received ' + data);
-        cb(data + 1);
-    });
-    
-    socket.on('disconnect', function (error) {
-        console.log(`<== Disconnect from ${socket.connection.remoteAddress}: ${error}`);
-    });
-    
-    initDone && initDone();
-}
+const io = new SocketAdmin(adapter.config, adapter, objects);
+io.start(
+    server,
+    ws,
+    {
+        userKey: 'connect.sid',
+        store,
+        secret: adapter.config.secret
+    }
+);
 
-// install event handlers of the socket server
-socketServer.on('connection', onConnection);
-socketServer.on('error', (e, details) => console.error(`Server error: ${e}${details ? ' - ' + details : ''}`));
+// subscribe on all object changes
+io.subscribe('objectChange', '*');
 
-// start web server
-webServer.listen(5000);
+
+// later
+io.close();
+```
+
+## Usage as socket (ws or socketio)
+```
+const TTL_SEC      = 3600;
+
+const ws           = require('@iobroker/ws-server');
+const SocketWS     = require('./lib/socketWS.js');
+const session      = require('express-session');
+const utils 	   = require('@iobroker/adapter-core'); // Get common adapter utils
+const AdapterStore = require(utils.controllerDir + '/lib/session.js')(session, TTL_SEC);
+
+const store = new AdapterStore({adapter});
+
+const settings = adapter.config;
+settings.crossDomain = true;
+settings.ttl = settings.ttl || TTL_SEC;
+
+const io = new SocketWS(settings, adapter);
+io.start(server.server, ws, {userKey: 'connect.sid', checkUser, store, secret: adapter.config.secret});
+
+
+// later
+io.close();
 ```
 
 <!--

@@ -34,10 +34,11 @@
   "bugs": {
     "url": "https://github.com/ioBroker/ioBroker.web/issues"
   },
-  "main": "socketCommon.js",
+  "main": "index.js",
   "files": [
     "LICENSE",
     "lib/",
+    "index.js",
     "socketCommon.js",
     "socketAdmin.js"
   ],
