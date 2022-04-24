@@ -12,7 +12,7 @@ This library is used for following adapters:
 ```
 const TTL_SEC      = 3600;
 
-const SocketAdmin  = require('./lib/socketAdmin');
+const SocketAdmin  = require('@iobroker/socket-classes').SocketAdmin;
 const ws           = require('@iobroker/ws-server');
 const session      = require('express-session');
 const utils 	   = require('@iobroker/adapter-core'); // Get common adapter utils
@@ -44,7 +44,7 @@ io.close();
 const TTL_SEC      = 3600;
 
 const ws           = require('@iobroker/ws-server');
-const SocketWS     = require('./lib/socketWS.js');
+const SocketWS     = require('@iobroker/socket-classes').SocketCommon;
 const session      = require('express-session');
 const utils 	   = require('@iobroker/adapter-core'); // Get common adapter utils
 const AdapterStore = require(utils.controllerDir + '/lib/session.js')(session, TTL_SEC);
