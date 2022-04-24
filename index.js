@@ -9,5 +9,11 @@ module.exports = {
     SocketCommon,
     SocketCommands,
     SocketCommandsAdmin,
-    passportSocket
+    passportSocket,
+    get passport() {
+        return require('passport');
+    },
+    get cookieParser() {
+        return require('cookie-parser');
+    }
 };
