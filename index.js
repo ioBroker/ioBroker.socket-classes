@@ -1,5 +1,5 @@
-const SocketAdmin = require('./socketAdmin');
-const SocketCommon = require('./socketCommon');
+const SocketAdmin = require('./lib/socketAdmin');
+const SocketCommon = require('./lib/socketCommon');
 const SocketCommands = require('./lib/socketCommands');
 const SocketCommandsAdmin = require('./lib/socketCommandsAdmin');
 
