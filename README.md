@@ -69,6 +69,9 @@ io.close();
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) added passportSocket
+
 ### 0.1.2 (2022-04-24)
 * (bluefox) initial commit
 
