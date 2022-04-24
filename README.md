@@ -69,11 +69,7 @@ io.close();
 -->
 
 ## Changelog
-### 2.0.0 (2022-04-24)
-* (bluefox) renamed package into `@iobroker/ws-server` 
-* (bluefox) added error handlers
-
-### 1.0.1 (2022-01-30)
+### **WORK IN PROGRESS**
 * (bluefox) initial commit
 
 ## License
