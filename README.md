@@ -69,7 +69,7 @@ io.close();
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 0.1.1 (2022-04-24)
 * (bluefox) initial commit
 
 ## License
