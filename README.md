@@ -69,9 +69,9 @@ io.close();
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 0.1.5 (2022-04-25)
 * (bluefox) added updateRatings
- 
+
 ### 0.1.4 (2022-04-24)
 * (bluefox) added passportSocket
 
