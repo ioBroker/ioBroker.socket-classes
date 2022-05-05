@@ -69,6 +69,9 @@ io.close();
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) fixed `delObject` command
+
 ### 0.1.5 (2022-04-25)
 * (bluefox) added updateRatings
 
