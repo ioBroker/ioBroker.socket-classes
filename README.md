@@ -69,6 +69,9 @@ io.close();
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) Caught some sentry errors
+
 ### 0.1.6 (2022-05-05)
 * (bluefox) fixed `delObject` command
 
