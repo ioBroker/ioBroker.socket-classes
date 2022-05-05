@@ -69,7 +69,7 @@ io.close();
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 0.1.7 (2022-05-05)
 * (bluefox) Caught some sentry errors
 
 ### 0.1.6 (2022-05-05)
