@@ -69,6 +69,9 @@ io.close();
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) Corrected readLogs command and implement file subscriptions
+
 ### 0.1.7 (2022-05-05)
 * (bluefox) Caught some sentry errors
 
