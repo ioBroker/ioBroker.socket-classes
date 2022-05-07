@@ -69,7 +69,7 @@ io.close();
 -->
 
 ## Changelog
-### 0.1.8 (2022-05-07)
+### **WORK IN PROGRESS**
 * (bluefox) Corrected readLogs command and implement file subscriptions
 
 ### 0.1.7 (2022-05-05)
