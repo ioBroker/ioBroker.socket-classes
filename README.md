@@ -69,6 +69,9 @@ io.close();
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) Added support for fileChanges
+
 ### 0.1.9 (2022-05-07)
 * (bluefox) Corrected readLogs command and implement file subscriptions
 
