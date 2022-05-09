@@ -69,7 +69,7 @@ io.close();
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 0.1.10 (2022-05-09)
 * (bluefox) Added support for fileChanges
 
 ### 0.1.9 (2022-05-07)
