@@ -69,6 +69,9 @@ io.close();
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) fixed `delObjects` command
+
 ### 0.1.10 (2022-05-09)
 * (bluefox) Added support for fileChanges
 
