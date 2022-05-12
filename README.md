@@ -69,6 +69,9 @@ io.close();
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) fixed `getObjects` command
+
 ### 0.2.0 (2022-05-09)
 * (bluefox) fixed `delObjects` command
 
