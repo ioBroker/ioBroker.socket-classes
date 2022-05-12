@@ -69,7 +69,7 @@ io.close();
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 0.2.1 (2022-05-12)
 * (bluefox) fixed `getObjects` command
 
 ### 0.2.0 (2022-05-09)
