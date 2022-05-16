@@ -69,6 +69,9 @@ io.close();
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) Added back compatibility with js-controller@4.0  for `writeDirAsZip`
+
 ### 0.3.0 (2022-05-16)
 * (bluefox) Process `writeDirAsZip` locally
 
