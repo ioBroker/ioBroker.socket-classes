@@ -69,6 +69,9 @@ io.close();
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) Process `writeDirAsZip` locally
+
 ### 0.2.1 (2022-05-12)
 * (bluefox) fixed `getObjects` command
 
