@@ -69,6 +69,9 @@ io.close();
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) Added support of socket.io 4.x
+
 ### 0.3.2 (2022-05-19)
 * (bluefox) Hide warn messages
 
