@@ -69,6 +69,9 @@ io.close();
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) Hide warn messages
+
 ### 0.3.1 (2022-05-16)
 * (bluefox) Added back compatibility with js-controller@4.0  for `writeDirAsZip`
 
