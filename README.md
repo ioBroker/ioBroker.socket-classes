@@ -69,7 +69,7 @@ io.close();
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 0.3.2 (2022-05-19)
 * (bluefox) Hide warn messages
 
 ### 0.3.1 (2022-05-16)
