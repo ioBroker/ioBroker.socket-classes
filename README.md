@@ -69,6 +69,9 @@ io.close();
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) Corrected renameFile command for admin
+
 ### 0.4.1 (2022-05-23)
 * (bluefox) Corrected changePassword command for admin
 
