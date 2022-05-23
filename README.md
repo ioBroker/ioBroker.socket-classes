@@ -69,6 +69,9 @@ io.close();
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) Corrected changePassword command for admin
+
 ### 0.4.0 (2022-05-19)
 * (bluefox) Added support of socket.io 4.x
 
