@@ -69,7 +69,7 @@ io.close();
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 0.4.1 (2022-05-23)
 * (bluefox) Corrected changePassword command for admin
 
 ### 0.4.0 (2022-05-19)
