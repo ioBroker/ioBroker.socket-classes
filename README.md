@@ -69,7 +69,7 @@ io.close();
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 0.4.3 (2022-06-03)
 * (bluefox) Allowed call of getAdapterInstances for non admin
 
 ### 0.4.2 (2022-05-23)
