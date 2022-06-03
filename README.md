@@ -69,6 +69,9 @@ io.close();
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) Allowed call of getAdapterInstances for non admin
+
 ### 0.4.2 (2022-05-23)
 * (bluefox) Corrected renameFile command for admin
 
