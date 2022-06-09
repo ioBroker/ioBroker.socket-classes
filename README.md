@@ -69,6 +69,9 @@ io.close();
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) Do not show requireLog message
+
 ### 0.4.3 (2022-06-03)
 * (bluefox) Allowed call of getAdapterInstances for non admin
 
