@@ -69,6 +69,9 @@ io.close();
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) updated `passport`
+
 ### 0.4.5 (2022-06-20)
 * (bluefox) allow to run socket.io behind reverse proxy
 
