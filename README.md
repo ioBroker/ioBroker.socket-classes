@@ -69,6 +69,9 @@ io.close();
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) Allowed to overload system language
+
 ### 0.4.6 (2022-06-20)
 * (bluefox) updated `passport`
 
