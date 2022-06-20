@@ -69,7 +69,7 @@ io.close();
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 0.4.6 (2022-06-20)
 * (bluefox) updated `passport`
 
 ### 0.4.5 (2022-06-20)
