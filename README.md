@@ -69,7 +69,7 @@ io.close();
 -->
 
 ## Changelog
-### 0.4.8 (2022-06-20)
+### **WORK IN PROGRESS**
 * (bluefox) Do not show error with failed authentication
 
 ### 0.4.7 (2022-06-20)
