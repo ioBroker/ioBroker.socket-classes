@@ -69,7 +69,7 @@ io.close();
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 0.4.5 (2022-06-20)
 * (bluefox) allow to run socket.io behind reverse proxy
 
 ### 0.4.4 (2022-06-09)
