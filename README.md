@@ -69,7 +69,7 @@ io.close();
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 0.4.7 (2022-06-20)
 * (bluefox) Allowed to overload system language
 
 ### 0.4.6 (2022-06-20)
