@@ -69,6 +69,9 @@ io.close();
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) allow to run socket.io behind reverse proxy
+
 ### 0.4.4 (2022-06-09)
 * (bluefox) Do not show requireLog message
 
