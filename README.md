@@ -69,6 +69,9 @@ io.close();
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) Do not show error with failed authentication
+
 ### 0.4.7 (2022-06-20)
 * (bluefox) Allowed to overload system language
 
