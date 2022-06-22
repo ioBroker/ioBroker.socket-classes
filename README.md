@@ -69,6 +69,9 @@ io.close();
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) Corrected getAdapterInstances
+
 ### 0.4.9 (2022-06-20)
 * (bluefox) Do not show error with failed authentication
 
