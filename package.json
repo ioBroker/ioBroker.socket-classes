@@ -1,6 +1,6 @@
 {
   "name": "@iobroker/socket-classes",
-  "version": "0.4.11",
+  "version": "0.4.12",
   "description": "ioBroker server-side web sockets",
   "author": {
     "name": "bluefox",
