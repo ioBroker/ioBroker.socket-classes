@@ -69,6 +69,9 @@ io.close();
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) Corrected getAdapterInstances method
+
 ### 0.4.11 (2022-07-05)
 * (bluefox) Corrected log transportation
 
