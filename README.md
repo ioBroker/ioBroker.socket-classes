@@ -69,7 +69,7 @@ io.close();
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 0.5.0 (2022-07-20)
 * (bluefox) Buffer conversion errors caught and handled
 
 ### 0.4.12 (2022-07-08)
