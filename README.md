@@ -69,6 +69,9 @@ io.close();
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) Added command `getCompactSystemRepositories`
+
 ### 0.5.0 (2022-07-20)
 * (bluefox) Buffer conversion errors caught and handled
 
