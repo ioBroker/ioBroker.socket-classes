@@ -69,7 +69,7 @@ io.close();
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 0.5.2 (2022-08-19)
 * (bluefox) Added command `getCompactSystemRepositories`
 
 ### 0.5.0 (2022-07-20)
