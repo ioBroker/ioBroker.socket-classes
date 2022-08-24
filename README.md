@@ -69,6 +69,9 @@ io.close();
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) Caught error by subscribe
+
 ### 0.5.2 (2022-08-19)
 * (bluefox) Added command `getCompactSystemRepositories`
 
