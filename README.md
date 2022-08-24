@@ -69,7 +69,7 @@ io.close();
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 0.5.3 (2022-08-24)
 * (bluefox) Caught error by subscribe
 
 ### 0.5.2 (2022-08-19)
