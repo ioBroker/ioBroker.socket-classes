@@ -63,6 +63,560 @@ io.start(server.server, ws, {userKey: 'connect.sid', checkUser, store, secret: a
 io.close();
 ```
 
+## Web Methods
+<!-- WEB_METHODS_START -->
+### authenticate(user, pass, callback)
+Authenticate user by login and password
+* user *(string)*: user name
+* pass *(string)*: password
+* callback *(function)*: function (isUserAuthenticated, isAuthenticationUsed)
+
+
+### error(error)
+Write error into ioBroker log
+* error *(string)*: error text
+
+
+### log(text, level)
+Write log entry into ioBroker log
+* text *(string)*: log text
+* level *(string)*: one of ['silly', 'debug', 'info', 'warn', 'error']. Default is 'debug'.
+
+
+### getHistory(id, options, callback)
+Get history data from specific instance
+* id *(string)*: object ID
+* options *(object)*: See object description here: https://github.com/ioBroker/ioBroker.history/blob/master/docs/en/README.md#access-values-from-javascript-adapter
+* callback *(function)*: function (error, result)
+
+
+### httpGet(url, callback)
+Read content of HTTP(S) page server-side (without CORS and stuff)
+* url *(string)*: Page URL
+* callback *(function)*: function (error, {status, statusText}, body)
+
+
+### sendTo(adapterInstance, command, message, callback)
+Send message to specific instance
+* adapterInstance *(string)*: instance name, e.g. `history.0`
+* command *(string)*: command name
+* message *(object)*: message is instance dependent
+* callback *(function)*: function (result)
+
+
+### sendToHost(host, command, message, callback)
+Send message to specific host.
+Host can answer following commands: cmdExec, getRepository, getInstalled, getInstalledAdapter, getVersion, getDiagData, getLocationOnDisk, getDevList, getLogs, getHostInfo, delLogs, readDirAsZip, writeDirAsZip, readObjectsAsZip, writeObjectsAsZip, checkLogging, updateMultihost
+* host *(string)*: instance name, e.g. `history.0`
+* command *(string)*: command name
+* message *(object)*: message is command specific
+* callback *(function)*: function (result)
+
+
+### authEnabled(callback)
+Ask server is authentication enabled and if the user authenticated
+* callback *(function)*: function (isAuthenticationUsed, userName)
+
+
+### logout(callback)
+Logout user
+* callback *(function)*: function (error)
+
+
+### listPermissions(callback)
+List commands and permissions
+* callback *(function)*: function (permissions)
+
+
+### getUserPermissions(callback)
+Get user permissions
+* callback *(function)*: function (error, permissions)
+
+
+### getVersion(callback)
+Get adapter version. Not the socket-classes version!
+* callback *(function)*: function (error, adapterVersion, adapterName)
+
+
+### getAdapterName(callback)
+Get adapter name. Not the socket-classes version!
+* callback *(function)*: function (error, adapterVersion)
+
+
+### getObject(id, callback)
+
+
+
+### getObjects(callback)
+
+
+
+### subscribeObjects(pattern, callback)
+
+
+
+### unsubscribeObjects(pattern, callback)
+
+
+
+### getObjectView(design, search, params, callback)
+
+
+
+### setObject(id, obj, callback)
+
+
+
+### getStates(pattern, callback)
+
+
+
+### delObject(id, options, callback)
+only flot allowed
+
+
+### getState(id, callback)
+
+
+
+### setState(id, state, callback)
+
+
+
+### getBinaryState(id, callback)
+
+
+
+### setBinaryState(id, base64, callback)
+
+
+
+### subscribe(pattern, callback)
+
+
+
+### subscribeStates(pattern, callback)
+
+
+
+### unsubscribe(pattern, callback)
+
+
+
+### unsubscribeStates(pattern, callback)
+
+
+
+### readFile(_adapter, fileName, callback)
+
+
+
+### readFile64(_adapter, fileName, callback)
+
+
+
+### writeFile64(_adapter, fileName, data64, options, callback)
+
+
+
+### writeFile(_adapter, fileName, data, options, callback)
+
+
+
+### unlink(_adapter, name, callback)
+
+
+
+### deleteFile(_adapter, name, callback)
+
+
+
+### deleteFolder(_adapter, name, callback)
+
+
+
+### renameFile(_adapter, oldName, newName, callback)
+
+
+
+### rename(_adapter, oldName, newName, callback)
+
+
+
+### mkdir(_adapter, dirName, callback)
+
+
+
+### readDir(_adapter, dirName, options, callback)
+
+
+
+### chmodFile(_adapter, fileName, options, callback)
+
+
+
+### chownFile(_adapter, fileName, options, callback)
+
+
+
+### fileExists(_adapter, fileName, callback)
+
+
+
+### subscribeFiles(id, pattern, callback)
+
+
+
+### unsubscribeFiles(id, pattern, callback)
+
+
+
+### getAdapterInstances(adapterName, callback)
+
+
+<!-- WEB_METHODS_END -->
+
+## Admin Methods
+<!-- ADMIN_METHODS_START -->
+### authenticate(user, pass, callback)
+Authenticate user by login and password
+* user *(string)*: user name
+* pass *(string)*: password
+* callback *(function)*: function (isUserAuthenticated, isAuthenticationUsed)
+
+
+### error(error)
+Write error into ioBroker log
+* error *(string)*: error text
+
+
+### log(text, level)
+Write log entry into ioBroker log
+* text *(string)*: log text
+* level *(string)*: one of ['silly', 'debug', 'info', 'warn', 'error']. Default is 'debug'.
+
+
+### getHistory(id, options, callback)
+Get history data from specific instance
+* id *(string)*: object ID
+* options *(object)*: See object description here: https://github.com/ioBroker/ioBroker.history/blob/master/docs/en/README.md#access-values-from-javascript-adapter
+* callback *(function)*: function (error, result)
+
+
+### httpGet(url, callback)
+Read content of HTTP(S) page server-side (without CORS and stuff)
+* url *(string)*: Page URL
+* callback *(function)*: function (error, {status, statusText}, body)
+
+
+### sendTo(adapterInstance, command, message, callback)
+Send message to specific instance
+* adapterInstance *(string)*: instance name, e.g. `history.0`
+* command *(string)*: command name
+* message *(object)*: message is instance dependent
+* callback *(function)*: function (result)
+
+
+### sendToHost(host, command, message, callback)
+Send message to specific host.
+Host can answer following commands: cmdExec, getRepository, getInstalled, getInstalledAdapter, getVersion, getDiagData, getLocationOnDisk, getDevList, getLogs, getHostInfo, delLogs, readDirAsZip, writeDirAsZip, readObjectsAsZip, writeObjectsAsZip, checkLogging, updateMultihost
+* host *(string)*: instance name, e.g. `history.0`
+* command *(string)*: command name
+* message *(object)*: message is command specific
+* callback *(function)*: function (result)
+
+
+### authEnabled(callback)
+Ask server is authentication enabled and if the user authenticated
+* callback *(function)*: function (isAuthenticationUsed, userName)
+
+
+### logout(callback)
+Logout user
+* callback *(function)*: function (error)
+
+
+### listPermissions(callback)
+List commands and permissions
+* callback *(function)*: function (permissions)
+
+
+### getUserPermissions(callback)
+Get user permissions
+* callback *(function)*: function (error, permissions)
+
+
+### getVersion(callback)
+Get adapter version. Not the socket-classes version!
+* callback *(function)*: function (error, adapterVersion, adapterName)
+
+
+### getAdapterName(callback)
+Get adapter name. Not the socket-classes version!
+* callback *(function)*: function (error, adapterVersion)
+
+
+### getHostByIp(ip, callback)
+
+
+
+### requireLog(isEnabled, callback)
+
+
+
+### readLogs(host, callback)
+
+
+
+### delState(id, callback)
+
+
+
+### cmdExec(host, id, cmd, callback)
+
+
+
+### eventsThreshold(isActive)
+
+
+
+### getRatings(update, callback)
+
+
+
+### getCurrentInstance(callback)
+
+
+
+### checkFeatureSupported(feature, callback)
+
+
+
+### decrypt(encryptedText, callback)
+
+
+
+### encrypt(plainText, callback)
+
+
+
+### getIsEasyModeStrict(callback)
+
+
+
+### getEasyMode(callback)
+
+
+
+### getAdapters(adapterName, callback)
+
+
+
+### updateLicenses(login, password, callback)
+
+
+
+### getCompactInstances(callback)
+
+
+
+### getCompactAdapters(callback)
+
+
+
+### getCompactInstalled(host, callback)
+
+
+
+### getCompactSystemConfig(callback)
+
+
+
+### getCompactSystemRepositories(callback)
+
+
+
+### getCompactRepository(host, callback)
+
+
+
+### getCompactHosts(callback)
+
+
+
+### addUser(user, pass, callback)
+
+
+
+### delUser(user, callback)
+
+
+
+### addGroup(group, desc, acl, callback)
+
+
+
+### delGroup(group, callback)
+
+
+
+### changePassword(user, pass, callback)
+
+
+
+### getObject(id, callback)
+
+
+
+### getObjects(callback)
+
+
+
+### subscribeObjects(pattern, callback)
+
+
+
+### unsubscribeObjects(pattern, callback)
+
+
+
+### getObjectView(design, search, params, callback)
+
+
+
+### setObject(id, obj, callback)
+
+
+
+### getAllObjects(callback)
+
+
+
+### extendObject(id, obj, callback)
+
+
+
+### getForeignObjects(pattern, type, callback)
+
+
+
+### delObject(id, options, callback)
+
+
+
+### getStates(pattern, callback)
+
+
+
+### getState(id, callback)
+
+
+
+### setState(id, state, callback)
+
+
+
+### getBinaryState(id, callback)
+
+
+
+### setBinaryState(id, base64, callback)
+
+
+
+### subscribe(pattern, callback)
+
+
+
+### subscribeStates(pattern, callback)
+
+
+
+### unsubscribe(pattern, callback)
+
+
+
+### unsubscribeStates(pattern, callback)
+
+
+
+### getForeignStates(pattern, callback)
+
+
+
+### delObjects(id, options, callback)
+
+
+
+### readFile(_adapter, fileName, callback)
+
+
+
+### readFile64(_adapter, fileName, callback)
+
+
+
+### writeFile64(_adapter, fileName, data64, options, callback)
+
+
+
+### writeFile(_adapter, fileName, data64, options, callback)
+
+
+
+### unlink(_adapter, name, callback)
+
+
+
+### deleteFile(_adapter, name, callback)
+
+
+
+### deleteFolder(_adapter, name, callback)
+
+
+
+### renameFile(_adapter, oldName, newName, callback)
+
+
+
+### rename(_adapter, oldName, newName, callback)
+
+
+
+### mkdir(_adapter, dirName, callback)
+
+
+
+### readDir(_adapter, dirName, options, callback)
+
+
+
+### chmodFile(_adapter, fileName, options, callback)
+
+
+
+### chownFile(_adapter, fileName, options, callback)
+
+
+
+### fileExists(_adapter, fileName, callback)
+
+
+
+### subscribeFiles(id, pattern, callback)
+
+
+
+### unsubscribeFiles(id, pattern, callback)
+
+
+
+### getAdapterInstances(adapterName, callback)
+
+
+<!-- ADMIN_METHODS_END -->
+
 <!--
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
