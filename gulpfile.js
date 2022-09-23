@@ -95,7 +95,7 @@ gulp.task('webList', done => {
     const SocketCommands = require('./lib/socketCommands');
     const texts = getCommands(SocketCommands, '_w');
 
-    replaceReadme('WEB_METHODS', texts.join('\n\n'));
+    replaceReadme('WEB_METHODS', texts.join('\n'));
     done();
 });
 
@@ -103,7 +103,7 @@ gulp.task('adminList', done => {
     const SocketCommands = require('./lib/socketCommandsAdmin');
     const texts = getCommands(SocketCommands, '_a');
 
-    replaceReadme('ADMIN_METHODS', texts.join('\n\n'));
+    replaceReadme('ADMIN_METHODS', texts.join('\n'));
     done();
 });
 gulp.task('default', gulp.series('webList', 'adminList'));
