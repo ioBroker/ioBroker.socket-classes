@@ -549,55 +549,79 @@ Execute shell command on host/controller. Following response commands are expect
 * callback *(function)*: `function (error)`
 
 ### <a name="eventsthreshold_a"></a>eventsThreshold(isActive)
-
+Used only for admin to limit number of events to front-end.
+* isActive *(boolean)*: if true, then events will be limited
 
 ### <a name="getratings_a"></a>getRatings(update, callback)
-
+Read ratings of adapters
+* update *(boolean)*: if true, the ratings will be read from central server, if false from local cache
+* callback *(function)*: `function (error, ratings)`, where `ratings` is object like `{accuweather: {rating: {r: 3.33, c: 3}, 1.2.1: {r: 3, c: 1}},…}`
 
 ### <a name="getcurrentinstance_a"></a>getCurrentInstance(callback)
-
+Return current instance name like `admin.0`
+* callback *(function)*: `function (error, namespace)`
 
 ### <a name="checkfeaturesupported_a"></a>checkFeatureSupported(feature, callback)
-
+Checks if same feature is supported by current js-controller
+* feature *(string)*: feature name like `CONTROLLER_LICENSE_MANAGER`
+* callback *(function)*: `function (error, isSupported)`
 
 ### <a name="decrypt_a"></a>decrypt(encryptedText, callback)
-
+Decrypts text with system secret key
+* encryptedText *(string)*: encrypted text
+* callback *(function)*: `function (error, decryptedText)`
 
 ### <a name="encrypt_a"></a>encrypt(plainText, callback)
-
+Encrypts text with system secret key
+* plainText *(string)*: normal text
+* callback *(function)*: `function (error, encryptedText)`
 
 ### <a name="getiseasymodestrict_a"></a>getIsEasyModeStrict(callback)
-
+Returns if admin has easy mode enabled
+* callback *(function)*: `function (error, isEasyModeStrict)`
 
 ### <a name="geteasymode_a"></a>getEasyMode(callback)
-
+Get easy mode configuration
+* callback *(function)*: `function (error, easyModeConfig)`, where `easyModeConfig` is object like `{strict: true, configs: [{_id: 'system.adapter.javascript.0', common: {...}}, {...}]}`
 
 ### <a name="getadapters_a"></a>getAdapters(adapterName, callback)
-
+Read all adapters objects
+* adapterName *(string)*: optional adapter name
+* callback *(function)*: `function (error, results)`, where `results` is array of objects like `{_id: 'system.adapter.javascript', common: {...}}`
 
 ### <a name="updatelicenses_a"></a>updateLicenses(login, password, callback)
-
+Read software licenses (vis, knx, ...) from ioBroker.net cloud for given user
+* login *(string)*: cloud login
+* password *(string)*: cloud password
+* callback *(function)*: `function (error, results)`, where `results` is array of objects like `[{"json":"xxx","id":"ab","email":"dogafox@gmail.com","product":"iobroker.knx.year","version":"2","invoice":"Pxx","uuid":"uuid","time":"2021-11-16T19:53:02.000Z","validTill":"2022-11-16T22:59:59.000Z","datapoints":1000}]`
 
 ### <a name="getcompactinstances_a"></a>getCompactInstances(callback)
-
+Read all instances in short form to save bandwidth
+* callback *(function)*: `function (error, results)`, where `results` is an object like `{'system.adapter.javascript.0': {adminTab, name, icon, enabled}}`
 
 ### <a name="getcompactadapters_a"></a>getCompactAdapters(callback)
-
+Read all adapters in short for to save bandwidth
+* callback *(function)*: `function (error, results)`, where `results` is an object like `{'javascript': {icon, v: '1.0.1', iv: 'ignoredVersion}}`
 
 ### <a name="getcompactinstalled_a"></a>getCompactInstalled(host, callback)
-
+Read all installed adapters in short form to save bandwidth
+* callback *(function)*: `function (error, results)`, where `results` is an object like `{'javascript': {version: '1.0.1'}}``
 
 ### <a name="getcompactsystemconfig_a"></a>getCompactSystemConfig(callback)
-
+Read system config in short form to save bandwidth
+* callback *(function)*: `function (error, systemConfig)`, where `systemConfig` is an object like `{common: {...}, native: {secret: 'aaa'}}`
 
 ### <a name="getcompactsystemrepositories_a"></a>getCompactSystemRepositories(callback)
-
+Read repositories from cache in short form to save bandwidth
+* callback *(function)*: `function (error, repositories)`, where `repositories` is an object like `{_id: 'system.repositories', common: {...}, native: {repositories: {default: {json: {_repoInfo: {...}}}}}}`
 
 ### <a name="getcompactrepository_a"></a>getCompactRepository(host, callback)
-
+Read current repository in short form to save bandwidth
+* callback *(function)*: `function (error, repository)`, where `repository` is an object like `{'javascript': {version: '1.0.1', icon}, 'admin': {version: '1.0.1', icon}}`
 
 ### <a name="getcompacthosts_a"></a>getCompactHosts(callback)
-
+Read all hosts in short form to save bandwidth
+* callback *(function)*: `function (error, hosts)`, where `hosts` is an array of objects like `[{_id:'system.host.raspi',common:{name:'raspi',icon:'icon',color:'blue',installedVersion:'2.1.0'},native:{hardware:{networkInterfaces:[...]}}}]`
 
 ### <a name="adduser_a"></a>addUser(user, pass, callback)
 Add new user
