@@ -69,7 +69,7 @@ io.close();
 Authenticate user by login and password
 * user *(string)*: user name
 * pass *(string)*: password
-* callback *(function)*: function (isUserAuthenticated, isAuthenticationUsed)
+* callback *(function)*: `function (isUserAuthenticated, isAuthenticationUsed)`
 
 
 ### error(error)
@@ -80,20 +80,20 @@ Write error into ioBroker log
 ### log(text, level)
 Write log entry into ioBroker log
 * text *(string)*: log text
-* level *(string)*: one of ['silly', 'debug', 'info', 'warn', 'error']. Default is 'debug'.
+* level *(string)*: one of `['silly', 'debug', 'info', 'warn', 'error']`. Default is 'debug'.
 
 
 ### getHistory(id, options, callback)
 Get history data from specific instance
 * id *(string)*: object ID
 * options *(object)*: See object description here: https://github.com/ioBroker/ioBroker.history/blob/master/docs/en/README.md#access-values-from-javascript-adapter
-* callback *(function)*: function (error, result)
+* callback *(function)*: `function (error, result)`
 
 
 ### httpGet(url, callback)
 Read content of HTTP(S) page server-side (without CORS and stuff)
 * url *(string)*: Page URL
-* callback *(function)*: function (error, {status, statusText}, body)
+* callback *(function)*: `function (error, {status, statusText}, body)`
 
 
 ### sendTo(adapterInstance, command, message, callback)
@@ -101,21 +101,21 @@ Send message to specific instance
 * adapterInstance *(string)*: instance name, e.g. `history.0`
 * command *(string)*: command name
 * message *(object)*: message is instance dependent
-* callback *(function)*: function (result)
+* callback *(function)*: `function (result)`
 
 
 ### sendToHost(host, command, message, callback)
 Send message to specific host.
-Host can answer following commands: cmdExec, getRepository, getInstalled, getInstalledAdapter, getVersion, getDiagData, getLocationOnDisk, getDevList, getLogs, getHostInfo, delLogs, readDirAsZip, writeDirAsZip, readObjectsAsZip, writeObjectsAsZip, checkLogging, updateMultihost
+Host can answer following commands: `cmdExec, getRepository, getInstalled, getInstalledAdapter, getVersion, getDiagData, getLocationOnDisk, getDevList, getLogs, getHostInfo, delLogs, readDirAsZip, writeDirAsZip, readObjectsAsZip, writeObjectsAsZip, checkLogging, updateMultihost`.
 * host *(string)*: instance name, e.g. `history.0`
 * command *(string)*: command name
 * message *(object)*: message is command specific
-* callback *(function)*: function (result)
+* callback *(function)*: `function (result)`
 
 
 ### authEnabled(callback)
 Ask server is authentication enabled and if the user authenticated
-* callback *(function)*: function (isAuthenticationUsed, userName)
+* callback *(function)*: `function (isAuthenticationUsed, userName)`
 
 
 ### logout(callback)
@@ -125,22 +125,22 @@ Logout user
 
 ### listPermissions(callback)
 List commands and permissions
-* callback *(function)*: function (permissions)
+* callback *(function)*: `function (permissions)`
 
 
 ### getUserPermissions(callback)
 Get user permissions
-* callback *(function)*: function (error, permissions)
+* callback *(function)*: `function (error, permissions)`
 
 
 ### getVersion(callback)
 Get adapter version. Not the socket-classes version!
-* callback *(function)*: function (error, adapterVersion, adapterName)
+* callback *(function)*: `function (error, adapterVersion, adapterName)`
 
 
 ### getAdapterName(callback)
 Get adapter name. Not the socket-classes version!
-* callback *(function)*: function (error, adapterVersion)
+* callback *(function)*: `function (error, adapterVersion)`
 
 
 ### getObject(id, callback)
@@ -168,111 +168,193 @@ Get adapter name. Not the socket-classes version!
 
 
 ### getStates(pattern, callback)
-
+Read states by pattern
+* pattern *(string)*: optional pattern, like `system.adapter.*` or array of state IDs
+* callback *(function)*: `function (error, states)`, where `states` is an object like `{'system.adapter.history.0': {_id: 'system.adapter.history.0', common: {name: 'history', ...}, native: {...}, 'system.adapter.history.1': {...}}}`
 
 
 ### delObject(id, options, callback)
-only flot allowed
+Delete object. Only deletion of flot objects is allowed
+* id *(string)*: Object ID like, 'flot.0.myChart'
+* options *(string)*: ignored
+* callback *(function)*: `function (error)`
 
 
 ### getState(id, callback)
-
+Read one state.
+* id *(string)*: State ID like, 'system.adapter.admin.0.memRss'
+* callback *(function)*: `function (error, state)`, where `state` is an object like `{val: 123, ts: 1663915537418, ack: true, from: 'system.adapter.admin.0', q: 0, lc: 1663915537418, c: 'javascript.0'}`
 
 
 ### setState(id, state, callback)
-
+Write one state.
+* id *(string)*: State ID like, 'system.adapter.admin.0.memRss'
+* state *(any)*: value or object like `{val: 123, ack: true}`
+* callback *(function)*: `function (error, state)`, where `state` is an object like `{val: 123, ts: 1663915537418, ack: true, from: 'system.adapter.admin.0', q: 0, lc: 1663915537418, c: 'javascript.0'}`
 
 
 ### getBinaryState(id, callback)
-
+Read one binary state.
+* id *(string)*: State ID like, 'javascript.0.binary'
+* callback *(function)*: `function (error, base64)`
 
 
 ### setBinaryState(id, base64, callback)
-
+Write one binary state.
+* id *(string)*: State ID like, 'javascript.0.binary'
+* base64 *(string)*: State value as base64 string. Binary states has no acknowledge flag.
+* callback *(function)*: `function (error)`
 
 
 ### subscribe(pattern, callback)
-
+Subscribe on state changes by pattern. The events will come as 'stateChange' events to the socket.
+* pattern *(string)*: pattern like 'system.adapter.*' or array of states like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
+* callback *(function)*: `function (error)`
 
 
 ### subscribeStates(pattern, callback)
-
+Subscribe on state changes by pattern. Same as `subscribe`. The events will come as 'stateChange' events to the socket.
+* pattern *(string)*: pattern like 'system.adapter.*' or array of states like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
+* callback *(function)*: `function (error)`
 
 
 ### unsubscribe(pattern, callback)
-
+Unsubscribe from state changes by pattern.
+* pattern *(string)*: pattern like 'system.adapter.*' or array of states like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
+* callback *(function)*: `function (error)`
 
 
 ### unsubscribeStates(pattern, callback)
-
+Unsubscribe from state changes by pattern. Same as `unsubscribe`.
+* pattern *(string)*: pattern like 'system.adapter.*' or array of states like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
+* callback *(function)*: `function (error)`
 
 
 ### readFile(_adapter, fileName, callback)
-
+Read file from ioBroker DB
+* _adapter *(string)*: instance name, e.g. `vis.0`
+* fileName *(string)*: file name, e.g `main/vis-views.json`
+* callback *(function)*: `function (error, data, mimeType)`
 
 
 ### readFile64(_adapter, fileName, callback)
-
+Read file from ioBroker DB as base64 string
+* _adapter *(string)*: instance name, e.g. `vis.0`
+* fileName *(string)*: file name, e.g `main/vis-views.json`
+* callback *(function)*: `function (error, base64, mimeType)`
 
 
 ### writeFile64(_adapter, fileName, data64, options, callback)
-
+Write file into ioBroker DB as base64 string
+* _adapter *(string)*: instance name, e.g. `vis.0`
+* fileName *(string)*: file name, e.g `main/vis-views.json`
+* data64 *(string)*: file content as base64 string
+* options *(object)*: optional {mode: '0644'}
+* callback *(function)*: `function (error, base64, mimeType)`
 
 
 ### writeFile(_adapter, fileName, data, options, callback)
-
+Write file into ioBroker DB as text **DEPRECATED**
+* _adapter *(string)*: instance name, e.g. `vis.0`
+* fileName *(string)*: file name, e.g `main/vis-views.json`
+* data64 *(string)*: file content as base64 string
+* options *(object)*: optional `{mode: 0x644}`
+* callback *(function)*: `function (error, base64, mimeType)`
 
 
 ### unlink(_adapter, name, callback)
-
+Delete file in ioBroker DB
+* _adapter *(string)*: instance name, e.g. `vis.0`
+* name *(string)*: file name, e.g `main/vis-views.json`
+* callback *(function)*: `function (error)`
 
 
 ### deleteFile(_adapter, name, callback)
-
+Delete file in ioBroker DB (same as unlink, but only for files)
+* _adapter *(string)*: instance name, e.g. `vis.0`
+* name *(string)*: file name, e.g `main/vis-views.json`
+* callback *(function)*: `function (error)`
 
 
 ### deleteFolder(_adapter, name, callback)
-
+Delete file in ioBroker DB (same as unlink, but only for folders)
+* _adapter *(string)*: instance name, e.g. `vis.0`
+* name *(string)*: folder name, e.g `main`
+* callback *(function)*: `function (error)`
 
 
 ### renameFile(_adapter, oldName, newName, callback)
-
+Rename file in ioBroker DB
+* _adapter *(string)*: instance name, e.g. `vis.0`
+* oldName *(string)*: current file name, e.g `main/vis-views.json`
+* newName *(string)*: new file name, e.g `main/vis-views-new.json`
+* callback *(function)*: `function (error)`
 
 
 ### rename(_adapter, oldName, newName, callback)
-
+Rename file or folder in ioBroker DB
+* _adapter *(string)*: instance name, e.g. `vis.0`
+* oldName *(string)*: current file name, e.g `main/vis-views.json`
+* newName *(string)*: new file name, e.g `main/vis-views-new.json`
+* callback *(function)*: `function (error)`
 
 
 ### mkdir(_adapter, dirName, callback)
-
+Create folder in ioBroker DB
+* _adapter *(string)*: instance name, e.g. `vis.0`
+* dirName *(string)*: desired folder name, e.g `main`
+* callback *(function)*: `function (error)`
 
 
 ### readDir(_adapter, dirName, options, callback)
-
+Read content of folder in ioBroker DB
+* _adapter *(string)*: instance name, e.g. `vis.0`
+* dirName *(string)*: folder name, e.g `main`
+* options *(object)*: optional `{filter: '*'}` or `{filter: '*.json'}`
+* callback *(function)*: `function (error, files)` where `files` is an array of objects, like `{file: 'vis-views.json', isDir: false, stats: {size: 123}, modifiedAt: 1661336290090, acl: {owner: 'system.user.admin', ownerGroup: 'system.group.administrator', permissions: 1632, read: true, write: true}`
 
 
 ### chmodFile(_adapter, fileName, options, callback)
-
+Change file mode in ioBroker DB
+* _adapter *(string)*: instance name, e.g. `vis.0`
+* fileName *(string)*: file name, e.g `main/vis-views.json`
+* options *(object)*: `{mode: 0x644}` or 0x644. First digit is user, second group, third others. Bit 1 is `execute`, bit 2 is `write`, bit 3 is `read`
+* callback *(function)*: `function (error)`
 
 
 ### chownFile(_adapter, fileName, options, callback)
-
+Change file owner in ioBroker DB
+* _adapter *(string)*: instance name, e.g. `vis.0`
+* fileName *(string)*: file name, e.g `main/vis-views.json`
+* options *(object)*: `{owner: 'system.user.user', ownerGroup: ''system.group.administrator'}` or 'system.user.user'. If ownerGroup is not defined, it will be taken from owner.
+* callback *(function)*: `function (error)`
 
 
 ### fileExists(_adapter, fileName, callback)
-
+Checks if the file or folder exists in ioBroker DB
+* _adapter *(string)*: instance name, e.g. `vis.0`
+* fileName *(string)*: file name, e.g `main/vis-views.json`
+* callback *(function)*: `function (error, isExist)`
 
 
 ### subscribeFiles(id, pattern, callback)
-
+Subscribe on file changes in ioBroker DB
+* id *(string)*: instance name, e.g. `vis.0` or any object ID of type `meta`. `id` could have wildcards `*` too.
+* pattern *(string)*: file name pattern, e.g `main/*.json`
+* callback *(function)*: `function (error)`
 
 
 ### unsubscribeFiles(id, pattern, callback)
-
+Unsubscribe on file changes in ioBroker DB
+* id *(string)*: instance name, e.g. `vis.0` or any object ID of type `meta`. `id` could have wildcards `*` too.
+* pattern *(string)*: file name pattern, e.g `main/*.json`
+* callback *(function)*: `function (error)`
 
 
 ### getAdapterInstances(adapterName, callback)
-
+Read all instances of the given adapter, or all instances of all adapters if adapterName is not defined
+* adapterName *(string)*: optional adapter name, e.g `history`.
+* callback *(function)*: `function (error, instanceList)`, where instanceList is an array of instance objects, e.g. `{_id: 'system.adapter.history.0', common: {name: 'history', ...}, native: {...}}`
 
 <!-- WEB_METHODS_END -->
 
@@ -282,7 +364,7 @@ only flot allowed
 Authenticate user by login and password
 * user *(string)*: user name
 * pass *(string)*: password
-* callback *(function)*: function (isUserAuthenticated, isAuthenticationUsed)
+* callback *(function)*: `function (isUserAuthenticated, isAuthenticationUsed)`
 
 
 ### error(error)
@@ -293,20 +375,20 @@ Write error into ioBroker log
 ### log(text, level)
 Write log entry into ioBroker log
 * text *(string)*: log text
-* level *(string)*: one of ['silly', 'debug', 'info', 'warn', 'error']. Default is 'debug'.
+* level *(string)*: one of `['silly', 'debug', 'info', 'warn', 'error']`. Default is 'debug'.
 
 
 ### getHistory(id, options, callback)
 Get history data from specific instance
 * id *(string)*: object ID
 * options *(object)*: See object description here: https://github.com/ioBroker/ioBroker.history/blob/master/docs/en/README.md#access-values-from-javascript-adapter
-* callback *(function)*: function (error, result)
+* callback *(function)*: `function (error, result)`
 
 
 ### httpGet(url, callback)
 Read content of HTTP(S) page server-side (without CORS and stuff)
 * url *(string)*: Page URL
-* callback *(function)*: function (error, {status, statusText}, body)
+* callback *(function)*: `function (error, {status, statusText}, body)`
 
 
 ### sendTo(adapterInstance, command, message, callback)
@@ -314,21 +396,21 @@ Send message to specific instance
 * adapterInstance *(string)*: instance name, e.g. `history.0`
 * command *(string)*: command name
 * message *(object)*: message is instance dependent
-* callback *(function)*: function (result)
+* callback *(function)*: `function (result)`
 
 
 ### sendToHost(host, command, message, callback)
 Send message to specific host.
-Host can answer following commands: cmdExec, getRepository, getInstalled, getInstalledAdapter, getVersion, getDiagData, getLocationOnDisk, getDevList, getLogs, getHostInfo, delLogs, readDirAsZip, writeDirAsZip, readObjectsAsZip, writeObjectsAsZip, checkLogging, updateMultihost
+Host can answer following commands: `cmdExec, getRepository, getInstalled, getInstalledAdapter, getVersion, getDiagData, getLocationOnDisk, getDevList, getLogs, getHostInfo, delLogs, readDirAsZip, writeDirAsZip, readObjectsAsZip, writeObjectsAsZip, checkLogging, updateMultihost`.
 * host *(string)*: instance name, e.g. `history.0`
 * command *(string)*: command name
 * message *(object)*: message is command specific
-* callback *(function)*: function (result)
+* callback *(function)*: `function (result)`
 
 
 ### authEnabled(callback)
 Ask server is authentication enabled and if the user authenticated
-* callback *(function)*: function (isAuthenticationUsed, userName)
+* callback *(function)*: `function (isAuthenticationUsed, userName)`
 
 
 ### logout(callback)
@@ -338,22 +420,22 @@ Logout user
 
 ### listPermissions(callback)
 List commands and permissions
-* callback *(function)*: function (permissions)
+* callback *(function)*: `function (permissions)`
 
 
 ### getUserPermissions(callback)
 Get user permissions
-* callback *(function)*: function (error, permissions)
+* callback *(function)*: `function (error, permissions)`
 
 
 ### getVersion(callback)
 Get adapter version. Not the socket-classes version!
-* callback *(function)*: function (error, adapterVersion, adapterName)
+* callback *(function)*: `function (error, adapterVersion, adapterName)`
 
 
 ### getAdapterName(callback)
 Get adapter name. Not the socket-classes version!
-* callback *(function)*: function (error, adapterVersion)
+* callback *(function)*: `function (error, adapterVersion)`
 
 
 ### getHostByIp(ip, callback)
@@ -501,43 +583,66 @@ Get adapter name. Not the socket-classes version!
 
 
 ### delObject(id, options, callback)
-
+Delete object or objects recursively. Objects with `dontDelete` cannot be deleted.
+* id *(string)*: Object ID like, 'adapterName.0.channel'
+* options *(string)*: `{recursive: true}`
+* callback *(function)*: `function (error)`
 
 
 ### getStates(pattern, callback)
-
+Read states by pattern
+* pattern *(string)*: optional pattern, like `system.adapter.*` or array of state IDs
+* callback *(function)*: `function (error, states)`, where `states` is an object like `{'system.adapter.history.0': {_id: 'system.adapter.history.0', common: {name: 'history', ...}, native: {...}, 'system.adapter.history.1': {...}}}`
 
 
 ### getState(id, callback)
-
+Read one state.
+* id *(string)*: State ID like, 'system.adapter.admin.0.memRss'
+* callback *(function)*: `function (error, state)`, where `state` is an object like `{val: 123, ts: 1663915537418, ack: true, from: 'system.adapter.admin.0', q: 0, lc: 1663915537418, c: 'javascript.0'}`
 
 
 ### setState(id, state, callback)
-
+Write one state.
+* id *(string)*: State ID like, 'system.adapter.admin.0.memRss'
+* state *(any)*: value or object like `{val: 123, ack: true}`
+* callback *(function)*: `function (error, state)`, where `state` is an object like `{val: 123, ts: 1663915537418, ack: true, from: 'system.adapter.admin.0', q: 0, lc: 1663915537418, c: 'javascript.0'}`
 
 
 ### getBinaryState(id, callback)
-
+Read one binary state.
+* id *(string)*: State ID like, 'javascript.0.binary'
+* callback *(function)*: `function (error, base64)`
 
 
 ### setBinaryState(id, base64, callback)
-
+Write one binary state.
+* id *(string)*: State ID like, 'javascript.0.binary'
+* base64 *(string)*: State value as base64 string. Binary states has no acknowledge flag.
+* callback *(function)*: `function (error)`
 
 
 ### subscribe(pattern, callback)
-
+Subscribe on state changes by pattern. The events will come as 'stateChange' events to the socket.
+* pattern *(string)*: pattern like 'system.adapter.*' or array of states like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
+* callback *(function)*: `function (error)`
 
 
 ### subscribeStates(pattern, callback)
-
+Subscribe on state changes by pattern. Same as `subscribe`. The events will come as 'stateChange' events to the socket.
+* pattern *(string)*: pattern like 'system.adapter.*' or array of states like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
+* callback *(function)*: `function (error)`
 
 
 ### unsubscribe(pattern, callback)
-
+Unsubscribe from state changes by pattern.
+* pattern *(string)*: pattern like 'system.adapter.*' or array of states like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
+* callback *(function)*: `function (error)`
 
 
 ### unsubscribeStates(pattern, callback)
-
+Unsubscribe from state changes by pattern. Same as `unsubscribe`.
+* pattern *(string)*: pattern like 'system.adapter.*' or array of states like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
+* callback *(function)*: `function (error)`
 
 
 ### getForeignStates(pattern, callback)
@@ -549,15 +654,26 @@ Get adapter name. Not the socket-classes version!
 
 
 ### readFile(_adapter, fileName, callback)
-
+Read file from ioBroker DB
+* _adapter *(string)*: instance name, e.g. `vis.0`
+* fileName *(string)*: file name, e.g `main/vis-views.json`
+* callback *(function)*: `function (error, data, mimeType)`
 
 
 ### readFile64(_adapter, fileName, callback)
-
+Read file from ioBroker DB as base64 string
+* _adapter *(string)*: instance name, e.g. `vis.0`
+* fileName *(string)*: file name, e.g `main/vis-views.json`
+* callback *(function)*: `function (error, base64, mimeType)`
 
 
 ### writeFile64(_adapter, fileName, data64, options, callback)
-
+Write file into ioBroker DB as base64 string
+* _adapter *(string)*: instance name, e.g. `vis.0`
+* fileName *(string)*: file name, e.g `main/vis-views.json`
+* data64 *(string)*: file content as base64 string
+* options *(object)*: optional {mode: '0644'}
+* callback *(function)*: `function (error, base64, mimeType)`
 
 
 ### writeFile(_adapter, fileName, data64, options, callback)
@@ -565,55 +681,98 @@ Get adapter name. Not the socket-classes version!
 
 
 ### unlink(_adapter, name, callback)
-
+Delete file in ioBroker DB
+* _adapter *(string)*: instance name, e.g. `vis.0`
+* name *(string)*: file name, e.g `main/vis-views.json`
+* callback *(function)*: `function (error)`
 
 
 ### deleteFile(_adapter, name, callback)
-
+Delete file in ioBroker DB (same as unlink, but only for files)
+* _adapter *(string)*: instance name, e.g. `vis.0`
+* name *(string)*: file name, e.g `main/vis-views.json`
+* callback *(function)*: `function (error)`
 
 
 ### deleteFolder(_adapter, name, callback)
-
+Delete file in ioBroker DB (same as unlink, but only for folders)
+* _adapter *(string)*: instance name, e.g. `vis.0`
+* name *(string)*: folder name, e.g `main`
+* callback *(function)*: `function (error)`
 
 
 ### renameFile(_adapter, oldName, newName, callback)
-
+Rename file in ioBroker DB
+* _adapter *(string)*: instance name, e.g. `vis.0`
+* oldName *(string)*: current file name, e.g `main/vis-views.json`
+* newName *(string)*: new file name, e.g `main/vis-views-new.json`
+* callback *(function)*: `function (error)`
 
 
 ### rename(_adapter, oldName, newName, callback)
-
+Rename file or folder in ioBroker DB
+* _adapter *(string)*: instance name, e.g. `vis.0`
+* oldName *(string)*: current file name, e.g `main/vis-views.json`
+* newName *(string)*: new file name, e.g `main/vis-views-new.json`
+* callback *(function)*: `function (error)`
 
 
 ### mkdir(_adapter, dirName, callback)
-
+Create folder in ioBroker DB
+* _adapter *(string)*: instance name, e.g. `vis.0`
+* dirName *(string)*: desired folder name, e.g `main`
+* callback *(function)*: `function (error)`
 
 
 ### readDir(_adapter, dirName, options, callback)
-
+Read content of folder in ioBroker DB
+* _adapter *(string)*: instance name, e.g. `vis.0`
+* dirName *(string)*: folder name, e.g `main`
+* options *(object)*: optional `{filter: '*'}` or `{filter: '*.json'}`
+* callback *(function)*: `function (error, files)` where `files` is an array of objects, like `{file: 'vis-views.json', isDir: false, stats: {size: 123}, modifiedAt: 1661336290090, acl: {owner: 'system.user.admin', ownerGroup: 'system.group.administrator', permissions: 1632, read: true, write: true}`
 
 
 ### chmodFile(_adapter, fileName, options, callback)
-
+Change file mode in ioBroker DB
+* _adapter *(string)*: instance name, e.g. `vis.0`
+* fileName *(string)*: file name, e.g `main/vis-views.json`
+* options *(object)*: `{mode: 0x644}` or 0x644. First digit is user, second group, third others. Bit 1 is `execute`, bit 2 is `write`, bit 3 is `read`
+* callback *(function)*: `function (error)`
 
 
 ### chownFile(_adapter, fileName, options, callback)
-
+Change file owner in ioBroker DB
+* _adapter *(string)*: instance name, e.g. `vis.0`
+* fileName *(string)*: file name, e.g `main/vis-views.json`
+* options *(object)*: `{owner: 'system.user.user', ownerGroup: ''system.group.administrator'}` or 'system.user.user'. If ownerGroup is not defined, it will be taken from owner.
+* callback *(function)*: `function (error)`
 
 
 ### fileExists(_adapter, fileName, callback)
-
+Checks if the file or folder exists in ioBroker DB
+* _adapter *(string)*: instance name, e.g. `vis.0`
+* fileName *(string)*: file name, e.g `main/vis-views.json`
+* callback *(function)*: `function (error, isExist)`
 
 
 ### subscribeFiles(id, pattern, callback)
-
+Subscribe on file changes in ioBroker DB
+* id *(string)*: instance name, e.g. `vis.0` or any object ID of type `meta`. `id` could have wildcards `*` too.
+* pattern *(string)*: file name pattern, e.g `main/*.json`
+* callback *(function)*: `function (error)`
 
 
 ### unsubscribeFiles(id, pattern, callback)
-
+Unsubscribe on file changes in ioBroker DB
+* id *(string)*: instance name, e.g. `vis.0` or any object ID of type `meta`. `id` could have wildcards `*` too.
+* pattern *(string)*: file name pattern, e.g `main/*.json`
+* callback *(function)*: `function (error)`
 
 
 ### getAdapterInstances(adapterName, callback)
-
+Read all instances of the given adapter, or all instances of all adapters if adapterName is not defined
+* adapterName *(string)*: optional adapter name, e.g `history`.
+* callback *(function)*: `function (error, instanceList)`, where instanceList is an array of instance objects, e.g. `{_id: 'system.adapter.history.0', common: {name: 'history', ...}, native: {...}}`
 
 <!-- ADMIN_METHODS_END -->
 
