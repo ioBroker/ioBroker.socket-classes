@@ -64,7 +64,7 @@ function replaceReadme(key, text) {
     fs.writeFileSync('README.md', result.join('\n'));
 }
 
-function getCommands(Commands) {
+function getCommands(Commands, index) {
     const commands = new Commands({config: {thresholdValue: 1}});
     const texts = [];
     const links = [];
@@ -72,8 +72,8 @@ function getCommands(Commands) {
         const func = commands.commands[command];
         const params = getParamNames(func);
         params.shift();
-        let text = `### ${command}(${params.join(', ')})\n`;
-        links.push(`* [${command}](#${command.toLowerCase()}-${params.map(a => a.toLowerCase()).join('-')})`); // #authenticateuser-pass-callback
+        let text = `### <a name="${command.toLowerCase()}${index}"></a>${command}(${params.join(', ')})\n`;
+        links.push(`* [${command}](#${command.toLowerCase()}${index})`); // #authenticateuser-pass-callback
         const comments = getParamComments(func);
         text += comments.desc.join('\n') + '\n';
         Object.keys(comments.params).forEach(param => {
@@ -93,7 +93,7 @@ function getCommands(Commands) {
 
 gulp.task('webList', done => {
     const SocketCommands = require('./lib/socketCommands');
-    const texts = getCommands(SocketCommands)
+    const texts = getCommands(SocketCommands, '_w');
 
     replaceReadme('WEB_METHODS', texts.join('\n\n'));
     done();
@@ -101,7 +101,7 @@ gulp.task('webList', done => {
 
 gulp.task('adminList', done => {
     const SocketCommands = require('./lib/socketCommandsAdmin');
-    const texts = getCommands(SocketCommands)
+    const texts = getCommands(SocketCommands, '_a');
 
     replaceReadme('ADMIN_METHODS', texts.join('\n\n'));
     done();

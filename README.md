@@ -67,130 +67,130 @@ io.close();
 <!-- WEB_METHODS_START -->
 ### List of commands
 
-* [authenticate](#authenticate-user-pass-callback)
+* [authenticate](#authenticate_w)
 
-* [error](#error-error)
+* [error](#error_w)
 
-* [log](#log-text-level)
+* [log](#log_w)
 
-* [getHistory](#gethistory-id-options-callback)
+* [getHistory](#gethistory_w)
 
-* [httpGet](#httpget-url-callback)
+* [httpGet](#httpget_w)
 
-* [sendTo](#sendto-adapterinstance-command-message-callback)
+* [sendTo](#sendto_w)
 
-* [sendToHost](#sendtohost-host-command-message-callback)
+* [sendToHost](#sendtohost_w)
 
-* [authEnabled](#authenabled-callback)
+* [authEnabled](#authenabled_w)
 
-* [logout](#logout-callback)
+* [logout](#logout_w)
 
-* [listPermissions](#listpermissions-callback)
+* [listPermissions](#listpermissions_w)
 
-* [getUserPermissions](#getuserpermissions-callback)
+* [getUserPermissions](#getuserpermissions_w)
 
-* [getVersion](#getversion-callback)
+* [getVersion](#getversion_w)
 
-* [getAdapterName](#getadaptername-callback)
+* [getAdapterName](#getadaptername_w)
 
-* [getObject](#getobject-id-callback)
+* [getObject](#getobject_w)
 
-* [getObjects](#getobjects-callback)
+* [getObjects](#getobjects_w)
 
-* [subscribeObjects](#subscribeobjects-pattern-callback)
+* [subscribeObjects](#subscribeobjects_w)
 
-* [unsubscribeObjects](#unsubscribeobjects-pattern-callback)
+* [unsubscribeObjects](#unsubscribeobjects_w)
 
-* [getObjectView](#getobjectview-design-search-params-callback)
+* [getObjectView](#getobjectview_w)
 
-* [setObject](#setobject-id-obj-callback)
+* [setObject](#setobject_w)
 
-* [getStates](#getstates-pattern-callback)
+* [getStates](#getstates_w)
 
-* [delObject](#delobject-id-options-callback)
+* [delObject](#delobject_w)
 
-* [getState](#getstate-id-callback)
+* [getState](#getstate_w)
 
-* [setState](#setstate-id-state-callback)
+* [setState](#setstate_w)
 
-* [getBinaryState](#getbinarystate-id-callback)
+* [getBinaryState](#getbinarystate_w)
 
-* [setBinaryState](#setbinarystate-id-base64-callback)
+* [setBinaryState](#setbinarystate_w)
 
-* [subscribe](#subscribe-pattern-callback)
+* [subscribe](#subscribe_w)
 
-* [subscribeStates](#subscribestates-pattern-callback)
+* [subscribeStates](#subscribestates_w)
 
-* [unsubscribe](#unsubscribe-pattern-callback)
+* [unsubscribe](#unsubscribe_w)
 
-* [unsubscribeStates](#unsubscribestates-pattern-callback)
+* [unsubscribeStates](#unsubscribestates_w)
 
-* [readFile](#readfile-_adapter-filename-callback)
+* [readFile](#readfile_w)
 
-* [readFile64](#readfile64-_adapter-filename-callback)
+* [readFile64](#readfile64_w)
 
-* [writeFile64](#writefile64-_adapter-filename-data64-options-callback)
+* [writeFile64](#writefile64_w)
 
-* [writeFile](#writefile-_adapter-filename-data-options-callback)
+* [writeFile](#writefile_w)
 
-* [unlink](#unlink-_adapter-name-callback)
+* [unlink](#unlink_w)
 
-* [deleteFile](#deletefile-_adapter-name-callback)
+* [deleteFile](#deletefile_w)
 
-* [deleteFolder](#deletefolder-_adapter-name-callback)
+* [deleteFolder](#deletefolder_w)
 
-* [renameFile](#renamefile-_adapter-oldname-newname-callback)
+* [renameFile](#renamefile_w)
 
-* [rename](#rename-_adapter-oldname-newname-callback)
+* [rename](#rename_w)
 
-* [mkdir](#mkdir-_adapter-dirname-callback)
+* [mkdir](#mkdir_w)
 
-* [readDir](#readdir-_adapter-dirname-options-callback)
+* [readDir](#readdir_w)
 
-* [chmodFile](#chmodfile-_adapter-filename-options-callback)
+* [chmodFile](#chmodfile_w)
 
-* [chownFile](#chownfile-_adapter-filename-options-callback)
+* [chownFile](#chownfile_w)
 
-* [fileExists](#fileexists-_adapter-filename-callback)
+* [fileExists](#fileexists_w)
 
-* [subscribeFiles](#subscribefiles-id-pattern-callback)
+* [subscribeFiles](#subscribefiles_w)
 
-* [unsubscribeFiles](#unsubscribefiles-id-pattern-callback)
+* [unsubscribeFiles](#unsubscribefiles_w)
 
-* [getAdapterInstances](#getadapterinstances-adaptername-callback)
+* [getAdapterInstances](#getadapterinstances_w)
 
-### authenticate(user, pass, callback)
+### <a name="authenticate_w"></a>authenticate(user, pass, callback)
 Authenticate user by login and password
 * user *(string)*: user name
 * pass *(string)*: password
 * callback *(function)*: `function (isUserAuthenticated, isAuthenticationUsed)`
 
 
-### error(error)
+### <a name="error_w"></a>error(error)
 Write error into ioBroker log
 * error *(string)*: error text
 
 
-### log(text, level)
+### <a name="log_w"></a>log(text, level)
 Write log entry into ioBroker log
 * text *(string)*: log text
 * level *(string)*: one of `['silly', 'debug', 'info', 'warn', 'error']`. Default is 'debug'.
 
 
-### getHistory(id, options, callback)
+### <a name="gethistory_w"></a>getHistory(id, options, callback)
 Get history data from specific instance
 * id *(string)*: object ID
 * options *(object)*: See object description here: https://github.com/ioBroker/ioBroker.history/blob/master/docs/en/README.md#access-values-from-javascript-adapter
 * callback *(function)*: `function (error, result)`
 
 
-### httpGet(url, callback)
+### <a name="httpget_w"></a>httpGet(url, callback)
 Read content of HTTP(S) page server-side (without CORS and stuff)
 * url *(string)*: Page URL
 * callback *(function)*: `function (error, {status, statusText}, body)`
 
 
-### sendTo(adapterInstance, command, message, callback)
+### <a name="sendto_w"></a>sendTo(adapterInstance, command, message, callback)
 Send message to specific instance
 * adapterInstance *(string)*: instance name, e.g. `history.0`
 * command *(string)*: command name
@@ -198,7 +198,7 @@ Send message to specific instance
 * callback *(function)*: `function (result)`
 
 
-### sendToHost(host, command, message, callback)
+### <a name="sendtohost_w"></a>sendToHost(host, command, message, callback)
 Send message to specific host.
 Host can answer following commands: `cmdExec, getRepository, getInstalled, getInstalledAdapter, getVersion, getDiagData, getLocationOnDisk, getDevList, getLogs, getHostInfo, delLogs, readDirAsZip, writeDirAsZip, readObjectsAsZip, writeObjectsAsZip, checkLogging, updateMultihost`.
 * host *(string)*: instance name, e.g. `history.0`
@@ -207,138 +207,138 @@ Host can answer following commands: `cmdExec, getRepository, getInstalled, getIn
 * callback *(function)*: `function (result)`
 
 
-### authEnabled(callback)
+### <a name="authenabled_w"></a>authEnabled(callback)
 Ask server is authentication enabled and if the user authenticated
 * callback *(function)*: `function (isAuthenticationUsed, userName)`
 
 
-### logout(callback)
+### <a name="logout_w"></a>logout(callback)
 Logout user
 * callback *(function)*: function (error)
 
 
-### listPermissions(callback)
+### <a name="listpermissions_w"></a>listPermissions(callback)
 List commands and permissions
 * callback *(function)*: `function (permissions)`
 
 
-### getUserPermissions(callback)
+### <a name="getuserpermissions_w"></a>getUserPermissions(callback)
 Get user permissions
 * callback *(function)*: `function (error, permissions)`
 
 
-### getVersion(callback)
+### <a name="getversion_w"></a>getVersion(callback)
 Get adapter version. Not the socket-classes version!
 * callback *(function)*: `function (error, adapterVersion, adapterName)`
 
 
-### getAdapterName(callback)
+### <a name="getadaptername_w"></a>getAdapterName(callback)
 Get adapter name. Not the socket-classes version!
 * callback *(function)*: `function (error, adapterVersion)`
 
 
-### getObject(id, callback)
+### <a name="getobject_w"></a>getObject(id, callback)
 
 
 
-### getObjects(callback)
+### <a name="getobjects_w"></a>getObjects(callback)
 
 
 
-### subscribeObjects(pattern, callback)
+### <a name="subscribeobjects_w"></a>subscribeObjects(pattern, callback)
 
 
 
-### unsubscribeObjects(pattern, callback)
+### <a name="unsubscribeobjects_w"></a>unsubscribeObjects(pattern, callback)
 
 
 
-### getObjectView(design, search, params, callback)
+### <a name="getobjectview_w"></a>getObjectView(design, search, params, callback)
 
 
 
-### setObject(id, obj, callback)
+### <a name="setobject_w"></a>setObject(id, obj, callback)
 
 
 
-### getStates(pattern, callback)
+### <a name="getstates_w"></a>getStates(pattern, callback)
 Read states by pattern
 * pattern *(string)*: optional pattern, like `system.adapter.*` or array of state IDs
 * callback *(function)*: `function (error, states)`, where `states` is an object like `{'system.adapter.history.0': {_id: 'system.adapter.history.0', common: {name: 'history', ...}, native: {...}, 'system.adapter.history.1': {...}}}`
 
 
-### delObject(id, options, callback)
+### <a name="delobject_w"></a>delObject(id, options, callback)
 Delete object. Only deletion of flot objects is allowed
 * id *(string)*: Object ID like, 'flot.0.myChart'
 * options *(string)*: ignored
 * callback *(function)*: `function (error)`
 
 
-### getState(id, callback)
+### <a name="getstate_w"></a>getState(id, callback)
 Read one state.
 * id *(string)*: State ID like, 'system.adapter.admin.0.memRss'
 * callback *(function)*: `function (error, state)`, where `state` is an object like `{val: 123, ts: 1663915537418, ack: true, from: 'system.adapter.admin.0', q: 0, lc: 1663915537418, c: 'javascript.0'}`
 
 
-### setState(id, state, callback)
+### <a name="setstate_w"></a>setState(id, state, callback)
 Write one state.
 * id *(string)*: State ID like, 'system.adapter.admin.0.memRss'
 * state *(any)*: value or object like `{val: 123, ack: true}`
 * callback *(function)*: `function (error, state)`, where `state` is an object like `{val: 123, ts: 1663915537418, ack: true, from: 'system.adapter.admin.0', q: 0, lc: 1663915537418, c: 'javascript.0'}`
 
 
-### getBinaryState(id, callback)
+### <a name="getbinarystate_w"></a>getBinaryState(id, callback)
 Read one binary state.
 * id *(string)*: State ID like, 'javascript.0.binary'
 * callback *(function)*: `function (error, base64)`
 
 
-### setBinaryState(id, base64, callback)
+### <a name="setbinarystate_w"></a>setBinaryState(id, base64, callback)
 Write one binary state.
 * id *(string)*: State ID like, 'javascript.0.binary'
 * base64 *(string)*: State value as base64 string. Binary states has no acknowledge flag.
 * callback *(function)*: `function (error)`
 
 
-### subscribe(pattern, callback)
+### <a name="subscribe_w"></a>subscribe(pattern, callback)
 Subscribe on state changes by pattern. The events will come as 'stateChange' events to the socket.
 * pattern *(string)*: pattern like 'system.adapter.*' or array of states like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
 * callback *(function)*: `function (error)`
 
 
-### subscribeStates(pattern, callback)
+### <a name="subscribestates_w"></a>subscribeStates(pattern, callback)
 Subscribe on state changes by pattern. Same as `subscribe`. The events will come as 'stateChange' events to the socket.
 * pattern *(string)*: pattern like 'system.adapter.*' or array of states like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
 * callback *(function)*: `function (error)`
 
 
-### unsubscribe(pattern, callback)
+### <a name="unsubscribe_w"></a>unsubscribe(pattern, callback)
 Unsubscribe from state changes by pattern.
 * pattern *(string)*: pattern like 'system.adapter.*' or array of states like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
 * callback *(function)*: `function (error)`
 
 
-### unsubscribeStates(pattern, callback)
+### <a name="unsubscribestates_w"></a>unsubscribeStates(pattern, callback)
 Unsubscribe from state changes by pattern. Same as `unsubscribe`.
 * pattern *(string)*: pattern like 'system.adapter.*' or array of states like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
 * callback *(function)*: `function (error)`
 
 
-### readFile(_adapter, fileName, callback)
+### <a name="readfile_w"></a>readFile(_adapter, fileName, callback)
 Read file from ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * fileName *(string)*: file name, e.g `main/vis-views.json`
 * callback *(function)*: `function (error, data, mimeType)`
 
 
-### readFile64(_adapter, fileName, callback)
+### <a name="readfile64_w"></a>readFile64(_adapter, fileName, callback)
 Read file from ioBroker DB as base64 string
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * fileName *(string)*: file name, e.g `main/vis-views.json`
 * callback *(function)*: `function (error, base64, mimeType)`
 
 
-### writeFile64(_adapter, fileName, data64, options, callback)
+### <a name="writefile64_w"></a>writeFile64(_adapter, fileName, data64, options, callback)
 Write file into ioBroker DB as base64 string
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * fileName *(string)*: file name, e.g `main/vis-views.json`
@@ -347,7 +347,7 @@ Write file into ioBroker DB as base64 string
 * callback *(function)*: `function (error, base64, mimeType)`
 
 
-### writeFile(_adapter, fileName, data, options, callback)
+### <a name="writefile_w"></a>writeFile(_adapter, fileName, data, options, callback)
 Write file into ioBroker DB as text **DEPRECATED**
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * fileName *(string)*: file name, e.g `main/vis-views.json`
@@ -356,28 +356,28 @@ Write file into ioBroker DB as text **DEPRECATED**
 * callback *(function)*: `function (error, base64, mimeType)`
 
 
-### unlink(_adapter, name, callback)
+### <a name="unlink_w"></a>unlink(_adapter, name, callback)
 Delete file in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * name *(string)*: file name, e.g `main/vis-views.json`
 * callback *(function)*: `function (error)`
 
 
-### deleteFile(_adapter, name, callback)
+### <a name="deletefile_w"></a>deleteFile(_adapter, name, callback)
 Delete file in ioBroker DB (same as unlink, but only for files)
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * name *(string)*: file name, e.g `main/vis-views.json`
 * callback *(function)*: `function (error)`
 
 
-### deleteFolder(_adapter, name, callback)
+### <a name="deletefolder_w"></a>deleteFolder(_adapter, name, callback)
 Delete file in ioBroker DB (same as unlink, but only for folders)
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * name *(string)*: folder name, e.g `main`
 * callback *(function)*: `function (error)`
 
 
-### renameFile(_adapter, oldName, newName, callback)
+### <a name="renamefile_w"></a>renameFile(_adapter, oldName, newName, callback)
 Rename file in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * oldName *(string)*: current file name, e.g `main/vis-views.json`
@@ -385,7 +385,7 @@ Rename file in ioBroker DB
 * callback *(function)*: `function (error)`
 
 
-### rename(_adapter, oldName, newName, callback)
+### <a name="rename_w"></a>rename(_adapter, oldName, newName, callback)
 Rename file or folder in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * oldName *(string)*: current file name, e.g `main/vis-views.json`
@@ -393,14 +393,14 @@ Rename file or folder in ioBroker DB
 * callback *(function)*: `function (error)`
 
 
-### mkdir(_adapter, dirName, callback)
+### <a name="mkdir_w"></a>mkdir(_adapter, dirName, callback)
 Create folder in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * dirName *(string)*: desired folder name, e.g `main`
 * callback *(function)*: `function (error)`
 
 
-### readDir(_adapter, dirName, options, callback)
+### <a name="readdir_w"></a>readDir(_adapter, dirName, options, callback)
 Read content of folder in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * dirName *(string)*: folder name, e.g `main`
@@ -408,7 +408,7 @@ Read content of folder in ioBroker DB
 * callback *(function)*: `function (error, files)` where `files` is an array of objects, like `{file: 'vis-views.json', isDir: false, stats: {size: 123}, modifiedAt: 1661336290090, acl: {owner: 'system.user.admin', ownerGroup: 'system.group.administrator', permissions: 1632, read: true, write: true}`
 
 
-### chmodFile(_adapter, fileName, options, callback)
+### <a name="chmodfile_w"></a>chmodFile(_adapter, fileName, options, callback)
 Change file mode in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * fileName *(string)*: file name, e.g `main/vis-views.json`
@@ -416,7 +416,7 @@ Change file mode in ioBroker DB
 * callback *(function)*: `function (error)`
 
 
-### chownFile(_adapter, fileName, options, callback)
+### <a name="chownfile_w"></a>chownFile(_adapter, fileName, options, callback)
 Change file owner in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * fileName *(string)*: file name, e.g `main/vis-views.json`
@@ -424,28 +424,28 @@ Change file owner in ioBroker DB
 * callback *(function)*: `function (error)`
 
 
-### fileExists(_adapter, fileName, callback)
+### <a name="fileexists_w"></a>fileExists(_adapter, fileName, callback)
 Checks if the file or folder exists in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * fileName *(string)*: file name, e.g `main/vis-views.json`
 * callback *(function)*: `function (error, isExist)`
 
 
-### subscribeFiles(id, pattern, callback)
+### <a name="subscribefiles_w"></a>subscribeFiles(id, pattern, callback)
 Subscribe on file changes in ioBroker DB
 * id *(string)*: instance name, e.g. `vis.0` or any object ID of type `meta`. `id` could have wildcards `*` too.
 * pattern *(string)*: file name pattern, e.g `main/*.json`
 * callback *(function)*: `function (error)`
 
 
-### unsubscribeFiles(id, pattern, callback)
+### <a name="unsubscribefiles_w"></a>unsubscribeFiles(id, pattern, callback)
 Unsubscribe on file changes in ioBroker DB
 * id *(string)*: instance name, e.g. `vis.0` or any object ID of type `meta`. `id` could have wildcards `*` too.
 * pattern *(string)*: file name pattern, e.g `main/*.json`
 * callback *(function)*: `function (error)`
 
 
-### getAdapterInstances(adapterName, callback)
+### <a name="getadapterinstances_w"></a>getAdapterInstances(adapterName, callback)
 Read all instances of the given adapter, or all instances of all adapters if adapterName is not defined
 * adapterName *(string)*: optional adapter name, e.g `history`.
 * callback *(function)*: `function (error, instanceList)`, where instanceList is an array of instance objects, e.g. `{_id: 'system.adapter.history.0', common: {name: 'history', ...}, native: {...}}`
@@ -456,194 +456,194 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 <!-- ADMIN_METHODS_START -->
 ### List of commands
 
-* [authenticate](#authenticate-user-pass-callback)
+* [authenticate](#authenticate_a)
 
-* [error](#error-error)
+* [error](#error_a)
 
-* [log](#log-text-level)
+* [log](#log_a)
 
-* [getHistory](#gethistory-id-options-callback)
+* [getHistory](#gethistory_a)
 
-* [httpGet](#httpget-url-callback)
+* [httpGet](#httpget_a)
 
-* [sendTo](#sendto-adapterinstance-command-message-callback)
+* [sendTo](#sendto_a)
 
-* [sendToHost](#sendtohost-host-command-message-callback)
+* [sendToHost](#sendtohost_a)
 
-* [authEnabled](#authenabled-callback)
+* [authEnabled](#authenabled_a)
 
-* [logout](#logout-callback)
+* [logout](#logout_a)
 
-* [listPermissions](#listpermissions-callback)
+* [listPermissions](#listpermissions_a)
 
-* [getUserPermissions](#getuserpermissions-callback)
+* [getUserPermissions](#getuserpermissions_a)
 
-* [getVersion](#getversion-callback)
+* [getVersion](#getversion_a)
 
-* [getAdapterName](#getadaptername-callback)
+* [getAdapterName](#getadaptername_a)
 
-* [getHostByIp](#gethostbyip-ip-callback)
+* [getHostByIp](#gethostbyip_a)
 
-* [requireLog](#requirelog-isenabled-callback)
+* [requireLog](#requirelog_a)
 
-* [readLogs](#readlogs-host-callback)
+* [readLogs](#readlogs_a)
 
-* [delState](#delstate-id-callback)
+* [delState](#delstate_a)
 
-* [cmdExec](#cmdexec-host-id-cmd-callback)
+* [cmdExec](#cmdexec_a)
 
-* [eventsThreshold](#eventsthreshold-isactive)
+* [eventsThreshold](#eventsthreshold_a)
 
-* [getRatings](#getratings-update-callback)
+* [getRatings](#getratings_a)
 
-* [getCurrentInstance](#getcurrentinstance-callback)
+* [getCurrentInstance](#getcurrentinstance_a)
 
-* [checkFeatureSupported](#checkfeaturesupported-feature-callback)
+* [checkFeatureSupported](#checkfeaturesupported_a)
 
-* [decrypt](#decrypt-encryptedtext-callback)
+* [decrypt](#decrypt_a)
 
-* [encrypt](#encrypt-plaintext-callback)
+* [encrypt](#encrypt_a)
 
-* [getIsEasyModeStrict](#getiseasymodestrict-callback)
+* [getIsEasyModeStrict](#getiseasymodestrict_a)
 
-* [getEasyMode](#geteasymode-callback)
+* [getEasyMode](#geteasymode_a)
 
-* [getAdapters](#getadapters-adaptername-callback)
+* [getAdapters](#getadapters_a)
 
-* [updateLicenses](#updatelicenses-login-password-callback)
+* [updateLicenses](#updatelicenses_a)
 
-* [getCompactInstances](#getcompactinstances-callback)
+* [getCompactInstances](#getcompactinstances_a)
 
-* [getCompactAdapters](#getcompactadapters-callback)
+* [getCompactAdapters](#getcompactadapters_a)
 
-* [getCompactInstalled](#getcompactinstalled-host-callback)
+* [getCompactInstalled](#getcompactinstalled_a)
 
-* [getCompactSystemConfig](#getcompactsystemconfig-callback)
+* [getCompactSystemConfig](#getcompactsystemconfig_a)
 
-* [getCompactSystemRepositories](#getcompactsystemrepositories-callback)
+* [getCompactSystemRepositories](#getcompactsystemrepositories_a)
 
-* [getCompactRepository](#getcompactrepository-host-callback)
+* [getCompactRepository](#getcompactrepository_a)
 
-* [getCompactHosts](#getcompacthosts-callback)
+* [getCompactHosts](#getcompacthosts_a)
 
-* [addUser](#adduser-user-pass-callback)
+* [addUser](#adduser_a)
 
-* [delUser](#deluser-user-callback)
+* [delUser](#deluser_a)
 
-* [addGroup](#addgroup-group-desc-acl-callback)
+* [addGroup](#addgroup_a)
 
-* [delGroup](#delgroup-group-callback)
+* [delGroup](#delgroup_a)
 
-* [changePassword](#changepassword-user-pass-callback)
+* [changePassword](#changepassword_a)
 
-* [getObject](#getobject-id-callback)
+* [getObject](#getobject_a)
 
-* [getObjects](#getobjects-callback)
+* [getObjects](#getobjects_a)
 
-* [subscribeObjects](#subscribeobjects-pattern-callback)
+* [subscribeObjects](#subscribeobjects_a)
 
-* [unsubscribeObjects](#unsubscribeobjects-pattern-callback)
+* [unsubscribeObjects](#unsubscribeobjects_a)
 
-* [getObjectView](#getobjectview-design-search-params-callback)
+* [getObjectView](#getobjectview_a)
 
-* [setObject](#setobject-id-obj-callback)
+* [setObject](#setobject_a)
 
-* [getAllObjects](#getallobjects-callback)
+* [getAllObjects](#getallobjects_a)
 
-* [extendObject](#extendobject-id-obj-callback)
+* [extendObject](#extendobject_a)
 
-* [getForeignObjects](#getforeignobjects-pattern-type-callback)
+* [getForeignObjects](#getforeignobjects_a)
 
-* [delObject](#delobject-id-options-callback)
+* [delObject](#delobject_a)
 
-* [getStates](#getstates-pattern-callback)
+* [getStates](#getstates_a)
 
-* [getState](#getstate-id-callback)
+* [getState](#getstate_a)
 
-* [setState](#setstate-id-state-callback)
+* [setState](#setstate_a)
 
-* [getBinaryState](#getbinarystate-id-callback)
+* [getBinaryState](#getbinarystate_a)
 
-* [setBinaryState](#setbinarystate-id-base64-callback)
+* [setBinaryState](#setbinarystate_a)
 
-* [subscribe](#subscribe-pattern-callback)
+* [subscribe](#subscribe_a)
 
-* [subscribeStates](#subscribestates-pattern-callback)
+* [subscribeStates](#subscribestates_a)
 
-* [unsubscribe](#unsubscribe-pattern-callback)
+* [unsubscribe](#unsubscribe_a)
 
-* [unsubscribeStates](#unsubscribestates-pattern-callback)
+* [unsubscribeStates](#unsubscribestates_a)
 
-* [getForeignStates](#getforeignstates-pattern-callback)
+* [getForeignStates](#getforeignstates_a)
 
-* [delObjects](#delobjects-id-options-callback)
+* [delObjects](#delobjects_a)
 
-* [readFile](#readfile-_adapter-filename-callback)
+* [readFile](#readfile_a)
 
-* [readFile64](#readfile64-_adapter-filename-callback)
+* [readFile64](#readfile64_a)
 
-* [writeFile64](#writefile64-_adapter-filename-data64-options-callback)
+* [writeFile64](#writefile64_a)
 
-* [writeFile](#writefile-_adapter-filename-data64-options-callback)
+* [writeFile](#writefile_a)
 
-* [unlink](#unlink-_adapter-name-callback)
+* [unlink](#unlink_a)
 
-* [deleteFile](#deletefile-_adapter-name-callback)
+* [deleteFile](#deletefile_a)
 
-* [deleteFolder](#deletefolder-_adapter-name-callback)
+* [deleteFolder](#deletefolder_a)
 
-* [renameFile](#renamefile-_adapter-oldname-newname-callback)
+* [renameFile](#renamefile_a)
 
-* [rename](#rename-_adapter-oldname-newname-callback)
+* [rename](#rename_a)
 
-* [mkdir](#mkdir-_adapter-dirname-callback)
+* [mkdir](#mkdir_a)
 
-* [readDir](#readdir-_adapter-dirname-options-callback)
+* [readDir](#readdir_a)
 
-* [chmodFile](#chmodfile-_adapter-filename-options-callback)
+* [chmodFile](#chmodfile_a)
 
-* [chownFile](#chownfile-_adapter-filename-options-callback)
+* [chownFile](#chownfile_a)
 
-* [fileExists](#fileexists-_adapter-filename-callback)
+* [fileExists](#fileexists_a)
 
-* [subscribeFiles](#subscribefiles-id-pattern-callback)
+* [subscribeFiles](#subscribefiles_a)
 
-* [unsubscribeFiles](#unsubscribefiles-id-pattern-callback)
+* [unsubscribeFiles](#unsubscribefiles_a)
 
-* [getAdapterInstances](#getadapterinstances-adaptername-callback)
+* [getAdapterInstances](#getadapterinstances_a)
 
-### authenticate(user, pass, callback)
+### <a name="authenticate_a"></a>authenticate(user, pass, callback)
 Authenticate user by login and password
 * user *(string)*: user name
 * pass *(string)*: password
 * callback *(function)*: `function (isUserAuthenticated, isAuthenticationUsed)`
 
 
-### error(error)
+### <a name="error_a"></a>error(error)
 Write error into ioBroker log
 * error *(string)*: error text
 
 
-### log(text, level)
+### <a name="log_a"></a>log(text, level)
 Write log entry into ioBroker log
 * text *(string)*: log text
 * level *(string)*: one of `['silly', 'debug', 'info', 'warn', 'error']`. Default is 'debug'.
 
 
-### getHistory(id, options, callback)
+### <a name="gethistory_a"></a>getHistory(id, options, callback)
 Get history data from specific instance
 * id *(string)*: object ID
 * options *(object)*: See object description here: https://github.com/ioBroker/ioBroker.history/blob/master/docs/en/README.md#access-values-from-javascript-adapter
 * callback *(function)*: `function (error, result)`
 
 
-### httpGet(url, callback)
+### <a name="httpget_a"></a>httpGet(url, callback)
 Read content of HTTP(S) page server-side (without CORS and stuff)
 * url *(string)*: Page URL
 * callback *(function)*: `function (error, {status, statusText}, body)`
 
 
-### sendTo(adapterInstance, command, message, callback)
+### <a name="sendto_a"></a>sendTo(adapterInstance, command, message, callback)
 Send message to specific instance
 * adapterInstance *(string)*: instance name, e.g. `history.0`
 * command *(string)*: command name
@@ -651,7 +651,7 @@ Send message to specific instance
 * callback *(function)*: `function (result)`
 
 
-### sendToHost(host, command, message, callback)
+### <a name="sendtohost_a"></a>sendToHost(host, command, message, callback)
 Send message to specific host.
 Host can answer following commands: `cmdExec, getRepository, getInstalled, getInstalledAdapter, getVersion, getDiagData, getLocationOnDisk, getDevList, getLogs, getHostInfo, delLogs, readDirAsZip, writeDirAsZip, readObjectsAsZip, writeObjectsAsZip, checkLogging, updateMultihost`.
 * host *(string)*: instance name, e.g. `history.0`
@@ -660,266 +660,266 @@ Host can answer following commands: `cmdExec, getRepository, getInstalled, getIn
 * callback *(function)*: `function (result)`
 
 
-### authEnabled(callback)
+### <a name="authenabled_a"></a>authEnabled(callback)
 Ask server is authentication enabled and if the user authenticated
 * callback *(function)*: `function (isAuthenticationUsed, userName)`
 
 
-### logout(callback)
+### <a name="logout_a"></a>logout(callback)
 Logout user
 * callback *(function)*: function (error)
 
 
-### listPermissions(callback)
+### <a name="listpermissions_a"></a>listPermissions(callback)
 List commands and permissions
 * callback *(function)*: `function (permissions)`
 
 
-### getUserPermissions(callback)
+### <a name="getuserpermissions_a"></a>getUserPermissions(callback)
 Get user permissions
 * callback *(function)*: `function (error, permissions)`
 
 
-### getVersion(callback)
+### <a name="getversion_a"></a>getVersion(callback)
 Get adapter version. Not the socket-classes version!
 * callback *(function)*: `function (error, adapterVersion, adapterName)`
 
 
-### getAdapterName(callback)
+### <a name="getadaptername_a"></a>getAdapterName(callback)
 Get adapter name. Not the socket-classes version!
 * callback *(function)*: `function (error, adapterVersion)`
 
 
-### getHostByIp(ip, callback)
+### <a name="gethostbyip_a"></a>getHostByIp(ip, callback)
 
 
 
-### requireLog(isEnabled, callback)
+### <a name="requirelog_a"></a>requireLog(isEnabled, callback)
 
 
 
-### readLogs(host, callback)
+### <a name="readlogs_a"></a>readLogs(host, callback)
 
 
 
-### delState(id, callback)
+### <a name="delstate_a"></a>delState(id, callback)
 
 
 
-### cmdExec(host, id, cmd, callback)
+### <a name="cmdexec_a"></a>cmdExec(host, id, cmd, callback)
 
 
 
-### eventsThreshold(isActive)
+### <a name="eventsthreshold_a"></a>eventsThreshold(isActive)
 
 
 
-### getRatings(update, callback)
+### <a name="getratings_a"></a>getRatings(update, callback)
 
 
 
-### getCurrentInstance(callback)
+### <a name="getcurrentinstance_a"></a>getCurrentInstance(callback)
 
 
 
-### checkFeatureSupported(feature, callback)
+### <a name="checkfeaturesupported_a"></a>checkFeatureSupported(feature, callback)
 
 
 
-### decrypt(encryptedText, callback)
+### <a name="decrypt_a"></a>decrypt(encryptedText, callback)
 
 
 
-### encrypt(plainText, callback)
+### <a name="encrypt_a"></a>encrypt(plainText, callback)
 
 
 
-### getIsEasyModeStrict(callback)
+### <a name="getiseasymodestrict_a"></a>getIsEasyModeStrict(callback)
 
 
 
-### getEasyMode(callback)
+### <a name="geteasymode_a"></a>getEasyMode(callback)
 
 
 
-### getAdapters(adapterName, callback)
+### <a name="getadapters_a"></a>getAdapters(adapterName, callback)
 
 
 
-### updateLicenses(login, password, callback)
+### <a name="updatelicenses_a"></a>updateLicenses(login, password, callback)
 
 
 
-### getCompactInstances(callback)
+### <a name="getcompactinstances_a"></a>getCompactInstances(callback)
 
 
 
-### getCompactAdapters(callback)
+### <a name="getcompactadapters_a"></a>getCompactAdapters(callback)
 
 
 
-### getCompactInstalled(host, callback)
+### <a name="getcompactinstalled_a"></a>getCompactInstalled(host, callback)
 
 
 
-### getCompactSystemConfig(callback)
+### <a name="getcompactsystemconfig_a"></a>getCompactSystemConfig(callback)
 
 
 
-### getCompactSystemRepositories(callback)
+### <a name="getcompactsystemrepositories_a"></a>getCompactSystemRepositories(callback)
 
 
 
-### getCompactRepository(host, callback)
+### <a name="getcompactrepository_a"></a>getCompactRepository(host, callback)
 
 
 
-### getCompactHosts(callback)
+### <a name="getcompacthosts_a"></a>getCompactHosts(callback)
 
 
 
-### addUser(user, pass, callback)
+### <a name="adduser_a"></a>addUser(user, pass, callback)
 
 
 
-### delUser(user, callback)
+### <a name="deluser_a"></a>delUser(user, callback)
 
 
 
-### addGroup(group, desc, acl, callback)
+### <a name="addgroup_a"></a>addGroup(group, desc, acl, callback)
 
 
 
-### delGroup(group, callback)
+### <a name="delgroup_a"></a>delGroup(group, callback)
 
 
 
-### changePassword(user, pass, callback)
+### <a name="changepassword_a"></a>changePassword(user, pass, callback)
 
 
 
-### getObject(id, callback)
+### <a name="getobject_a"></a>getObject(id, callback)
 
 
 
-### getObjects(callback)
+### <a name="getobjects_a"></a>getObjects(callback)
 
 
 
-### subscribeObjects(pattern, callback)
+### <a name="subscribeobjects_a"></a>subscribeObjects(pattern, callback)
 
 
 
-### unsubscribeObjects(pattern, callback)
+### <a name="unsubscribeobjects_a"></a>unsubscribeObjects(pattern, callback)
 
 
 
-### getObjectView(design, search, params, callback)
+### <a name="getobjectview_a"></a>getObjectView(design, search, params, callback)
 
 
 
-### setObject(id, obj, callback)
+### <a name="setobject_a"></a>setObject(id, obj, callback)
 
 
 
-### getAllObjects(callback)
+### <a name="getallobjects_a"></a>getAllObjects(callback)
 
 
 
-### extendObject(id, obj, callback)
+### <a name="extendobject_a"></a>extendObject(id, obj, callback)
 
 
 
-### getForeignObjects(pattern, type, callback)
+### <a name="getforeignobjects_a"></a>getForeignObjects(pattern, type, callback)
 
 
 
-### delObject(id, options, callback)
+### <a name="delobject_a"></a>delObject(id, options, callback)
 Delete object or objects recursively. Objects with `dontDelete` cannot be deleted.
 * id *(string)*: Object ID like, 'adapterName.0.channel'
 * options *(string)*: `{recursive: true}`
 * callback *(function)*: `function (error)`
 
 
-### getStates(pattern, callback)
+### <a name="getstates_a"></a>getStates(pattern, callback)
 Read states by pattern
 * pattern *(string)*: optional pattern, like `system.adapter.*` or array of state IDs
 * callback *(function)*: `function (error, states)`, where `states` is an object like `{'system.adapter.history.0': {_id: 'system.adapter.history.0', common: {name: 'history', ...}, native: {...}, 'system.adapter.history.1': {...}}}`
 
 
-### getState(id, callback)
+### <a name="getstate_a"></a>getState(id, callback)
 Read one state.
 * id *(string)*: State ID like, 'system.adapter.admin.0.memRss'
 * callback *(function)*: `function (error, state)`, where `state` is an object like `{val: 123, ts: 1663915537418, ack: true, from: 'system.adapter.admin.0', q: 0, lc: 1663915537418, c: 'javascript.0'}`
 
 
-### setState(id, state, callback)
+### <a name="setstate_a"></a>setState(id, state, callback)
 Write one state.
 * id *(string)*: State ID like, 'system.adapter.admin.0.memRss'
 * state *(any)*: value or object like `{val: 123, ack: true}`
 * callback *(function)*: `function (error, state)`, where `state` is an object like `{val: 123, ts: 1663915537418, ack: true, from: 'system.adapter.admin.0', q: 0, lc: 1663915537418, c: 'javascript.0'}`
 
 
-### getBinaryState(id, callback)
+### <a name="getbinarystate_a"></a>getBinaryState(id, callback)
 Read one binary state.
 * id *(string)*: State ID like, 'javascript.0.binary'
 * callback *(function)*: `function (error, base64)`
 
 
-### setBinaryState(id, base64, callback)
+### <a name="setbinarystate_a"></a>setBinaryState(id, base64, callback)
 Write one binary state.
 * id *(string)*: State ID like, 'javascript.0.binary'
 * base64 *(string)*: State value as base64 string. Binary states has no acknowledge flag.
 * callback *(function)*: `function (error)`
 
 
-### subscribe(pattern, callback)
+### <a name="subscribe_a"></a>subscribe(pattern, callback)
 Subscribe on state changes by pattern. The events will come as 'stateChange' events to the socket.
 * pattern *(string)*: pattern like 'system.adapter.*' or array of states like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
 * callback *(function)*: `function (error)`
 
 
-### subscribeStates(pattern, callback)
+### <a name="subscribestates_a"></a>subscribeStates(pattern, callback)
 Subscribe on state changes by pattern. Same as `subscribe`. The events will come as 'stateChange' events to the socket.
 * pattern *(string)*: pattern like 'system.adapter.*' or array of states like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
 * callback *(function)*: `function (error)`
 
 
-### unsubscribe(pattern, callback)
+### <a name="unsubscribe_a"></a>unsubscribe(pattern, callback)
 Unsubscribe from state changes by pattern.
 * pattern *(string)*: pattern like 'system.adapter.*' or array of states like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
 * callback *(function)*: `function (error)`
 
 
-### unsubscribeStates(pattern, callback)
+### <a name="unsubscribestates_a"></a>unsubscribeStates(pattern, callback)
 Unsubscribe from state changes by pattern. Same as `unsubscribe`.
 * pattern *(string)*: pattern like 'system.adapter.*' or array of states like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
 * callback *(function)*: `function (error)`
 
 
-### getForeignStates(pattern, callback)
+### <a name="getforeignstates_a"></a>getForeignStates(pattern, callback)
 
 
 
-### delObjects(id, options, callback)
+### <a name="delobjects_a"></a>delObjects(id, options, callback)
 
 
 
-### readFile(_adapter, fileName, callback)
+### <a name="readfile_a"></a>readFile(_adapter, fileName, callback)
 Read file from ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * fileName *(string)*: file name, e.g `main/vis-views.json`
 * callback *(function)*: `function (error, data, mimeType)`
 
 
-### readFile64(_adapter, fileName, callback)
+### <a name="readfile64_a"></a>readFile64(_adapter, fileName, callback)
 Read file from ioBroker DB as base64 string
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * fileName *(string)*: file name, e.g `main/vis-views.json`
 * callback *(function)*: `function (error, base64, mimeType)`
 
 
-### writeFile64(_adapter, fileName, data64, options, callback)
+### <a name="writefile64_a"></a>writeFile64(_adapter, fileName, data64, options, callback)
 Write file into ioBroker DB as base64 string
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * fileName *(string)*: file name, e.g `main/vis-views.json`
@@ -928,32 +928,32 @@ Write file into ioBroker DB as base64 string
 * callback *(function)*: `function (error, base64, mimeType)`
 
 
-### writeFile(_adapter, fileName, data64, options, callback)
+### <a name="writefile_a"></a>writeFile(_adapter, fileName, data64, options, callback)
 
 
 
-### unlink(_adapter, name, callback)
+### <a name="unlink_a"></a>unlink(_adapter, name, callback)
 Delete file in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * name *(string)*: file name, e.g `main/vis-views.json`
 * callback *(function)*: `function (error)`
 
 
-### deleteFile(_adapter, name, callback)
+### <a name="deletefile_a"></a>deleteFile(_adapter, name, callback)
 Delete file in ioBroker DB (same as unlink, but only for files)
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * name *(string)*: file name, e.g `main/vis-views.json`
 * callback *(function)*: `function (error)`
 
 
-### deleteFolder(_adapter, name, callback)
+### <a name="deletefolder_a"></a>deleteFolder(_adapter, name, callback)
 Delete file in ioBroker DB (same as unlink, but only for folders)
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * name *(string)*: folder name, e.g `main`
 * callback *(function)*: `function (error)`
 
 
-### renameFile(_adapter, oldName, newName, callback)
+### <a name="renamefile_a"></a>renameFile(_adapter, oldName, newName, callback)
 Rename file in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * oldName *(string)*: current file name, e.g `main/vis-views.json`
@@ -961,7 +961,7 @@ Rename file in ioBroker DB
 * callback *(function)*: `function (error)`
 
 
-### rename(_adapter, oldName, newName, callback)
+### <a name="rename_a"></a>rename(_adapter, oldName, newName, callback)
 Rename file or folder in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * oldName *(string)*: current file name, e.g `main/vis-views.json`
@@ -969,14 +969,14 @@ Rename file or folder in ioBroker DB
 * callback *(function)*: `function (error)`
 
 
-### mkdir(_adapter, dirName, callback)
+### <a name="mkdir_a"></a>mkdir(_adapter, dirName, callback)
 Create folder in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * dirName *(string)*: desired folder name, e.g `main`
 * callback *(function)*: `function (error)`
 
 
-### readDir(_adapter, dirName, options, callback)
+### <a name="readdir_a"></a>readDir(_adapter, dirName, options, callback)
 Read content of folder in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * dirName *(string)*: folder name, e.g `main`
@@ -984,7 +984,7 @@ Read content of folder in ioBroker DB
 * callback *(function)*: `function (error, files)` where `files` is an array of objects, like `{file: 'vis-views.json', isDir: false, stats: {size: 123}, modifiedAt: 1661336290090, acl: {owner: 'system.user.admin', ownerGroup: 'system.group.administrator', permissions: 1632, read: true, write: true}`
 
 
-### chmodFile(_adapter, fileName, options, callback)
+### <a name="chmodfile_a"></a>chmodFile(_adapter, fileName, options, callback)
 Change file mode in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * fileName *(string)*: file name, e.g `main/vis-views.json`
@@ -992,7 +992,7 @@ Change file mode in ioBroker DB
 * callback *(function)*: `function (error)`
 
 
-### chownFile(_adapter, fileName, options, callback)
+### <a name="chownfile_a"></a>chownFile(_adapter, fileName, options, callback)
 Change file owner in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * fileName *(string)*: file name, e.g `main/vis-views.json`
@@ -1000,28 +1000,28 @@ Change file owner in ioBroker DB
 * callback *(function)*: `function (error)`
 
 
-### fileExists(_adapter, fileName, callback)
+### <a name="fileexists_a"></a>fileExists(_adapter, fileName, callback)
 Checks if the file or folder exists in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * fileName *(string)*: file name, e.g `main/vis-views.json`
 * callback *(function)*: `function (error, isExist)`
 
 
-### subscribeFiles(id, pattern, callback)
+### <a name="subscribefiles_a"></a>subscribeFiles(id, pattern, callback)
 Subscribe on file changes in ioBroker DB
 * id *(string)*: instance name, e.g. `vis.0` or any object ID of type `meta`. `id` could have wildcards `*` too.
 * pattern *(string)*: file name pattern, e.g `main/*.json`
 * callback *(function)*: `function (error)`
 
 
-### unsubscribeFiles(id, pattern, callback)
+### <a name="unsubscribefiles_a"></a>unsubscribeFiles(id, pattern, callback)
 Unsubscribe on file changes in ioBroker DB
 * id *(string)*: instance name, e.g. `vis.0` or any object ID of type `meta`. `id` could have wildcards `*` too.
 * pattern *(string)*: file name pattern, e.g `main/*.json`
 * callback *(function)*: `function (error)`
 
 
-### getAdapterInstances(adapterName, callback)
+### <a name="getadapterinstances_a"></a>getAdapterInstances(adapterName, callback)
 Read all instances of the given adapter, or all instances of all adapters if adapterName is not defined
 * adapterName *(string)*: optional adapter name, e.g `history`.
 * callback *(function)*: `function (error, instanceList)`, where instanceList is an array of instance objects, e.g. `{_id: 'system.adapter.history.0', common: {name: 'history', ...}, native: {...}}`
