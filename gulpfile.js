@@ -67,11 +67,13 @@ function replaceReadme(key, text) {
 function getCommands(Commands) {
     const commands = new Commands({config: {thresholdValue: 1}});
     const texts = [];
+    const links = [];
     Object.keys(commands.commands).forEach(command => {
         const func = commands.commands[command];
         const params = getParamNames(func);
         params.shift();
         let text = `### ${command}(${params.join(', ')})\n`;
+        links.push(`* [${command}](#${command.toLowerCase()}-${params.map(a => a.toLowerCase()).join('-')})`); // #authenticateuser-pass-callback
         const comments = getParamComments(func);
         text += comments.desc.join('\n') + '\n';
         Object.keys(comments.params).forEach(param => {
@@ -84,7 +86,9 @@ function getCommands(Commands) {
 
         texts.push(text);
     });
-    return texts;
+
+    links.unshift('### List of commands');
+    return links.concat(texts);
 }
 
 gulp.task('webList', done => {

@@ -65,6 +65,100 @@ io.close();
 
 ## Web Methods
 <!-- WEB_METHODS_START -->
+### List of commands
+
+* [authenticate](#authenticate-user-pass-callback)
+
+* [error](#error-error)
+
+* [log](#log-text-level)
+
+* [getHistory](#gethistory-id-options-callback)
+
+* [httpGet](#httpget-url-callback)
+
+* [sendTo](#sendto-adapterinstance-command-message-callback)
+
+* [sendToHost](#sendtohost-host-command-message-callback)
+
+* [authEnabled](#authenabled-callback)
+
+* [logout](#logout-callback)
+
+* [listPermissions](#listpermissions-callback)
+
+* [getUserPermissions](#getuserpermissions-callback)
+
+* [getVersion](#getversion-callback)
+
+* [getAdapterName](#getadaptername-callback)
+
+* [getObject](#getobject-id-callback)
+
+* [getObjects](#getobjects-callback)
+
+* [subscribeObjects](#subscribeobjects-pattern-callback)
+
+* [unsubscribeObjects](#unsubscribeobjects-pattern-callback)
+
+* [getObjectView](#getobjectview-design-search-params-callback)
+
+* [setObject](#setobject-id-obj-callback)
+
+* [getStates](#getstates-pattern-callback)
+
+* [delObject](#delobject-id-options-callback)
+
+* [getState](#getstate-id-callback)
+
+* [setState](#setstate-id-state-callback)
+
+* [getBinaryState](#getbinarystate-id-callback)
+
+* [setBinaryState](#setbinarystate-id-base64-callback)
+
+* [subscribe](#subscribe-pattern-callback)
+
+* [subscribeStates](#subscribestates-pattern-callback)
+
+* [unsubscribe](#unsubscribe-pattern-callback)
+
+* [unsubscribeStates](#unsubscribestates-pattern-callback)
+
+* [readFile](#readfile-_adapter-filename-callback)
+
+* [readFile64](#readfile64-_adapter-filename-callback)
+
+* [writeFile64](#writefile64-_adapter-filename-data64-options-callback)
+
+* [writeFile](#writefile-_adapter-filename-data-options-callback)
+
+* [unlink](#unlink-_adapter-name-callback)
+
+* [deleteFile](#deletefile-_adapter-name-callback)
+
+* [deleteFolder](#deletefolder-_adapter-name-callback)
+
+* [renameFile](#renamefile-_adapter-oldname-newname-callback)
+
+* [rename](#rename-_adapter-oldname-newname-callback)
+
+* [mkdir](#mkdir-_adapter-dirname-callback)
+
+* [readDir](#readdir-_adapter-dirname-options-callback)
+
+* [chmodFile](#chmodfile-_adapter-filename-options-callback)
+
+* [chownFile](#chownfile-_adapter-filename-options-callback)
+
+* [fileExists](#fileexists-_adapter-filename-callback)
+
+* [subscribeFiles](#subscribefiles-id-pattern-callback)
+
+* [unsubscribeFiles](#unsubscribefiles-id-pattern-callback)
+
+* [getAdapterInstances](#getadapterinstances-adaptername-callback)
+
 ### authenticate(user, pass, callback)
 Authenticate user by login and password
 * user *(string)*: user name
@@ -360,6 +454,164 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 
 ## Admin Methods
 <!-- ADMIN_METHODS_START -->
+### List of commands
+
+* [authenticate](#authenticate-user-pass-callback)
+
+* [error](#error-error)
+
+* [log](#log-text-level)
+
+* [getHistory](#gethistory-id-options-callback)
+
+* [httpGet](#httpget-url-callback)
+
+* [sendTo](#sendto-adapterinstance-command-message-callback)
+
+* [sendToHost](#sendtohost-host-command-message-callback)
+
+* [authEnabled](#authenabled-callback)
+
+* [logout](#logout-callback)
+
+* [listPermissions](#listpermissions-callback)
+
+* [getUserPermissions](#getuserpermissions-callback)
+
+* [getVersion](#getversion-callback)
+
+* [getAdapterName](#getadaptername-callback)
+
+* [getHostByIp](#gethostbyip-ip-callback)
+
+* [requireLog](#requirelog-isenabled-callback)
+
+* [readLogs](#readlogs-host-callback)
+
+* [delState](#delstate-id-callback)
+
+* [cmdExec](#cmdexec-host-id-cmd-callback)
+
+* [eventsThreshold](#eventsthreshold-isactive)
+
+* [getRatings](#getratings-update-callback)
+
+* [getCurrentInstance](#getcurrentinstance-callback)
+
+* [checkFeatureSupported](#checkfeaturesupported-feature-callback)
+
+* [decrypt](#decrypt-encryptedtext-callback)
+
+* [encrypt](#encrypt-plaintext-callback)
+
+* [getIsEasyModeStrict](#getiseasymodestrict-callback)
+
+* [getEasyMode](#geteasymode-callback)
+
+* [getAdapters](#getadapters-adaptername-callback)
+
+* [updateLicenses](#updatelicenses-login-password-callback)
+
+* [getCompactInstances](#getcompactinstances-callback)
+
+* [getCompactAdapters](#getcompactadapters-callback)
+
+* [getCompactInstalled](#getcompactinstalled-host-callback)
+
+* [getCompactSystemConfig](#getcompactsystemconfig-callback)
+
+* [getCompactSystemRepositories](#getcompactsystemrepositories-callback)
+
+* [getCompactRepository](#getcompactrepository-host-callback)
+
+* [getCompactHosts](#getcompacthosts-callback)
+
+* [addUser](#adduser-user-pass-callback)
+
+* [delUser](#deluser-user-callback)
+
+* [addGroup](#addgroup-group-desc-acl-callback)
+
+* [delGroup](#delgroup-group-callback)
+
+* [changePassword](#changepassword-user-pass-callback)
+
+* [getObject](#getobject-id-callback)
+
+* [getObjects](#getobjects-callback)
+
+* [subscribeObjects](#subscribeobjects-pattern-callback)
+
+* [unsubscribeObjects](#unsubscribeobjects-pattern-callback)
+
+* [getObjectView](#getobjectview-design-search-params-callback)
+
+* [setObject](#setobject-id-obj-callback)
+
+* [getAllObjects](#getallobjects-callback)
+
+* [extendObject](#extendobject-id-obj-callback)
+
+* [getForeignObjects](#getforeignobjects-pattern-type-callback)
+
+* [delObject](#delobject-id-options-callback)
+
+* [getStates](#getstates-pattern-callback)
+
+* [getState](#getstate-id-callback)
+
+* [setState](#setstate-id-state-callback)
+
+* [getBinaryState](#getbinarystate-id-callback)
+
+* [setBinaryState](#setbinarystate-id-base64-callback)
+
+* [subscribe](#subscribe-pattern-callback)
+
+* [subscribeStates](#subscribestates-pattern-callback)
+
+* [unsubscribe](#unsubscribe-pattern-callback)
+
+* [unsubscribeStates](#unsubscribestates-pattern-callback)
+
+* [getForeignStates](#getforeignstates-pattern-callback)
+
+* [delObjects](#delobjects-id-options-callback)
+
+* [readFile](#readfile-_adapter-filename-callback)
+
+* [readFile64](#readfile64-_adapter-filename-callback)
+
+* [writeFile64](#writefile64-_adapter-filename-data64-options-callback)
+
+* [writeFile](#writefile-_adapter-filename-data64-options-callback)
+
+* [unlink](#unlink-_adapter-name-callback)
+
+* [deleteFile](#deletefile-_adapter-name-callback)
+
+* [deleteFolder](#deletefolder-_adapter-name-callback)
+
+* [renameFile](#renamefile-_adapter-oldname-newname-callback)
+
+* [rename](#rename-_adapter-oldname-newname-callback)
+
+* [mkdir](#mkdir-_adapter-dirname-callback)
+
+* [readDir](#readdir-_adapter-dirname-options-callback)
+
+* [chmodFile](#chmodfile-_adapter-filename-options-callback)
+
+* [chownFile](#chownfile-_adapter-filename-options-callback)
+
+* [fileExists](#fileexists-_adapter-filename-callback)
+
+* [subscribeFiles](#subscribefiles-id-pattern-callback)
+
+* [unsubscribeFiles](#unsubscribefiles-id-pattern-callback)
+
+* [getAdapterInstances](#getadapterinstances-adaptername-callback)
+
 ### authenticate(user, pass, callback)
 Authenticate user by login and password
 * user *(string)*: user name
