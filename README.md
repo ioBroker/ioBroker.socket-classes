@@ -883,6 +883,10 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
+
+### __WORK IN PROGRESS__
+* (Apollon77) Prepare for future js-controller versions
+
 ### 0.5.4 (2022-09-23)
 * (bluefox) Fixed error in `delObjects` method
 
