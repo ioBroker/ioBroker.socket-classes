@@ -883,8 +883,7 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
-
-### __WORK IN PROGRESS__
+### 0.5.5 (2022-10-09)
 * (Apollon77) Prepare for future js-controller versions
 
 ### 0.5.4 (2022-09-23)
