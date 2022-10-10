@@ -85,8 +85,8 @@ io.close();
 * [unsubscribeObjects](#unsubscribeobjects_w)
 * [getObjectView](#getobjectview_w)
 * [setObject](#setobject_w)
-* [getStates](#getstates_w)
 * [delObject](#delobject_w)
+* [getStates](#getstates_w)
 * [getState](#getstate_w)
 * [setState](#setstate_w)
 * [getBinaryState](#getbinarystate_w)
@@ -210,16 +210,16 @@ Set object.
 * obj *(object)*: object itself
 * callback *(function)*: `function (error)`
 
-### <a name="getstates_w"></a>getStates(pattern, callback)
-Read states by pattern
-* pattern *(string)*: optional pattern, like `system.adapter.*` or array of state IDs
-* callback *(function)*: `function (error, states)`, where `states` is an object like `{'system.adapter.history.0': {_id: 'system.adapter.history.0', common: {name: 'history', ...}, native: {...}, 'system.adapter.history.1': {...}}}`
-
 ### <a name="delobject_w"></a>delObject(id, options, callback)
 Delete object. Only deletion of flot objects is allowed
 * id *(string)*: Object ID like, 'flot.0.myChart'
 * options *(string)*: ignored
 * callback *(function)*: `function (error)`
+
+### <a name="getstates_w"></a>getStates(pattern, callback)
+Read states by pattern
+* pattern *(string)*: optional pattern, like `system.adapter.*` or array of state IDs
+* callback *(function)*: `function (error, states)`, where `states` is an object like `{'system.adapter.history.0': {_id: 'system.adapter.history.0', common: {name: 'history', ...}, native: {...}, 'system.adapter.history.1': {...}}}`
 
 ### <a name="getstate_w"></a>getState(id, callback)
 Read one state.
@@ -424,10 +424,10 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 * [unsubscribeObjects](#unsubscribeobjects_a)
 * [getObjectView](#getobjectview_a)
 * [setObject](#setobject_a)
+* [delObject](#delobject_a)
 * [getAllObjects](#getallobjects_a)
 * [extendObject](#extendobject_a)
 * [getForeignObjects](#getforeignobjects_a)
-* [delObject](#delobject_a)
 * [delObjects](#delobjects_a)
 * [getStates](#getstates_a)
 * [getState](#getstate_a)
@@ -684,6 +684,12 @@ Set object.
 * obj *(object)*: object itself
 * callback *(function)*: `function (error)`
 
+### <a name="delobject_a"></a>delObject(id, options, callback)
+Delete object or objects recursively. Objects with `dontDelete` cannot be deleted.
+* id *(string)*: Object ID like, 'adapterName.0.channel'
+* options *(string)*: `{recursive: true}`
+* callback *(function)*: `function (error)`
+
 ### <a name="getallobjects_a"></a>getAllObjects(callback)
 Read absolutely all objects
 * callback *(function)*: `function (error, objects)`, where `objects` is an object like `{'system.adapter.admin.0': {...}, 'system.adapter.web.0': {...}}`
@@ -699,12 +705,6 @@ Read objects by pattern
 * pattern *(string)*: pattern like `system.adapter.admin.0.*`
 * type *(string)*: type of objects to delete, like `state`, `channel`, `device`, `host`, `adapter`. Default - `state`
 * callback *(function)*: `function (error, objects)`, where `objects` is an object like `{'system.adapter.admin.0': {...}, 'system.adapter.web.0': {...}}`
-
-### <a name="delobject_a"></a>delObject(id, options, callback)
-Delete object. Only deletion of flot objects is allowed
-* id *(string)*: Object ID like, 'flot.0.myChart'
-* options *(string)*: ignored
-* callback *(function)*: `function (error)`
 
 ### <a name="delobjects_a"></a>delObjects(id, options, callback)
 Delete objects recursively. Objects with `dontDelete` cannot be deleted. Same as `delObject` but with `recursive: true`.
@@ -760,9 +760,8 @@ Unsubscribe from state changes by pattern. Same as `unsubscribe`.
 * callback *(function)*: `function (error)`
 
 ### <a name="getforeignstates_a"></a>getForeignStates(pattern, callback)
-Change user password
-* user *(string)*: user name, like 'benjamin`
-* pass *(string)*: new password
+Read all states (which might not belong to this adapter) which match the given pattern
+* pattern *(string)*: pattern like
 * callback *(function)*: `function (error)`
 
 ### <a name="readfile_a"></a>readFile(_adapter, fileName, callback)
@@ -883,7 +882,7 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 1.0.0 (2022-10-10)
 * (bluefox) Fixed error with delObject
 
 ### 0.5.5 (2022-10-09)
