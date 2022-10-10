@@ -882,7 +882,7 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 1.0.1 (2022-10-10)
 * (bluefox) Fixed error with delObject
 
 ### 0.5.5 (2022-10-09)
