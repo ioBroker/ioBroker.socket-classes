@@ -882,6 +882,9 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) Function `getObjects`for web was extended by devices, channels and enums
+
 ### 1.0.1 (2022-10-10)
 * (bluefox) Fixed error with delObject
 
