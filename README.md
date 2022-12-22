@@ -87,6 +87,7 @@ io.close();
 * [setObject](#setobject_w)
 * [delObject](#delobject_w)
 * [getStates](#getstates_w)
+* [getForeignStates](#getforeignstates_w)
 * [getState](#getstate_w)
 * [setState](#setstate_w)
 * [getBinaryState](#getbinarystate_w)
@@ -220,6 +221,11 @@ Delete object. Only deletion of flot objects is allowed
 Read states by pattern
 * pattern *(string)*: optional pattern, like `system.adapter.*` or array of state IDs
 * callback *(function)*: `function (error, states)`, where `states` is an object like `{'system.adapter.history.0': {_id: 'system.adapter.history.0', common: {name: 'history', ...}, native: {...}, 'system.adapter.history.1': {...}}}`
+
+### <a name="getforeignstates_w"></a>getForeignStates(pattern, callback)
+Read all states (which might not belong to this adapter) which match the given pattern
+* pattern *(string)*: pattern like
+* callback *(function)*: `function (error)`
 
 ### <a name="getstate_w"></a>getState(id, callback)
 Read one state.
@@ -430,6 +436,7 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 * [getForeignObjects](#getforeignobjects_a)
 * [delObjects](#delobjects_a)
 * [getStates](#getstates_a)
+* [getForeignStates](#getforeignstates_a)
 * [getState](#getstate_a)
 * [setState](#setstate_a)
 * [getBinaryState](#getbinarystate_a)
@@ -438,7 +445,6 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 * [subscribeStates](#subscribestates_a)
 * [unsubscribe](#unsubscribe_a)
 * [unsubscribeStates](#unsubscribestates_a)
-* [getForeignStates](#getforeignstates_a)
 * [readFile](#readfile_a)
 * [readFile64](#readfile64_a)
 * [writeFile64](#writefile64_a)
@@ -717,6 +723,11 @@ Read states by pattern
 * pattern *(string)*: optional pattern, like `system.adapter.*` or array of state IDs
 * callback *(function)*: `function (error, states)`, where `states` is an object like `{'system.adapter.history.0': {_id: 'system.adapter.history.0', common: {name: 'history', ...}, native: {...}, 'system.adapter.history.1': {...}}}`
 
+### <a name="getforeignstates_a"></a>getForeignStates(pattern, callback)
+Read all states (which might not belong to this adapter) which match the given pattern
+* pattern *(string)*: pattern like
+* callback *(function)*: `function (error)`
+
 ### <a name="getstate_a"></a>getState(id, callback)
 Read one state.
 * id *(string)*: State ID like, 'system.adapter.admin.0.memRss'
@@ -757,11 +768,6 @@ Unsubscribe from state changes by pattern.
 ### <a name="unsubscribestates_a"></a>unsubscribeStates(pattern, callback)
 Unsubscribe from state changes by pattern. Same as `unsubscribe`.
 * pattern *(string)*: pattern like 'system.adapter.*' or array of states like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
-* callback *(function)*: `function (error)`
-
-### <a name="getforeignstates_a"></a>getForeignStates(pattern, callback)
-Read all states (which might not belong to this adapter) which match the given pattern
-* pattern *(string)*: pattern like
 * callback *(function)*: `function (error)`
 
 ### <a name="readfile_a"></a>readFile(_adapter, fileName, callback)
@@ -882,7 +888,7 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 1.1.0 (2022-12-22)
 * (bluefox) Added user check to many commands
 * (bluefox) Downgrade axios to 0.27.2
 
