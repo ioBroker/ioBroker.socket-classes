@@ -889,6 +889,9 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 
 ## Changelog
 ### 1.1.0 (2022-12-22)
+* (bluefox) Corrected error with subscribe
+
+### 1.1.0 (2022-12-22)
 * (bluefox) Added user check to many commands
 * (bluefox) Downgrade axios to 0.27.2
 
