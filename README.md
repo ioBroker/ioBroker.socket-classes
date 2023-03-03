@@ -888,6 +888,9 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) Allow deletion of fullcalendar objects
+
 ### 1.1.1 (2022-12-22)
 * (bluefox) Corrected error with subscribe
 
