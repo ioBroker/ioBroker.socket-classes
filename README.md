@@ -888,7 +888,7 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 1.1.3 (2023-03-12)
 * (bluefox) Treat `json5` as `json`
 
 ### 1.1.2 (2023-03-03)
