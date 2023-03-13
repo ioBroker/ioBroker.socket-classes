@@ -888,7 +888,7 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
-### 1.1.4 (2023-03-13)
+### **WORK IN PROGRESS**
 * (bluefox) Added command `name`
 
 ### 1.1.3 (2023-03-12)
