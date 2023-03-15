@@ -224,7 +224,7 @@ Read states by pattern
 
 ### <a name="getforeignstates_w"></a>getForeignStates(pattern, callback)
 Read all states (which might not belong to this adapter) which match the given pattern
-* pattern *(string)*: pattern like
+* pattern *(string)*: pattern like `system.adapter.*` or array of state IDs
 * callback *(function)*: `function (error)`
 
 ### <a name="getstate_w"></a>getState(id, callback)
@@ -725,7 +725,7 @@ Read states by pattern
 
 ### <a name="getforeignstates_a"></a>getForeignStates(pattern, callback)
 Read all states (which might not belong to this adapter) which match the given pattern
-* pattern *(string)*: pattern like
+* pattern *(string)*: pattern like `system.adapter.*` or array of state IDs
 * callback *(function)*: `function (error)`
 
 ### <a name="getstate_a"></a>getState(id, callback)
