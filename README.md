@@ -888,6 +888,9 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (foxriver76) fixed crash on invalid patterns with js-controller version 5
+
 ### 1.1.5 (2023-03-13)
 * (bluefox) Added command `name`
 
