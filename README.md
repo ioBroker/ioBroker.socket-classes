@@ -889,7 +889,7 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 1.2.0 (2023-07-07)
 * (foxriver76) fixed crash on invalid patterns with js-controller version 5
 * (bluefox) extended the getObjects function with the possibility to read the list of IDs
 
