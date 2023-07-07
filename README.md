@@ -140,22 +140,22 @@ Read content of HTTP(S) page server-side (without CORS and stuff)
 * callback *(function)*: `function (error, {status, statusText}, body)`
 
 ### <a name="sendto_w"></a>sendTo(adapterInstance, command, message, callback)
-Send message to specific instance
+Send the message to specific instance
 * adapterInstance *(string)*: instance name, e.g. `history.0`
 * command *(string)*: command name
-* message *(object)*: message is instance dependent
+* message *(object)*: the message is instance dependent
 * callback *(function)*: `function (result)`
 
 ### <a name="sendtohost_w"></a>sendToHost(host, command, message, callback)
-Send message to specific host.
-Host can answer following commands: `cmdExec, getRepository, getInstalled, getInstalledAdapter, getVersion, getDiagData, getLocationOnDisk, getDevList, getLogs, getHostInfo, delLogs, readDirAsZip, writeDirAsZip, readObjectsAsZip, writeObjectsAsZip, checkLogging, updateMultihost`.
+Send a message to the specific host.
+Host can answer to the following commands: `cmdExec, getRepository, getInstalled, getInstalledAdapter, getVersion, getDiagData, getLocationOnDisk, getDevList, getLogs, getHostInfo, delLogs, readDirAsZip, writeDirAsZip, readObjectsAsZip, writeObjectsAsZip, checkLogging, updateMultihost`.
 * host *(string)*: instance name, e.g. `history.0`
 * command *(string)*: command name
-* message *(object)*: message is command specific
+* message *(object)*: the message is command-specific
 * callback *(function)*: `function (result)`
 
 ### <a name="authenabled_w"></a>authEnabled(callback)
-Ask server is authentication enabled and if the user authenticated
+Ask server is authentication enabled, and if the user authenticated
 * callback *(function)*: `function (isAuthenticationUsed, userName)`
 
 ### <a name="logout_w"></a>logout(callback)
@@ -171,7 +171,7 @@ Get user permissions
 * callback *(function)*: `function (error, permissions)`
 
 ### <a name="getversion_w"></a>getVersion(callback)
-Get adapter version. Not the socket-classes version!
+Get the adapter version. Not the socket-classes version!
 * callback *(function)*: `function (error, adapterVersion, adapterName)`
 
 ### <a name="getadaptername_w"></a>getAdapterName(callback)
@@ -183,18 +183,19 @@ Get one object
 * id *(string)*: object ID.
 * callback *(function)*: `function (error, obj)`
 
-### <a name="getobjects_w"></a>getObjects(callback)
+### <a name="getobjects_w"></a>getObjects(list, callback)
 Get all objects that are relevant for web: all states and enums with rooms
 * id *(string)*: object ID.
+* list *(string[])*: optional list of IDs.
 * callback *(function)*: `function (error, obj)`
 
 ### <a name="subscribeobjects_w"></a>subscribeObjects(pattern, callback)
-Subscribe on object changes by pattern. The events will come as 'objectChange' events to the socket.
+Subscribe to object changes by pattern. The events will come as 'objectChange' events to the socket.
 * pattern *(string)*: pattern like 'system.adapter.*' or array of IDs like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
 * callback *(function)*: `function (error)`
 
 ### <a name="unsubscribeobjects_w"></a>unsubscribeObjects(pattern, callback)
-Unsubscribe on object changes by pattern.
+Unsubscribe from object changes by pattern.
 * pattern *(string)*: pattern like 'system.adapter.*' or array of IDs like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
 * callback *(function)*: `function (error)`
 
@@ -246,16 +247,16 @@ Read one binary state.
 ### <a name="setbinarystate_w"></a>setBinaryState(id, base64, callback)
 Write one binary state.
 * id *(string)*: State ID like, 'javascript.0.binary'
-* base64 *(string)*: State value as base64 string. Binary states has no acknowledge flag.
+* base64 *(string)*: State value as base64 string. Binary states have no acknowledged flag.
 * callback *(function)*: `function (error)`
 
 ### <a name="subscribe_w"></a>subscribe(pattern, callback)
-Subscribe on state changes by pattern. The events will come as 'stateChange' events to the socket.
+Subscribe to state changes by pattern. The events will come as 'stateChange' events to the socket.
 * pattern *(string)*: pattern like 'system.adapter.*' or array of states like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
 * callback *(function)*: `function (error)`
 
 ### <a name="subscribestates_w"></a>subscribeStates(pattern, callback)
-Subscribe on state changes by pattern. Same as `subscribe`. The events will come as 'stateChange' events to the socket.
+Subscribe to state changes by pattern. Same as `subscribe`. The events will come as 'stateChange' events to the socket.
 * pattern *(string)*: pattern like 'system.adapter.*' or array of states like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
 * callback *(function)*: `function (error)`
 
@@ -346,7 +347,7 @@ Read content of folder in ioBroker DB
 Change file mode in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * fileName *(string)*: file name, e.g `main/vis-views.json`
-* options *(object)*: `{mode: 0x644}` or 0x644. First digit is user, second group, third others. Bit 1 is `execute`, bit 2 is `write`, bit 3 is `read`
+* options *(object)*: `{mode: 0x644}` or 0x644. The first digit is user, second group, third others. Bit 1 is `execute`, bit 2 is `write`, bit 3 is `read`
 * callback *(function)*: `function (error)`
 
 ### <a name="chownfile_w"></a>chownFile(_adapter, fileName, options, callback)
@@ -357,19 +358,19 @@ Change file owner in ioBroker DB
 * callback *(function)*: `function (error)`
 
 ### <a name="fileexists_w"></a>fileExists(_adapter, fileName, callback)
-Checks if the file or folder exists in ioBroker DB
+Check if the file or folder exists in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * fileName *(string)*: file name, e.g `main/vis-views.json`
 * callback *(function)*: `function (error, isExist)`
 
 ### <a name="subscribefiles_w"></a>subscribeFiles(id, pattern, callback)
-Subscribe on file changes in ioBroker DB
+Subscribe to file changes in ioBroker DB
 * id *(string)*: instance name, e.g. `vis.0` or any object ID of type `meta`. `id` could have wildcards `*` too.
 * pattern *(string)*: file name pattern, e.g `main/*.json`
 * callback *(function)*: `function (error)`
 
 ### <a name="unsubscribefiles_w"></a>unsubscribeFiles(id, pattern, callback)
-Unsubscribe on file changes in ioBroker DB
+Unsubscribe from file changes in ioBroker DB
 * id *(string)*: instance name, e.g. `vis.0` or any object ID of type `meta`. `id` could have wildcards `*` too.
 * pattern *(string)*: file name pattern, e.g `main/*.json`
 * callback *(function)*: `function (error)`
@@ -489,22 +490,22 @@ Read content of HTTP(S) page server-side (without CORS and stuff)
 * callback *(function)*: `function (error, {status, statusText}, body)`
 
 ### <a name="sendto_a"></a>sendTo(adapterInstance, command, message, callback)
-Send message to specific instance
+Send the message to specific instance
 * adapterInstance *(string)*: instance name, e.g. `history.0`
 * command *(string)*: command name
-* message *(object)*: message is instance dependent
+* message *(object)*: the message is instance dependent
 * callback *(function)*: `function (result)`
 
 ### <a name="sendtohost_a"></a>sendToHost(host, command, message, callback)
-Send message to specific host.
-Host can answer following commands: `cmdExec, getRepository, getInstalled, getInstalledAdapter, getVersion, getDiagData, getLocationOnDisk, getDevList, getLogs, getHostInfo, delLogs, readDirAsZip, writeDirAsZip, readObjectsAsZip, writeObjectsAsZip, checkLogging, updateMultihost`.
+Send a message to the specific host.
+Host can answer to the following commands: `cmdExec, getRepository, getInstalled, getInstalledAdapter, getVersion, getDiagData, getLocationOnDisk, getDevList, getLogs, getHostInfo, delLogs, readDirAsZip, writeDirAsZip, readObjectsAsZip, writeObjectsAsZip, checkLogging, updateMultihost`.
 * host *(string)*: instance name, e.g. `history.0`
 * command *(string)*: command name
-* message *(object)*: message is command specific
+* message *(object)*: the message is command-specific
 * callback *(function)*: `function (result)`
 
 ### <a name="authenabled_a"></a>authEnabled(callback)
-Ask server is authentication enabled and if the user authenticated
+Ask server is authentication enabled, and if the user authenticated
 * callback *(function)*: `function (isAuthenticationUsed, userName)`
 
 ### <a name="logout_a"></a>logout(callback)
@@ -520,7 +521,7 @@ Get user permissions
 * callback *(function)*: `function (error, permissions)`
 
 ### <a name="getversion_a"></a>getVersion(callback)
-Get adapter version. Not the socket-classes version!
+Get the adapter version. Not the socket-classes version!
 * callback *(function)*: `function (error, adapterVersion, adapterName)`
 
 ### <a name="getadaptername_a"></a>getAdapterName(callback)
@@ -528,9 +529,9 @@ Get adapter name. Not the socket-classes version!
 * callback *(function)*: `function (error, adapterVersion)`
 
 ### <a name="gethostbyip_a"></a>getHostByIp(ip, callback)
-Read host object by IP address
+Read the host object by IP address
 * ip *(string)*: ip address. IPv4 or IPv6
-* callback *(function)*: `function (ip, obj)`. If host not found, obj is null
+* callback *(function)*: `function (ip, obj)`. If host is not found, obj is null
 
 ### <a name="requirelog_a"></a>requireLog(isEnabled, callback)
 Activate or deactivate logging events. Events will be sent to the socket as `log` event. Adapter must have `common.logTransporter = true`
@@ -543,19 +544,19 @@ Get logs file from given host
 * callback *(function)*: `function (error, files)`, where `files` is array of `{fileName: `log/hostname/transport/file`, size: 123}`
 
 ### <a name="delstate_a"></a>delState(id, callback)
-Delete state. Corresponding object will be deleted too.
+Delete state. The corresponding object will be deleted too.
 * id *(string)*: state ID
 * callback *(function)*: `function (error)`
 
 ### <a name="cmdexec_a"></a>cmdExec(host, id, cmd, callback)
-Execute shell command on host/controller. Following response commands are expected: ´cmdStdout, cmdStderr, cmdExit´
+Execute the shell command on host/controller. Following response commands are expected: ´cmdStdout, cmdStderr, cmdExit´
 * host *(string)*: host name, like 'system.host.raspberrypi'
 * id *(string)*: session ID, like `Date.now()´. This session ID will come in events `cmdStdout, cmdStderr, cmdExit`
 * cmd *(string)*: command
 * callback *(function)*: `function (error)`
 
 ### <a name="eventsthreshold_a"></a>eventsThreshold(isActive)
-Used only for admin to limit number of events to front-end.
+Used only for admin to the limited number of events to front-end.
 * isActive *(boolean)*: if true, then events will be limited
 
 ### <a name="getratings_a"></a>getRatings(update, callback)
@@ -568,17 +569,17 @@ Return current instance name like `admin.0`
 * callback *(function)*: `function (error, namespace)`
 
 ### <a name="checkfeaturesupported_a"></a>checkFeatureSupported(feature, callback)
-Checks if same feature is supported by current js-controller
+Checks, if the same feature is supported by the current js-controller
 * feature *(string)*: feature name like `CONTROLLER_LICENSE_MANAGER`
 * callback *(function)*: `function (error, isSupported)`
 
 ### <a name="decrypt_a"></a>decrypt(encryptedText, callback)
-Decrypts text with system secret key
+Decrypts text with the system secret key
 * encryptedText *(string)*: encrypted text
 * callback *(function)*: `function (error, decryptedText)`
 
 ### <a name="encrypt_a"></a>encrypt(plainText, callback)
-Encrypts text with system secret key
+Encrypts text with the system secret key
 * plainText *(string)*: normal text
 * callback *(function)*: `function (error, encryptedText)`
 
@@ -641,14 +642,14 @@ Delete existing user. Admin cannot be deleted.
 * callback *(function)*: `function (error)`
 
 ### <a name="addgroup_a"></a>addGroup(group, desc, acl, callback)
-Add new group.
+Add a new group.
 * group *(string)*: user name, like 'benjamin
 * desc *(string)*: optional description
 * acl *(object)*: optional access control list object, like `{"object":{"list":true,"read":true,"write":false,"delete":false},"state":{"list":true,"read":true,"write":true,"create":true,"delete":false},"users":{"list":true,"read":true,"write":false,"create":false,"delete":false},"other":{"execute":false,"http":true,"sendto":false},"file":{"list":true,"read":true,"write":false,"create":false,"delete":false}}`
 * callback *(function)*: `function (error)`
 
 ### <a name="delgroup_a"></a>delGroup(group, callback)
-Delete existing group. Administrator group cannot be deleted.
+Delete the existing group. Administrator group cannot be deleted.
 * group *(string)*: group name, like 'users`
 * callback *(function)*: `function (error)`
 
@@ -668,12 +669,12 @@ Read absolutely all objects. Same as `getAllObjects`.
 * callback *(function)*: `function (error, objects)`, where `objects` is an object like `{'system.adapter.admin.0': {...}, 'system.adapter.web.0': {...}}`
 
 ### <a name="subscribeobjects_a"></a>subscribeObjects(pattern, callback)
-Subscribe on object changes by pattern. The events will come as 'objectChange' events to the socket.
+Subscribe to object changes by pattern. The events will come as 'objectChange' events to the socket.
 * pattern *(string)*: pattern like 'system.adapter.*' or array of IDs like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
 * callback *(function)*: `function (error)`
 
 ### <a name="unsubscribeobjects_a"></a>unsubscribeObjects(pattern, callback)
-Unsubscribe on object changes by pattern.
+Unsubscribe from object changes by pattern.
 * pattern *(string)*: pattern like 'system.adapter.*' or array of IDs like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
 * callback *(function)*: `function (error)`
 
@@ -691,7 +692,7 @@ Set object.
 * callback *(function)*: `function (error)`
 
 ### <a name="delobject_a"></a>delObject(id, options, callback)
-Delete object or objects recursively. Objects with `dontDelete` cannot be deleted.
+Delete an object or objects recursively. Objects with `dontDelete` cannot be deleted.
 * id *(string)*: Object ID like, 'adapterName.0.channel'
 * options *(string)*: `{recursive: true}`
 * callback *(function)*: `function (error)`
@@ -701,7 +702,7 @@ Read absolutely all objects
 * callback *(function)*: `function (error, objects)`, where `objects` is an object like `{'system.adapter.admin.0': {...}, 'system.adapter.web.0': {...}}`
 
 ### <a name="extendobject_a"></a>extendObject(id, obj, callback)
-Extend existing object
+Extend the existing object
 * id *(string)*: object ID
 * obj *(object)*: new parts of the object, like `{common: {name: 'new name'}}`
 * callback *(function)*: `function (error)`
@@ -747,16 +748,16 @@ Read one binary state.
 ### <a name="setbinarystate_a"></a>setBinaryState(id, base64, callback)
 Write one binary state.
 * id *(string)*: State ID like, 'javascript.0.binary'
-* base64 *(string)*: State value as base64 string. Binary states has no acknowledge flag.
+* base64 *(string)*: State value as base64 string. Binary states have no acknowledged flag.
 * callback *(function)*: `function (error)`
 
 ### <a name="subscribe_a"></a>subscribe(pattern, callback)
-Subscribe on state changes by pattern. The events will come as 'stateChange' events to the socket.
+Subscribe to state changes by pattern. The events will come as 'stateChange' events to the socket.
 * pattern *(string)*: pattern like 'system.adapter.*' or array of states like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
 * callback *(function)*: `function (error)`
 
 ### <a name="subscribestates_a"></a>subscribeStates(pattern, callback)
-Subscribe on state changes by pattern. Same as `subscribe`. The events will come as 'stateChange' events to the socket.
+Subscribe to state changes by pattern. Same as `subscribe`. The events will come as 'stateChange' events to the socket.
 * pattern *(string)*: pattern like 'system.adapter.*' or array of states like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
 * callback *(function)*: `function (error)`
 
@@ -847,7 +848,7 @@ Read content of folder in ioBroker DB
 Change file mode in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * fileName *(string)*: file name, e.g `main/vis-views.json`
-* options *(object)*: `{mode: 0x644}` or 0x644. First digit is user, second group, third others. Bit 1 is `execute`, bit 2 is `write`, bit 3 is `read`
+* options *(object)*: `{mode: 0x644}` or 0x644. The first digit is user, second group, third others. Bit 1 is `execute`, bit 2 is `write`, bit 3 is `read`
 * callback *(function)*: `function (error)`
 
 ### <a name="chownfile_a"></a>chownFile(_adapter, fileName, options, callback)
@@ -858,19 +859,19 @@ Change file owner in ioBroker DB
 * callback *(function)*: `function (error)`
 
 ### <a name="fileexists_a"></a>fileExists(_adapter, fileName, callback)
-Checks if the file or folder exists in ioBroker DB
+Check if the file or folder exists in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
 * fileName *(string)*: file name, e.g `main/vis-views.json`
 * callback *(function)*: `function (error, isExist)`
 
 ### <a name="subscribefiles_a"></a>subscribeFiles(id, pattern, callback)
-Subscribe on file changes in ioBroker DB
+Subscribe to file changes in ioBroker DB
 * id *(string)*: instance name, e.g. `vis.0` or any object ID of type `meta`. `id` could have wildcards `*` too.
 * pattern *(string)*: file name pattern, e.g `main/*.json`
 * callback *(function)*: `function (error)`
 
 ### <a name="unsubscribefiles_a"></a>unsubscribeFiles(id, pattern, callback)
-Unsubscribe on file changes in ioBroker DB
+Unsubscribe from file changes in ioBroker DB
 * id *(string)*: instance name, e.g. `vis.0` or any object ID of type `meta`. `id` could have wildcards `*` too.
 * pattern *(string)*: file name pattern, e.g `main/*.json`
 * callback *(function)*: `function (error)`
@@ -890,6 +891,7 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 ## Changelog
 ### **WORK IN PROGRESS**
 * (foxriver76) fixed crash on invalid patterns with js-controller version 5
+* (bluefox) extended the getObjects function with the possibility to read the list of IDs
 
 ### 1.1.5 (2023-03-13)
 * (bluefox) Added command `name`
