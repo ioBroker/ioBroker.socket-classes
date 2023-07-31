@@ -63,6 +63,59 @@ io.start(server.server, ws, {userKey: 'connect.sid', checkUser, store, secret: a
 io.close();
 ```
 
+## GUI subscribes
+GUI client can send to desired instance the `subscribe` message
+```
+    socket.emit('clientSubscribe', 'cameras.0', 'startCamera', {width: 640, height: 480}, result => console.log('Started: ' + result));
+```
+
+The instance 'cameras.0' will receive message `clientSubscribe` with information who want to receive messages.
+```
+adapter.on('message', obj => {
+    if (obj?.command === 'clientSubscribe') {
+        if (obj?.message.type && obj.message.type.startsWith('startCamera/')) {
+            const [, camera] = obj.message.type.split('/');
+            // start camera with obj.message.data
+            // ...
+            
+            // inform GUI that camera is started
+            adapter.sendTo(obj.from, obj.command, {result: true}, obj.callback);
+            this.subscribes = this.subscribes || [];
+            this.subscribes.push({sid: obj.message.sid, from: obj.from, type: obj.message.type, camera});
+        }
+    } else
+    if (obj?.command === 'clientUnsubscribe' || obj?.command === 'clientSubscribeError') {
+        if (obj?.message.type && obj.message.type.startsWith('startCamera/')) {
+            const [, camera] = obj.message.type.split('/');
+            if (this.subscribes) {
+                const pos = this.subscribes.findIndex(s => s.sid === obj.message.sid && s.from === obj.from && s.type === obj.message.type);
+                if (pos !== -1) {
+                    this.subscribes.splice(pos, 1);
+
+                    // stop camera
+                    // ...
+                }
+            }
+        }
+    }
+});
+```
+
+and after that client will receive messages from instance
+
+```
+function sendImage(camera, data) {
+    this.subscribes.forEach(it => {
+        if (it.camera !== camera) {
+            return;
+        }
+        // send image to GUI
+        adapter.sendTo(it.from, 'im', {m: it.type, s: it.sid, d: data});
+    });
+}
+```
+
+
 ## Web Methods
 <!-- WEB_METHODS_START -->
 ### List of commands
@@ -86,6 +139,8 @@ io.close();
 * [getObjectView](#getobjectview_w)
 * [setObject](#setobject_w)
 * [delObject](#delobject_w)
+* [clientSubscribe](#clientsubscribe_w)
+* [clientUnsubscribe](#clientunsubscribe_w)
 * [getStates](#getstates_w)
 * [getForeignStates](#getforeignstates_w)
 * [getState](#getstate_w)
@@ -218,6 +273,19 @@ Delete object. Only deletion of flot objects is allowed
 * options *(string)*: ignored
 * callback *(function)*: `function (error)`
 
+### <a name="clientsubscribe_w"></a>clientSubscribe(targetInstance, messageType, data, callback)
+Client informs specific instance about subscription on its messages
+* targetInstance *(string)*: instance name, e.g. "cameras.0"
+* messageType *(string)*: message type, e.g. "startRecording"
+* data *(string)*: optional data object, e.g. {width: 640, height: 480}
+* callback *(function)*: `function (error, result)`, target instance MUST acknowledge the subscription and returns some object as result
+
+### <a name="clientunsubscribe_w"></a>clientUnsubscribe(targetInstance, messageType, callback)
+Client unsubscribes from specific instance's messages
+* targetInstance *(string)*: instance name, e.g. "cameras.0"
+* messageType *(string)*: message type, e.g. "startRecording"
+* callback *(function)*: `function (error, notSubscribed)`, target instance MUST NOT acknowledge the un-subscription
+
 ### <a name="getstates_w"></a>getStates(pattern, callback)
 Read states by pattern
 * pattern *(string)*: optional pattern, like `system.adapter.*` or array of state IDs
@@ -273,19 +341,19 @@ Unsubscribe from state changes by pattern. Same as `unsubscribe`.
 ### <a name="readfile_w"></a>readFile(_adapter, fileName, callback)
 Read file from ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
-* fileName *(string)*: file name, e.g `main/vis-views.json`
+* fileName *(string)*: file name, e.g. `main/vis-views.json`
 * callback *(function)*: `function (error, data, mimeType)`
 
 ### <a name="readfile64_w"></a>readFile64(_adapter, fileName, callback)
 Read file from ioBroker DB as base64 string
 * _adapter *(string)*: instance name, e.g. `vis.0`
-* fileName *(string)*: file name, e.g `main/vis-views.json`
+* fileName *(string)*: file name, e.g. `main/vis-views.json`
 * callback *(function)*: `function (error, base64, mimeType)`
 
 ### <a name="writefile64_w"></a>writeFile64(_adapter, fileName, data64, options, callback)
 Write file into ioBroker DB as base64 string
 * _adapter *(string)*: instance name, e.g. `vis.0`
-* fileName *(string)*: file name, e.g `main/vis-views.json`
+* fileName *(string)*: file name, e.g. `main/vis-views.json`
 * data64 *(string)*: file content as base64 string
 * options *(object)*: optional `{mode: 0x0644}`
 * callback *(function)*: `function (error)`
@@ -293,7 +361,7 @@ Write file into ioBroker DB as base64 string
 ### <a name="writefile_w"></a>writeFile(_adapter, fileName, data, options, callback)
 Write file into ioBroker DB as text **DEPRECATED**
 * _adapter *(string)*: instance name, e.g. `vis.0`
-* fileName *(string)*: file name, e.g `main/vis-views.json`
+* fileName *(string)*: file name, e.g. `main/vis-views.json`
 * data64 *(string)*: file content as base64 string
 * options *(object)*: optional `{mode: 0x644}`
 * callback *(function)*: `function (error)`
@@ -301,83 +369,83 @@ Write file into ioBroker DB as text **DEPRECATED**
 ### <a name="unlink_w"></a>unlink(_adapter, name, callback)
 Delete file in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
-* name *(string)*: file name, e.g `main/vis-views.json`
+* name *(string)*: file name, e.g. `main/vis-views.json`
 * callback *(function)*: `function (error)`
 
 ### <a name="deletefile_w"></a>deleteFile(_adapter, name, callback)
 Delete file in ioBroker DB (same as unlink, but only for files)
 * _adapter *(string)*: instance name, e.g. `vis.0`
-* name *(string)*: file name, e.g `main/vis-views.json`
+* name *(string)*: file name, e.g. `main/vis-views.json`
 * callback *(function)*: `function (error)`
 
 ### <a name="deletefolder_w"></a>deleteFolder(_adapter, name, callback)
 Delete file in ioBroker DB (same as unlink, but only for folders)
 * _adapter *(string)*: instance name, e.g. `vis.0`
-* name *(string)*: folder name, e.g `main`
+* name *(string)*: folder name, e.g. `main`
 * callback *(function)*: `function (error)`
 
 ### <a name="renamefile_w"></a>renameFile(_adapter, oldName, newName, callback)
 Rename file in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
-* oldName *(string)*: current file name, e.g `main/vis-views.json`
-* newName *(string)*: new file name, e.g `main/vis-views-new.json`
+* oldName *(string)*: current file name, e.g. `main/vis-views.json`
+* newName *(string)*: new file name, e.g. `main/vis-views-new.json`
 * callback *(function)*: `function (error)`
 
 ### <a name="rename_w"></a>rename(_adapter, oldName, newName, callback)
 Rename file or folder in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
-* oldName *(string)*: current file name, e.g `main/vis-views.json`
-* newName *(string)*: new file name, e.g `main/vis-views-new.json`
+* oldName *(string)*: current file name, e.g. `main/vis-views.json`
+* newName *(string)*: new file name, e.g. `main/vis-views-new.json`
 * callback *(function)*: `function (error)`
 
 ### <a name="mkdir_w"></a>mkdir(_adapter, dirName, callback)
 Create folder in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
-* dirName *(string)*: desired folder name, e.g `main`
+* dirName *(string)*: desired folder name, e.g. `main`
 * callback *(function)*: `function (error)`
 
 ### <a name="readdir_w"></a>readDir(_adapter, dirName, options, callback)
 Read content of folder in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
-* dirName *(string)*: folder name, e.g `main`
+* dirName *(string)*: folder name, e.g. `main`
 * options *(object)*: optional `{filter: '*'}` or `{filter: '*.json'}`
 * callback *(function)*: `function (error, files)` where `files` is an array of objects, like `{file: 'vis-views.json', isDir: false, stats: {size: 123}, modifiedAt: 1661336290090, acl: {owner: 'system.user.admin', ownerGroup: 'system.group.administrator', permissions: 1632, read: true, write: true}`
 
 ### <a name="chmodfile_w"></a>chmodFile(_adapter, fileName, options, callback)
 Change file mode in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
-* fileName *(string)*: file name, e.g `main/vis-views.json`
+* fileName *(string)*: file name, e.g. `main/vis-views.json`
 * options *(object)*: `{mode: 0x644}` or 0x644. The first digit is user, second group, third others. Bit 1 is `execute`, bit 2 is `write`, bit 3 is `read`
 * callback *(function)*: `function (error)`
 
 ### <a name="chownfile_w"></a>chownFile(_adapter, fileName, options, callback)
 Change file owner in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
-* fileName *(string)*: file name, e.g `main/vis-views.json`
+* fileName *(string)*: file name, e.g. `main/vis-views.json`
 * options *(object)*: `{owner: 'system.user.user', ownerGroup: ''system.group.administrator'}` or 'system.user.user'. If ownerGroup is not defined, it will be taken from owner.
 * callback *(function)*: `function (error)`
 
 ### <a name="fileexists_w"></a>fileExists(_adapter, fileName, callback)
 Check if the file or folder exists in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
-* fileName *(string)*: file name, e.g `main/vis-views.json`
+* fileName *(string)*: file name, e.g. `main/vis-views.json`
 * callback *(function)*: `function (error, isExist)`
 
 ### <a name="subscribefiles_w"></a>subscribeFiles(id, pattern, callback)
 Subscribe to file changes in ioBroker DB
 * id *(string)*: instance name, e.g. `vis.0` or any object ID of type `meta`. `id` could have wildcards `*` too.
-* pattern *(string)*: file name pattern, e.g `main/*.json`
+* pattern *(string)*: file name pattern, e.g. `main/*.json`
 * callback *(function)*: `function (error)`
 
 ### <a name="unsubscribefiles_w"></a>unsubscribeFiles(id, pattern, callback)
 Unsubscribe from file changes in ioBroker DB
 * id *(string)*: instance name, e.g. `vis.0` or any object ID of type `meta`. `id` could have wildcards `*` too.
-* pattern *(string)*: file name pattern, e.g `main/*.json`
+* pattern *(string)*: file name pattern, e.g. `main/*.json`
 * callback *(function)*: `function (error)`
 
 ### <a name="getadapterinstances_w"></a>getAdapterInstances(adapterName, callback)
 Read all instances of the given adapter, or all instances of all adapters if adapterName is not defined
-* adapterName *(string)*: optional adapter name, e.g `history`.
+* adapterName *(string)*: optional adapter name, e.g. `history`.
 * callback *(function)*: `function (error, instanceList)`, where instanceList is an array of instance objects, e.g. `{_id: 'system.adapter.history.0', common: {name: 'history', ...}, native: {...}}`
 
 <!-- WEB_METHODS_END -->
@@ -432,6 +500,8 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 * [getObjectView](#getobjectview_a)
 * [setObject](#setobject_a)
 * [delObject](#delobject_a)
+* [clientSubscribe](#clientsubscribe_a)
+* [clientUnsubscribe](#clientunsubscribe_a)
 * [getAllObjects](#getallobjects_a)
 * [extendObject](#extendobject_a)
 * [getForeignObjects](#getforeignobjects_a)
@@ -697,6 +767,19 @@ Delete an object or objects recursively. Objects with `dontDelete` cannot be del
 * options *(string)*: `{recursive: true}`
 * callback *(function)*: `function (error)`
 
+### <a name="clientsubscribe_a"></a>clientSubscribe(targetInstance, messageType, data, callback)
+Client informs specific instance about subscription on its messages
+* targetInstance *(string)*: instance name, e.g. "cameras.0"
+* messageType *(string)*: message type, e.g. "startRecording"
+* data *(string)*: optional data object, e.g. {width: 640, height: 480}
+* callback *(function)*: `function (error, result)`, target instance MUST acknowledge the subscription and returns some object as result
+
+### <a name="clientunsubscribe_a"></a>clientUnsubscribe(targetInstance, messageType, callback)
+Client unsubscribes from specific instance's messages
+* targetInstance *(string)*: instance name, e.g. "cameras.0"
+* messageType *(string)*: message type, e.g. "startRecording"
+* callback *(function)*: `function (error, notSubscribed)`, target instance MUST NOT acknowledge the un-subscription
+
 ### <a name="getallobjects_a"></a>getAllObjects(callback)
 Read absolutely all objects
 * callback *(function)*: `function (error, objects)`, where `objects` is an object like `{'system.adapter.admin.0': {...}, 'system.adapter.web.0': {...}}`
@@ -774,19 +857,19 @@ Unsubscribe from state changes by pattern. Same as `unsubscribe`.
 ### <a name="readfile_a"></a>readFile(_adapter, fileName, callback)
 Read file from ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
-* fileName *(string)*: file name, e.g `main/vis-views.json`
+* fileName *(string)*: file name, e.g. `main/vis-views.json`
 * callback *(function)*: `function (error, data, mimeType)`
 
 ### <a name="readfile64_a"></a>readFile64(_adapter, fileName, callback)
 Read file from ioBroker DB as base64 string
 * _adapter *(string)*: instance name, e.g. `vis.0`
-* fileName *(string)*: file name, e.g `main/vis-views.json`
+* fileName *(string)*: file name, e.g. `main/vis-views.json`
 * callback *(function)*: `function (error, base64, mimeType)`
 
 ### <a name="writefile64_a"></a>writeFile64(_adapter, fileName, data64, options, callback)
 Write file into ioBroker DB as base64 string
 * _adapter *(string)*: instance name, e.g. `vis.0`
-* fileName *(string)*: file name, e.g `main/vis-views.json`
+* fileName *(string)*: file name, e.g. `main/vis-views.json`
 * data64 *(string)*: file content as base64 string
 * options *(object)*: optional `{mode: 0x0644}`
 * callback *(function)*: `function (error)`
@@ -802,83 +885,83 @@ Write file into ioBroker DB as base64 string
 ### <a name="unlink_a"></a>unlink(_adapter, name, callback)
 Delete file in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
-* name *(string)*: file name, e.g `main/vis-views.json`
+* name *(string)*: file name, e.g. `main/vis-views.json`
 * callback *(function)*: `function (error)`
 
 ### <a name="deletefile_a"></a>deleteFile(_adapter, name, callback)
 Delete file in ioBroker DB (same as unlink, but only for files)
 * _adapter *(string)*: instance name, e.g. `vis.0`
-* name *(string)*: file name, e.g `main/vis-views.json`
+* name *(string)*: file name, e.g. `main/vis-views.json`
 * callback *(function)*: `function (error)`
 
 ### <a name="deletefolder_a"></a>deleteFolder(_adapter, name, callback)
 Delete file in ioBroker DB (same as unlink, but only for folders)
 * _adapter *(string)*: instance name, e.g. `vis.0`
-* name *(string)*: folder name, e.g `main`
+* name *(string)*: folder name, e.g. `main`
 * callback *(function)*: `function (error)`
 
 ### <a name="renamefile_a"></a>renameFile(_adapter, oldName, newName, callback)
 Rename file in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
-* oldName *(string)*: current file name, e.g `main/vis-views.json`
-* newName *(string)*: new file name, e.g `main/vis-views-new.json`
+* oldName *(string)*: current file name, e.g. `main/vis-views.json`
+* newName *(string)*: new file name, e.g. `main/vis-views-new.json`
 * callback *(function)*: `function (error)`
 
 ### <a name="rename_a"></a>rename(_adapter, oldName, newName, callback)
 Rename file or folder in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
-* oldName *(string)*: current file name, e.g `main/vis-views.json`
-* newName *(string)*: new file name, e.g `main/vis-views-new.json`
+* oldName *(string)*: current file name, e.g. `main/vis-views.json`
+* newName *(string)*: new file name, e.g. `main/vis-views-new.json`
 * callback *(function)*: `function (error)`
 
 ### <a name="mkdir_a"></a>mkdir(_adapter, dirName, callback)
 Create folder in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
-* dirName *(string)*: desired folder name, e.g `main`
+* dirName *(string)*: desired folder name, e.g. `main`
 * callback *(function)*: `function (error)`
 
 ### <a name="readdir_a"></a>readDir(_adapter, dirName, options, callback)
 Read content of folder in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
-* dirName *(string)*: folder name, e.g `main`
+* dirName *(string)*: folder name, e.g. `main`
 * options *(object)*: optional `{filter: '*'}` or `{filter: '*.json'}`
 * callback *(function)*: `function (error, files)` where `files` is an array of objects, like `{file: 'vis-views.json', isDir: false, stats: {size: 123}, modifiedAt: 1661336290090, acl: {owner: 'system.user.admin', ownerGroup: 'system.group.administrator', permissions: 1632, read: true, write: true}`
 
 ### <a name="chmodfile_a"></a>chmodFile(_adapter, fileName, options, callback)
 Change file mode in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
-* fileName *(string)*: file name, e.g `main/vis-views.json`
+* fileName *(string)*: file name, e.g. `main/vis-views.json`
 * options *(object)*: `{mode: 0x644}` or 0x644. The first digit is user, second group, third others. Bit 1 is `execute`, bit 2 is `write`, bit 3 is `read`
 * callback *(function)*: `function (error)`
 
 ### <a name="chownfile_a"></a>chownFile(_adapter, fileName, options, callback)
 Change file owner in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
-* fileName *(string)*: file name, e.g `main/vis-views.json`
+* fileName *(string)*: file name, e.g. `main/vis-views.json`
 * options *(object)*: `{owner: 'system.user.user', ownerGroup: ''system.group.administrator'}` or 'system.user.user'. If ownerGroup is not defined, it will be taken from owner.
 * callback *(function)*: `function (error)`
 
 ### <a name="fileexists_a"></a>fileExists(_adapter, fileName, callback)
 Check if the file or folder exists in ioBroker DB
 * _adapter *(string)*: instance name, e.g. `vis.0`
-* fileName *(string)*: file name, e.g `main/vis-views.json`
+* fileName *(string)*: file name, e.g. `main/vis-views.json`
 * callback *(function)*: `function (error, isExist)`
 
 ### <a name="subscribefiles_a"></a>subscribeFiles(id, pattern, callback)
 Subscribe to file changes in ioBroker DB
 * id *(string)*: instance name, e.g. `vis.0` or any object ID of type `meta`. `id` could have wildcards `*` too.
-* pattern *(string)*: file name pattern, e.g `main/*.json`
+* pattern *(string)*: file name pattern, e.g. `main/*.json`
 * callback *(function)*: `function (error)`
 
 ### <a name="unsubscribefiles_a"></a>unsubscribeFiles(id, pattern, callback)
 Unsubscribe from file changes in ioBroker DB
 * id *(string)*: instance name, e.g. `vis.0` or any object ID of type `meta`. `id` could have wildcards `*` too.
-* pattern *(string)*: file name pattern, e.g `main/*.json`
+* pattern *(string)*: file name pattern, e.g. `main/*.json`
 * callback *(function)*: `function (error)`
 
 ### <a name="getadapterinstances_a"></a>getAdapterInstances(adapterName, callback)
 Read all instances of the given adapter, or all instances of all adapters if adapterName is not defined
-* adapterName *(string)*: optional adapter name, e.g `history`.
+* adapterName *(string)*: optional adapter name, e.g. `history`.
 * callback *(function)*: `function (error, instanceList)`, where instanceList is an array of instance objects, e.g. `{_id: 'system.adapter.history.0', common: {name: 'history', ...}, native: {...}}`
 
 <!-- ADMIN_METHODS_END -->
@@ -889,6 +972,9 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) Implemented subscribes of a client on messages from specific instance
+
 ### 1.2.0 (2023-07-07)
 * (foxriver76) fixed crash on invalid patterns with js-controller version 5
 * (bluefox) extended the getObjects function with the possibility to read the list of IDs
