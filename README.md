@@ -274,17 +274,17 @@ Delete object. Only deletion of flot objects is allowed
 * callback *(function)*: `function (error)`
 
 ### <a name="clientsubscribe_w"></a>clientSubscribe(targetInstance, messageType, data, callback)
-Client informs specific instance about subscription on its messages
+Client informs specific instance about subscription on its messages. After subscription the socket will receive "im" messages from desired instance
 * targetInstance *(string)*: instance name, e.g. "cameras.0"
-* messageType *(string)*: message type, e.g. "startRecording"
-* data *(string)*: optional data object, e.g. {width: 640, height: 480}
-* callback *(function)*: `function (error, result)`, target instance MUST acknowledge the subscription and returns some object as result
+* messageType *(string)*: message type, e.g. "startRecording/cam1"
+* data *(object)*: optional data object, e.g. {width: 640, height: 480}
+* callback *(function)*: `function (error, result)`, target instance MUST acknowledge the subscription and return some object as result
 
 ### <a name="clientunsubscribe_w"></a>clientUnsubscribe(targetInstance, messageType, callback)
 Client unsubscribes from specific instance's messages
 * targetInstance *(string)*: instance name, e.g. "cameras.0"
-* messageType *(string)*: message type, e.g. "startRecording"
-* callback *(function)*: `function (error, notSubscribed)`, target instance MUST NOT acknowledge the un-subscription
+* messageType *(string)*: message type, e.g. "startRecording/cam1"
+* callback *(function)*: `function (error, wasSubscribed)`, target instance MUST NOT acknowledge the un-subscription
 
 ### <a name="getstates_w"></a>getStates(pattern, callback)
 Read states by pattern
@@ -768,17 +768,17 @@ Delete an object or objects recursively. Objects with `dontDelete` cannot be del
 * callback *(function)*: `function (error)`
 
 ### <a name="clientsubscribe_a"></a>clientSubscribe(targetInstance, messageType, data, callback)
-Client informs specific instance about subscription on its messages
+Client informs specific instance about subscription on its messages. After subscription the socket will receive "im" messages from desired instance
 * targetInstance *(string)*: instance name, e.g. "cameras.0"
-* messageType *(string)*: message type, e.g. "startRecording"
-* data *(string)*: optional data object, e.g. {width: 640, height: 480}
-* callback *(function)*: `function (error, result)`, target instance MUST acknowledge the subscription and returns some object as result
+* messageType *(string)*: message type, e.g. "startRecording/cam1"
+* data *(object)*: optional data object, e.g. {width: 640, height: 480}
+* callback *(function)*: `function (error, result)`, target instance MUST acknowledge the subscription and return some object as result
 
 ### <a name="clientunsubscribe_a"></a>clientUnsubscribe(targetInstance, messageType, callback)
 Client unsubscribes from specific instance's messages
 * targetInstance *(string)*: instance name, e.g. "cameras.0"
-* messageType *(string)*: message type, e.g. "startRecording"
-* callback *(function)*: `function (error, notSubscribed)`, target instance MUST NOT acknowledge the un-subscription
+* messageType *(string)*: message type, e.g. "startRecording/cam1"
+* callback *(function)*: `function (error, wasSubscribed)`, target instance MUST NOT acknowledge the un-subscription
 
 ### <a name="getallobjects_a"></a>getAllObjects(callback)
 Read absolutely all objects
@@ -972,7 +972,7 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 1.3.0 (2023-07-31)
 * (bluefox) Implemented subscribes of a client on messages from specific instance
 
 ### 1.2.0 (2023-07-07)
