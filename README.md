@@ -972,7 +972,7 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
-### 1.3.0 (2023-07-31)
+### **WORK IN PROGRESS**
 * (bluefox) Implemented subscribes of a client on messages from specific instance
 
 ### 1.2.0 (2023-07-07)
