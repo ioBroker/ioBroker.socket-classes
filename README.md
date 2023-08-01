@@ -972,8 +972,9 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
-### 1.3.1 (2023-07-31)
+### **WORK IN PROGRESS**
 * (bluefox) Implemented subscribes of a client on messages from specific instance
+* (bluefox) Moved checkFeatureSupported to regular connection and not only admin
 
 ### 1.2.0 (2023-07-07)
 * (foxriver76) fixed crash on invalid patterns with js-controller version 5
@@ -1029,13 +1030,13 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 * (bluefox) Do not show error with failed authentication
 
 ### 0.4.7 (2022-06-20)
-* (bluefox) Allowed to overload system language
+* (bluefox) Allowed overloading system language
 
 ### 0.4.6 (2022-06-20)
 * (bluefox) updated `passport`
 
 ### 0.4.5 (2022-06-20)
-* (bluefox) allow to run socket.io behind reverse proxy
+* (bluefox) allowed running socket.io behind reverse proxy
 
 ### 0.4.4 (2022-06-09)
 * (bluefox) Do not show requireLog message
