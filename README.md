@@ -978,7 +978,7 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 1.3.3 (2023-08-01)
 * (bluefox) Implemented subscribes of a client on messages from specific instance
 * (bluefox) Moved checkFeatureSupported to regular connection and not only admin
 
