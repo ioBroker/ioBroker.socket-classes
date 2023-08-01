@@ -122,6 +122,7 @@ function sendImage(camera, data) {
 * [authenticate](#authenticate_w)
 * [error](#error_w)
 * [log](#log_w)
+* [checkFeatureSupported](#checkfeaturesupported_w)
 * [getHistory](#gethistory_w)
 * [httpGet](#httpget_w)
 * [sendTo](#sendto_w)
@@ -182,6 +183,11 @@ Write error into ioBroker log
 Write log entry into ioBroker log
 * text *(string)*: log text
 * level *(string)*: one of `['silly', 'debug', 'info', 'warn', 'error']`. Default is 'debug'.
+
+### <a name="checkfeaturesupported_w"></a>checkFeatureSupported(feature, callback)
+Checks, if the same feature is supported by the current js-controller
+* feature *(string)*: feature name like `CONTROLLER_LICENSE_MANAGER`
+* callback *(function)*: `function (error, isSupported)`
 
 ### <a name="gethistory_w"></a>getHistory(id, options, callback)
 Get history data from specific instance
@@ -456,6 +462,7 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 * [authenticate](#authenticate_a)
 * [error](#error_a)
 * [log](#log_a)
+* [checkFeatureSupported](#checkfeaturesupported_a)
 * [getHistory](#gethistory_a)
 * [httpGet](#httpget_a)
 * [sendTo](#sendto_a)
@@ -474,7 +481,6 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 * [eventsThreshold](#eventsthreshold_a)
 * [getRatings](#getratings_a)
 * [getCurrentInstance](#getcurrentinstance_a)
-* [checkFeatureSupported](#checkfeaturesupported_a)
 * [decrypt](#decrypt_a)
 * [encrypt](#encrypt_a)
 * [getIsEasyModeStrict](#getiseasymodestrict_a)
@@ -547,6 +553,11 @@ Write error into ioBroker log
 Write log entry into ioBroker log
 * text *(string)*: log text
 * level *(string)*: one of `['silly', 'debug', 'info', 'warn', 'error']`. Default is 'debug'.
+
+### <a name="checkfeaturesupported_a"></a>checkFeatureSupported(feature, callback)
+Checks, if the same feature is supported by the current js-controller
+* feature *(string)*: feature name like `CONTROLLER_LICENSE_MANAGER`
+* callback *(function)*: `function (error, isSupported)`
 
 ### <a name="gethistory_a"></a>getHistory(id, options, callback)
 Get history data from specific instance
@@ -637,11 +648,6 @@ Read ratings of adapters
 ### <a name="getcurrentinstance_a"></a>getCurrentInstance(callback)
 Return current instance name like `admin.0`
 * callback *(function)*: `function (error, namespace)`
-
-### <a name="checkfeaturesupported_a"></a>checkFeatureSupported(feature, callback)
-Checks, if the same feature is supported by the current js-controller
-* feature *(string)*: feature name like `CONTROLLER_LICENSE_MANAGER`
-* callback *(function)*: `function (error, isSupported)`
 
 ### <a name="decrypt_a"></a>decrypt(encryptedText, callback)
 Decrypts text with the system secret key
@@ -972,7 +978,7 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 1.3.2 (2023-08-01)
 * (bluefox) Implemented subscribes of a client on messages from specific instance
 * (bluefox) Moved checkFeatureSupported to regular connection and not only admin
 
