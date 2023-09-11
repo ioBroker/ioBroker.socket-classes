@@ -978,7 +978,7 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 1.4.0 (2023-09-11)
 * (foxriver76) fixed crash on invalid patterns with js-controller version 5
 
 ### 1.3.3 (2023-08-01)
