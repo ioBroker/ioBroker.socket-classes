@@ -978,7 +978,7 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 1.4.1 (2023-09-12)
 * (foxriver76) do not cancel follow subscribes if one subscribe has an error
 
 ### 1.4.0 (2023-09-11)
