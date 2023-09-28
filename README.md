@@ -988,7 +988,7 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 * (foxriver76) fixed crash on invalid patterns with js-controller version 5
 
 ### 1.3.3 (2023-08-01)
-* (bluefox) Implemented subscribes of a client on messages from specific instance
+* (bluefox) Implemented subscribing of a client on messages from specific instance
 * (bluefox) Moved checkFeatureSupported to regular connection and not only admin
 
 ### 1.2.0 (2023-07-07)
