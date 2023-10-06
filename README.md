@@ -978,6 +978,9 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
+### 1.4.2 (2023-09-28)
+* (bluefox) Corrected error by unsubscribing on client disconnect
+
 ### 1.4.1 (2023-09-12)
 * (foxriver76) do not cancel follow subscribes if one subscribe has an error
 
@@ -985,7 +988,7 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 * (foxriver76) fixed crash on invalid patterns with js-controller version 5
 
 ### 1.3.3 (2023-08-01)
-* (bluefox) Implemented subscribes of a client on messages from specific instance
+* (bluefox) Implemented subscribing of a client on messages from specific instance
 * (bluefox) Moved checkFeatureSupported to regular connection and not only admin
 
 ### 1.2.0 (2023-07-07)
