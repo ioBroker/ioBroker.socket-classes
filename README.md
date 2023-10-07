@@ -978,6 +978,9 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (foxriver76) do not await the subscribes anymore
+
 ### 1.4.2 (2023-09-28)
 * (bluefox) Corrected error by unsubscribing on client disconnect
 

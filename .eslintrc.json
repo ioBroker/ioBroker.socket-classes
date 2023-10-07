@@ -1,0 +1,6 @@
+{
+  "extends": ["@foxriver76/eslint-config"],
+  "parserOptions": {
+    "ecmaVersion": 2022
+  }
+}
