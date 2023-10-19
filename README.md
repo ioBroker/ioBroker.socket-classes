@@ -978,7 +978,7 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
-### 1.4.5 (2023-10-19)
+### **WORK IN PROGRESS**
 * (bluefox) Added `publishInstanceMessageAll` command
 
 ### 1.4.4 (2023-10-11)
