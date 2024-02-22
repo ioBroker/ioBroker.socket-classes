@@ -740,8 +740,9 @@ Get one object
 * id *(string)*: object ID.
 * callback *(function)*: `function (error, obj)`
 
-### <a name="getobjects_a"></a>getObjects(callback)
+### <a name="getobjects_a"></a>getObjects(list, callback)
 Read absolutely all objects. Same as `getAllObjects`.
+* list *(string[])*: optional list of IDs.
 * callback *(function)*: `function (error, objects)`, where `objects` is an object like `{'system.adapter.admin.0': {...}, 'system.adapter.web.0': {...}}`
 
 ### <a name="subscribeobjects_a"></a>subscribeObjects(pattern, callback)
@@ -978,7 +979,7 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 1.5.0 (2024-02-22)
 * (bluefox) Extended getObjects function with the possibility to read the list of IDs in admin
 
 ### 1.4.6 (2023-10-19)
