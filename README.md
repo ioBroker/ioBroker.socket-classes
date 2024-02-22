@@ -978,6 +978,9 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) Extended getObjects function with the possibility to read the list of IDs in admin
+
 ### 1.4.6 (2023-10-19)
 * (bluefox) Added `publishInstanceMessageAll` command
 
