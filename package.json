@@ -21,7 +21,7 @@
     "url": "https://github.com/ioBroker/ioBroker.socket-classes"
   },
   "dependencies": {
-    "@iobroker/adapter-core": "^3.0.4",
+    "@iobroker/adapter-core": "^3.1.4",
     "axios": "^1.6.7",
     "cookie-parser": "^1.4.6",
     "passport": "^0.7.0"
