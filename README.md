@@ -264,7 +264,7 @@ Unsubscribe from object changes by pattern.
 Make a query to the object database.
 * design *(string)*: 'system' or other designs like `custom`, but it must exist object `_design/custom`. Too 99,9% use `system`.
 * search *(string)*: object type, like `state`, `instance`, `adapter`, `host`, ...
-* params *(string)*: parameters for the query in form `{startkey: 'system.adapter.', endkey: 'system.adapter.\u9999'}`
+* params *(string)*: parameters for the query in form `{startkey: 'system.adapter.', endkey?: 'system.adapter.\u9999', depth?: number}`
 * callback *(function)*: `function (error)`
 
 ### <a name="setobject_w"></a>setObject(id, obj, callback)
@@ -759,7 +759,7 @@ Unsubscribe from object changes by pattern.
 Make a query to the object database.
 * design *(string)*: 'system' or other designs like `custom`, but it must exist object `_design/custom`. Too 99,9% use `system`.
 * search *(string)*: object type, like `state`, `instance`, `adapter`, `host`, ...
-* params *(string)*: parameters for the query in form `{startkey: 'system.adapter.', endkey: 'system.adapter.\u9999'}`
+* params *(string)*: parameters for the query in form `{startkey: 'system.adapter.', endkey?: 'system.adapter.\u9999', depth?: number}`
 * callback *(function)*: `function (error)`
 
 ### <a name="setobject_a"></a>setObject(id, obj, callback)
@@ -979,6 +979,9 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
+### 1.5.1 (2024-05-28)
+* (foxriver76) ensure compatible `adapter-core` version
+
 ### 1.5.0 (2024-02-22)
 * (bluefox) Extended getObjects function with the possibility to read the list of IDs in admin
 
