@@ -32,6 +32,7 @@
     "@foxriver76/eslint-config": "^1.0.2",
     "chai": "^4.4.1",
     "gulp": "^4.0.2",
+    "iobroker.js-controller": "dev",
     "mocha": "^10.3.0"
   },
   "bugs": {
@@ -48,9 +49,9 @@
   "scripts": {
     "test": "node node_modules/mocha/bin/mocha --exit",
     "release": "release-script",
-    "release-patch": "release-script patch --yes",
-    "release-minor": "release-script minor --yes",
-    "release-major": "release-script major --yes",
+    "release-patch": "release-script patch --no-update-lockfile --yes",
+    "release-minor": "release-script minor --no-update-lockfile --yes",
+    "release-major": "release-script major --no-update-lockfile --yes",
     "update-packages": "ncu --upgrade",
     "docs": "gulp"
   },
