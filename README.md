@@ -979,7 +979,7 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
-### 1.5.1 (2024-05-28)
+### 1.5.2 (2024-05-28)
 * (foxriver76) ensure compatible `adapter-core` version
 
 ### 1.5.0 (2024-02-22)
