@@ -32,7 +32,6 @@
     "@foxriver76/eslint-config": "^1.0.2",
     "chai": "^4.4.1",
     "gulp": "^4.0.2",
-    "iobroker.js-controller": "dev",
     "mocha": "^10.3.0"
   },
   "bugs": {
