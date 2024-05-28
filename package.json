@@ -47,6 +47,7 @@
     "lib/socketAdmin.js"
   ],
   "scripts": {
+    "lint": "eslint .",
     "test": "node node_modules/mocha/bin/mocha --exit",
     "release": "release-script",
     "release-patch": "release-script patch --no-update-lockfile --yes",

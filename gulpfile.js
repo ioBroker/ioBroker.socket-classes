@@ -1,8 +1,7 @@
 const gulp = require('gulp');
-const fs = require('fs');
-const SocketCommands = require("./lib/socketCommands");
+const fs = require('node:fs');
 
-const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
+const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/gm;
 const ARGUMENT_NAMES = /([^\s,]+)/g;
 function getParamNames(func) {
     const fnStr = func.toString().replace(STRIP_COMMENTS, '');
@@ -13,7 +12,11 @@ function getParamNames(func) {
     return result;
 }
 function getParamComments(func) {
-    const fnStr = func.toString().split('\n').map(line => line.trim()).filter(line => line.trim());
+    const fnStr = func
+        .toString()
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.trim());
     const comments = [];
     for (let i = 1; i < fnStr.length; i++) {
         if (fnStr[i].startsWith('//')) {
@@ -36,12 +39,12 @@ function getParamComments(func) {
             const parts = comments[i].slice(7).trim().split(' ');
             params[parts[1]] = {
                 type: parts[0].substring(1, parts[0].length - 1),
-                desc: parts.slice(3).join(' '),
+                desc: parts.slice(3).join(' ')
             };
         }
     }
 
-    return {desc, params};
+    return { desc, params };
 }
 
 function replaceReadme(key, text) {
@@ -57,7 +60,7 @@ function replaceReadme(key, text) {
             result.push(`<!-- ${key}_END -->`);
         } else if (lines[i].includes(key + '_END')) {
             skip = false;
-        } else if (!skip){
+        } else if (!skip) {
             result.push(lines[i]);
         }
     }
@@ -65,7 +68,7 @@ function replaceReadme(key, text) {
 }
 
 function getCommands(Commands, index) {
-    const commands = new Commands({config: {thresholdValue: 1}});
+    const commands = new Commands({ config: { thresholdValue: 1 } });
     const texts = [];
     const links = [];
     Object.keys(commands.commands).forEach(command => {
@@ -78,7 +81,9 @@ function getCommands(Commands, index) {
         text += comments.desc.join('\n') + '\n';
         Object.keys(comments.params).forEach(param => {
             if (comments.params[param].desc) {
-                text += `* ${param} *(${comments.params[param].type || 'any'})*: ${comments.params[param].desc || '--'}\n`;
+                text += `* ${param} *(${comments.params[param].type || 'any'})*: ${
+                    comments.params[param].desc || '--'
+                }\n`;
             } else {
                 text += `* ${param}: '--'\n`;
             }
