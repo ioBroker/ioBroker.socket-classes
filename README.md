@@ -979,7 +979,7 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
-### 1.5.3 (2024-06-02)
+### **WORK IN PROGRESS**
 * (bluefox) extend `getCompactInstances`method with version information
 
 ### 1.5.2 (2024-05-28)
