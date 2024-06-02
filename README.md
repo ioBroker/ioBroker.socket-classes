@@ -979,6 +979,9 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) extend `getCompactInstances`method with version information
+
 ### 1.5.2 (2024-05-28)
 * (foxriver76) ensure compatible `adapter-core` version
 
@@ -1040,7 +1043,7 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 * (bluefox) Fixed error in `delObjects` method
 
 ### 0.5.3 (2022-08-24)
-* (bluefox) Caught error by subscribe
+* (bluefox) Caught error by subscribing
 
 ### 0.5.2 (2022-08-19)
 * (bluefox) Added command `getCompactSystemRepositories`
