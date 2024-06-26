@@ -33,7 +33,7 @@
     "chai": "^4.4.1",
     "gulp": "^4.0.2",
     "iobroker.js-controller": "^6.0.6-alpha.0-20240624-92c3310c8",
-    "mocha": "^10.5.1"
+    "mocha": "^10.5.2"
   },
   "bugs": {
     "url": "https://github.com/ioBroker/ioBroker.web/issues"

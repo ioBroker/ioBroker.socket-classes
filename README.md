@@ -979,6 +979,9 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) Corrected call of getObjectView with null parameter
+
 ### 1.5.5 (2024-06-26)
 * (bluefox) updated packages
 
