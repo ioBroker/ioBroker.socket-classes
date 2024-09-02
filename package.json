@@ -22,18 +22,23 @@
   },
   "dependencies": {
     "@iobroker/adapter-core": "^3.1.6",
-    "axios": "^1.7.2",
+    "axios": "^1.7.7",
     "cookie-parser": "^1.4.6",
     "passport": "^0.7.0"
   },
   "devDependencies": {
-    "@alcalzone/release-script": "^3.7.0",
+    "@alcalzone/release-script": "^3.8.0",
     "@alcalzone/release-script-plugin-license": "^3.7.0",
-    "@foxriver76/eslint-config": "^1.0.4",
-    "chai": "^4.4.1",
+    "@foxriver76/eslint-config": "^1.0.5",
+    "@iobroker/types": "^6.0.11",
+    "@types/axios": "^0.14.0",
+    "@typescript-eslint/eslint-plugin": "^8.3.0",
+    "chai": "^4.5.0",
     "gulp": "^4.0.2",
-    "iobroker.js-controller": "^6.0.6-alpha.0-20240624-92c3310c8",
-    "mocha": "^10.5.2"
+    "eslint": "^8.57.0",
+    "iobroker.js-controller": "^6.0.11",
+    "mocha": "^10.7.3",
+    "typescript": "^5.5.4"
   },
   "bugs": {
     "url": "https://github.com/ioBroker/ioBroker.web/issues"
@@ -54,6 +59,7 @@
     "release-minor": "release-script minor --no-update-lockfile --yes",
     "release-major": "release-script major --no-update-lockfile --yes",
     "update-packages": "ncu --upgrade",
+    "tsc": "tsc -p tsconfig.build.json",
     "docs": "gulp"
   },
   "license": "MIT",
