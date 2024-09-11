@@ -110,7 +110,7 @@ export interface SocketClient {
     _sessionID: string;
     ___socket: SocketClient;
     _secure: boolean;
-    _authPending: boolean;
+    _authPending: ((isUserAuthenticated: boolean, isAuthenticationUsed: boolean) => void) | null;
     emit: (command: SocketTextCommands, ...args: any[]) => void;
     on: (command: SocketTextCommands, callback: (...args: any[]) => void) => void;
     _acl: {

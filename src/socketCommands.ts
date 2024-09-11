@@ -753,20 +753,18 @@ class SocketCommands {
     }
 
     __initCommandsCommon() {
-        this.commands['authenticate'] = (socket, user, pass, callback) => {
-            // Authenticate user by login and password
-            // @param {string} user - user name
-            // @param {string} pass - password
+        this.commands['authenticate'] = (
+            socket,
+            callback: (isUserAuthenticated: boolean, isAuthenticationUsed: boolean) => void,
+        ) => {
+            // Request authentication
             // @param {function} callback - `function (isUserAuthenticated, isAuthenticationUsed)`
             if (socket?.___socket) {
                 socket = socket.___socket;
             }
 
             this.adapter.log.debug(`${new Date().toISOString()} Request authenticate [${socket._acl.user}]`);
-            if (typeof user === 'function') {
-                callback = user;
-                // user = undefined;
-            }
+
             if (socket._acl.user !== null) {
                 if (typeof callback === 'function') {
                     callback(true, socket._secure);
@@ -1178,7 +1176,12 @@ class SocketCommands {
             }
         };
 
-        this.commands['deleteFile'] = (socket, _adapter, name, callback) => {
+        this.commands['deleteFile'] = (
+            socket,
+            _adapter,
+            name,
+            callback,
+        ) => {
             // Delete file in ioBroker DB (same as unlink, but only for files)
             // @param {string} _adapter - instance name, e.g. `vis.0`
             // @param {string} name - file name, e.g. `main/vis-views.json`
