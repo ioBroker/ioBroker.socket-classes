@@ -5,15 +5,18 @@ import {
     type CallOptions,
     type PermissionCommands,
     type SocketSubscribeTypes,
-    COMMANDS_PERMISSIONS, SocketOperation, SocketCallback,
+    COMMANDS_PERMISSIONS,
+    SocketOperation,
+    SocketCallback,
 } from './types';
 const pattern2RegEx = commonTools.pattern2RegEx;
 let axiosGet: any = null;
 let zipFiles: typeof commonTools.zipFiles | null = null;
 
-class SocketCommands {
+export default class SocketCommands {
     static ERROR_PERMISSION = 'permissionError';
-    static COMMANDS_PERMISSIONS: Record<string, { type: 'object' | 'state', operation: SocketOperation }> = COMMANDS_PERMISSIONS;
+    static COMMANDS_PERMISSIONS: Record<string, { type: 'object' | 'state'; operation: SocketOperation }> =
+        COMMANDS_PERMISSIONS;
 
     private adapter: ioBroker.Adapter;
 
@@ -29,14 +32,18 @@ class SocketCommands {
 
     public adapterName: string | undefined;
 
-    private _sendToHost: ((id: string, command: string, data: any, callback: (result: { error?: string; result?: any }) => void) => void) | null
+    private _sendToHost:
+        | ((
+              id: string,
+              command: string,
+              data: any,
+              callback: (result: { error?: string; result?: any }) => void,
+          ) => void)
+        | null;
 
     public states: Record<string, ioBroker.State> | null = null;
 
-    constructor(
-        adapter: ioBroker.Adapter,
-        updateSession: (socket: SocketClient) => boolean,
-    ) {
+    constructor(adapter: ioBroker.Adapter, updateSession: (socket: SocketClient) => boolean) {
         this.adapter = adapter;
 
         this._updateSession = updateSession;
@@ -158,24 +165,32 @@ class SocketCommands {
         callback: ((error: string | null, ...args: any[]) => void) | undefined,
         arg?: any,
     ) {
-        const _command: string = command as unknown as string
+        const _command: string = command as unknown as string;
         if (socket._acl.user !== 'system.user.admin') {
             // type: file, object, state, other
             // operation: create, read, write, list, delete, sendto, execute, sendToHost, readLogs
             if (SocketCommands.COMMANDS_PERMISSIONS[_command]) {
                 // If permission required
                 if (SocketCommands.COMMANDS_PERMISSIONS[_command].type) {
-                    if (SocketCommands.COMMANDS_PERMISSIONS[_command].type === 'object' && socket._acl.object &&
-                        (socket._acl.object as Record<string, boolean>)[SocketCommands.COMMANDS_PERMISSIONS[_command].operation as string]
+                    if (
+                        SocketCommands.COMMANDS_PERMISSIONS[_command].type === 'object' &&
+                        socket._acl.object &&
+                        (socket._acl.object as Record<string, boolean>)[
+                            SocketCommands.COMMANDS_PERMISSIONS[_command].operation as string
+                        ]
                     ) {
                         return true;
-                    } else if (SocketCommands.COMMANDS_PERMISSIONS[_command].type === 'state' && socket._acl.state &&
-                        (socket._acl.state as Record<string, boolean>)[SocketCommands.COMMANDS_PERMISSIONS[_command].operation as string]
+                    } else if (
+                        SocketCommands.COMMANDS_PERMISSIONS[_command].type === 'state' &&
+                        socket._acl.state &&
+                        (socket._acl.state as Record<string, boolean>)[
+                            SocketCommands.COMMANDS_PERMISSIONS[_command].operation as string
+                        ]
                     ) {
                         return true;
                     } else {
                         this.adapter.log.warn(
-                            `No permission for "${socket._acl.user}" to call ${_command}. Need "${SocketCommands.COMMANDS_PERMISSIONS[_command].type}"."${SocketCommands.COMMANDS_PERMISSIONS[_command].operation}"`
+                            `No permission for "${socket._acl.user}" to call ${_command}. Need "${SocketCommands.COMMANDS_PERMISSIONS[_command].type}"."${SocketCommands.COMMANDS_PERMISSIONS[_command].operation}"`,
                         );
                     }
                 } else {
@@ -189,15 +204,12 @@ class SocketCommands {
                 callback(SocketCommands.ERROR_PERMISSION);
             } else {
                 if (SocketCommands.COMMANDS_PERMISSIONS[_command]) {
-                    socket.emit(
-                        SocketCommands.ERROR_PERMISSION,
-                        {
-                            command,
-                            type: SocketCommands.COMMANDS_PERMISSIONS[_command].type,
-                            operation: SocketCommands.COMMANDS_PERMISSIONS[_command].operation,
-                            arg
-                        },
-                    );
+                    socket.emit(SocketCommands.ERROR_PERMISSION, {
+                        command,
+                        type: SocketCommands.COMMANDS_PERMISSIONS[_command].type,
+                        operation: SocketCommands.COMMANDS_PERMISSIONS[_command].operation,
+                        arg,
+                    });
                 } else {
                     socket.emit(SocketCommands.ERROR_PERMISSION, { command: _command, arg });
                 }
@@ -208,17 +220,16 @@ class SocketCommands {
         return true;
     }
 
-    publish(
-        socket: SocketClient,
-        type: SocketSubscribeTypes,
-        id: string,
-        obj: ioBroker.Object | ioBroker.State,
-    ) {
+    publish(socket: SocketClient, type: SocketSubscribeTypes, id: string, obj: ioBroker.Object | ioBroker.State) {
         if (socket?.subscribe?.[type] && this._updateSession(socket)) {
             return !!socket.subscribe[type].find(sub => {
                 if (sub.regex.test(id)) {
                     // replace language
-                    if ((this.adapter as any)._language && id === 'system.config' && (obj as ioBroker.SystemConfigObject).common) {
+                    if (
+                        (this.adapter as any)._language &&
+                        id === 'system.config' &&
+                        (obj as ioBroker.SystemConfigObject).common
+                    ) {
                         (obj as ioBroker.SystemConfigObject).common.language = (this.adapter as any)._language;
                     }
                     socket.emit(type, id, obj);
@@ -230,12 +241,7 @@ class SocketCommands {
         return false;
     }
 
-    publishFile(
-        socket: SocketClient,
-        id: string,
-        fileName: string,
-        size: number,
-    ): boolean {
+    publishFile(socket: SocketClient, id: string, fileName: string, size: number): boolean {
         if (socket && socket.subscribe && socket.subscribe.fileChange && this._updateSession(socket)) {
             const key = `${id}####${fileName}`;
             return !!socket.subscribe.fileChange.find(sub => {
@@ -249,12 +255,7 @@ class SocketCommands {
         return false;
     }
 
-    publishInstanceMessage(
-        socket: SocketClient,
-        sourceInstance: string,
-        messageType: string,
-        data: any,
-    ): boolean {
+    publishInstanceMessage(socket: SocketClient, sourceInstance: string, messageType: string, data: any): boolean {
         if (
             this.clientSubscribes[socket.id] &&
             this.clientSubscribes[socket.id][sourceInstance] &&
@@ -268,15 +269,12 @@ class SocketCommands {
         this.adapter.sendTo(sourceInstance, 'clientSubscribeError', {
             type: messageType,
             sid: socket.id,
-            reason: 'no one subscribed'
+            reason: 'no one subscribed',
         });
         return false;
     }
 
-    _showSubscribes(
-        socket: SocketClient,
-        type: SocketSubscribeTypes,
-    ) {
+    _showSubscribes(socket: SocketClient, type: SocketSubscribeTypes) {
         if (socket && socket.subscribe) {
             const s = socket.subscribe[type] || [];
             const ids = [];
@@ -293,12 +291,7 @@ class SocketCommands {
         return this.logEnabled;
     }
 
-    subscribe(
-        socket: SocketClient,
-        type: SocketSubscribeTypes,
-        pattern: string,
-        patternFile?: string,
-    ) {
+    subscribe(socket: SocketClient, type: SocketSubscribeTypes, pattern: string, patternFile?: string) {
         if (!pattern) {
             return this.adapter.log.warn('Empty pattern on subscribe!');
         }
@@ -357,21 +350,14 @@ class SocketCommands {
             } else if (type === 'fileChange' && this.adapter.subscribeForeignFiles) {
                 this.adapter
                     .subscribeForeignFiles(pattern, patternFile || '*', options)
-                    // @ts-expect-error fixed in js-controller 6
                     .catch(e => this.adapter.log.error(`Cannot subscribe "${pattern}": ${e.message}`));
-
             }
         } else {
             this.subscribes[type][key]++;
         }
     }
 
-    unsubscribe(
-        socket: SocketClient,
-        type: SocketSubscribeTypes,
-        pattern: string,
-        patternFile?: string,
-    ) {
+    unsubscribe(socket: SocketClient, type: SocketSubscribeTypes, pattern: string, patternFile?: string) {
         if (!pattern) {
             return this.adapter.log.warn('Empty pattern on subscribe!');
         }
@@ -406,13 +392,13 @@ class SocketCommands {
                                 this.adapter
                                     .unsubscribeForeignStatesAsync(pattern, options)
                                     .catch(e =>
-                                        this.adapter.log.error(`Cannot unsubscribe "${pattern}": ${e.message}`)
+                                        this.adapter.log.error(`Cannot unsubscribe "${pattern}": ${e.message}`),
                                     );
                             } else if (type === 'objectChange') {
                                 this.adapter
                                     .unsubscribeForeignObjectsAsync(pattern, options)
                                     .catch(e =>
-                                        this.adapter.log.error(`Cannot unsubscribe "${pattern}": ${e.message}`)
+                                        this.adapter.log.error(`Cannot unsubscribe "${pattern}": ${e.message}`),
                                     );
                             } else if (type === 'log') {
                                 if (this.logEnabled && this.adapter.requireLog) {
@@ -422,9 +408,9 @@ class SocketCommands {
                             } else if (type === 'fileChange' && this.adapter.unsubscribeForeignFiles) {
                                 this.adapter
                                     .unsubscribeForeignFiles(pattern, patternFile || '*', options)
-                                    // @ts-expect-error fixed in js-controller 6
                                     .catch(e =>
-                                        this.adapter.log.error(`Cannot unsubscribe "${pattern}": ${e.message}`));
+                                        this.adapter.log.error(`Cannot unsubscribe "${pattern}": ${e.message}`),
+                                    );
                             }
                             delete this.subscribes[type][pattern];
                         }
@@ -456,9 +442,7 @@ class SocketCommands {
                     } else if (type === 'fileChange' && this.adapter.unsubscribeForeignFiles) {
                         this.adapter
                             .unsubscribeForeignFiles(pattern, patternFile || '*', options)
-                            // @ts-expect-error fixed in js-controller 6
-                            .catch(e =>
-                                this.adapter.log.error(`Cannot unsubscribe "${pattern}": ${e.message}`));
+                            .catch(e => this.adapter.log.error(`Cannot unsubscribe "${pattern}": ${e.message}`));
                     }
                     delete this.subscribes[type][key];
                 }
@@ -483,7 +467,6 @@ class SocketCommands {
                     const [id, fileName] = pattern.split('####');
                     this.adapter
                         .unsubscribeForeignFiles(id, fileName, options)
-                        // @ts-expect-error fixed in js-controller 6
                         .catch(e => this.adapter.log.error(`Cannot unsubscribe "${pattern}": ${e.message}`));
                 }
             }
@@ -492,10 +475,7 @@ class SocketCommands {
         }
     }
 
-    subscribeSocket(
-        socket: SocketClient,
-        type?: SocketSubscribeTypes,
-    ): void {
+    subscribeSocket(socket: SocketClient, type?: SocketSubscribeTypes): void {
         if (!socket || !socket.subscribe) {
             return;
         }
@@ -533,7 +513,6 @@ class SocketCommands {
                     const [id, fileName] = pattern.split('####');
                     this.adapter
                         .subscribeForeignFiles(id, fileName, options)
-                        // @ts-expect-error fixed in js-controller 6
                         .catch(e => this.adapter.log.error(`Cannot subscribe "${pattern}": ${e.message}`));
                 }
             } else {
@@ -542,10 +521,7 @@ class SocketCommands {
         }
     }
 
-    unsubscribeSocket(
-        socket: SocketClient,
-        type?: SocketSubscribeTypes,
-    ) {
+    unsubscribeSocket(socket: SocketClient, type?: SocketSubscribeTypes) {
         if (!socket || !socket.subscribe) {
             return;
         }
@@ -586,7 +562,6 @@ class SocketCommands {
                         const [id, fileName] = pattern.split('####');
                         this.adapter
                             .unsubscribeForeignFiles(id, fileName, options)
-                            // @ts-expect-error fixed in js-controller 6
                             .catch(e => this.adapter.log.error(`Cannot unsubscribe "${pattern}": ${e.message}`));
                     }
                     delete this.subscribes[type][pattern];
@@ -595,11 +570,7 @@ class SocketCommands {
         }
     }
 
-    #subscribeStates(
-        socket: SocketClient,
-        pattern: string | string[],
-        callback?: (error: string | null) => void,
-    ) {
+    #subscribeStates(socket: SocketClient, pattern: string | string[], callback?: (error: string | null) => void) {
         if (this._checkPermissions(socket, 'subscribe', callback, pattern)) {
             if (Array.isArray(pattern)) {
                 for (let p = 0; p < pattern.length; p++) {
@@ -615,11 +586,7 @@ class SocketCommands {
         }
     }
 
-    #unsubscribeStates(
-        socket: SocketClient,
-        pattern: string | string[],
-        callback?: (error: string | null) => void,
-    ) {
+    #unsubscribeStates(socket: SocketClient, pattern: string | string[], callback?: (error: string | null) => void) {
         if (this._checkPermissions(socket, 'unsubscribe', callback, pattern)) {
             if (Array.isArray(pattern)) {
                 for (let p = 0; p < pattern.length; p++) {
@@ -677,10 +644,7 @@ class SocketCommands {
         }
     }
 
-    addCommandHandler(
-        command: string,
-        handler: (socket: SocketClient, ...args: any[]) => void,
-    ) {
+    addCommandHandler(command: string, handler: (socket: SocketClient, ...args: any[]) => void) {
         if (handler) {
             this.commands[command] = handler;
         } else if (command in this.commands) {
@@ -722,8 +686,8 @@ class SocketCommands {
             obj.common.adminUI &&
                 this.adapter.log.debug(
                     `Please add to "${obj._id.replace(/\.\d+$/, '')}" common.adminUI=${JSON.stringify(
-                        obj.common.adminUI
-                    )}`
+                        obj.common.adminUI,
+                    )}`,
                 );
         }
     }
@@ -741,7 +705,7 @@ class SocketCommands {
                     validateStatus: (status: number) => status < 400,
                 })
                     .then((result: AxiosResponse) =>
-                        callback(null, { status: result.status, statusText: result.statusText }, result.data)
+                        callback(null, { status: result.status, statusText: result.statusText }, result.data),
                     )
                     .catch((error: AxiosError) => callback(error));
             } catch (error) {
@@ -808,7 +772,7 @@ class SocketCommands {
                 SocketCommands._fixCallback(
                     callback,
                     null,
-                    this.adapter.supportsFeature && this.adapter.supportsFeature(feature)
+                    this.adapter.supportsFeature && this.adapter.supportsFeature(feature),
                 );
             }
         };
@@ -822,7 +786,7 @@ class SocketCommands {
             if (this._checkPermissions(socket, 'getStateHistory', callback, id)) {
                 if (typeof options === 'string') {
                     options = {
-                        instance: options
+                        instance: options,
                     };
                 }
                 options = options || {};
@@ -830,7 +794,7 @@ class SocketCommands {
                 options.aggregate = options.aggregate || 'none';
                 try {
                     this.adapter.getHistory(id, options, (error, ...args) =>
-                        SocketCommands._fixCallback(callback, error, ...args)
+                        SocketCommands._fixCallback(callback, error, ...args),
                     );
                 } catch (error) {
                     this.adapter.log.error(`[getHistory] ERROR: ${error.toString()}`);
@@ -869,7 +833,7 @@ class SocketCommands {
                         adapterInstance,
                         command,
                         message,
-                        res => typeof callback === 'function' && setImmediate(() => callback(res))
+                        res => typeof callback === 'function' && setImmediate(() => callback(res)),
                     );
                 } catch (error) {
                     typeof callback === 'function' && setImmediate(() => callback({ error }));
@@ -889,14 +853,49 @@ class SocketCommands {
             'readObjectsAsZip',
             'checkLogging',
             'updateMultihost',
-            'rebuildAdapter'
+            'rebuildAdapter',
         ];
 
         this.commands['sendToHost'] = (
             socket: SocketClient,
             /** Host name. With or without 'system.host.' prefix */
             host: string,
-            command: 'shell' | 'cmdExec' | 'getRepository' | 'getInstalled' | 'getInstalledAdapter' | 'getVersion' | 'getDiagData' | 'getLocationOnDisk' | 'getDevList' | 'getLogs' | 'getLogFile' | 'getLogFiles' | 'getHostInfo' | 'getHostInfoShort' | 'delLogs' | 'readDirAsZip' | 'writeDirAsZip' | 'readObjectsAsZip' | 'writeObjectsAsZip' | 'checkLogging' | 'updateMultihost' | 'upgradeController' | 'upgradeAdapterWithWebserver' | 'getInterfaces' | 'upload' | 'rebuildAdapter' | 'readBaseSettings' | 'writeBaseSettings' | 'addNotification' | 'clearNotifications' | 'getNotifications' | 'updateLicenses' | 'upgradeOsPackages' | 'restartController' | 'sendToSentry',
+            command:
+                | 'shell'
+                | 'cmdExec'
+                | 'getRepository'
+                | 'getInstalled'
+                | 'getInstalledAdapter'
+                | 'getVersion'
+                | 'getDiagData'
+                | 'getLocationOnDisk'
+                | 'getDevList'
+                | 'getLogs'
+                | 'getLogFile'
+                | 'getLogFiles'
+                | 'getHostInfo'
+                | 'getHostInfoShort'
+                | 'delLogs'
+                | 'readDirAsZip'
+                | 'writeDirAsZip'
+                | 'readObjectsAsZip'
+                | 'writeObjectsAsZip'
+                | 'checkLogging'
+                | 'updateMultihost'
+                | 'upgradeController'
+                | 'upgradeAdapterWithWebserver'
+                | 'getInterfaces'
+                | 'upload'
+                | 'rebuildAdapter'
+                | 'readBaseSettings'
+                | 'writeBaseSettings'
+                | 'addNotification'
+                | 'clearNotifications'
+                | 'getNotifications'
+                | 'updateLicenses'
+                | 'upgradeOsPackages'
+                | 'restartController'
+                | 'sendToSentry',
             message: any,
             callback: (result: { error?: string; result?: any }) => void,
         ) => {
@@ -911,7 +910,7 @@ class SocketCommands {
                     socket,
                     protectedCommands.includes(command) ? 'cmdExec' : 'sendToHost',
                     (error: string | null) => callback({ error: error || SocketCommands.ERROR_PERMISSION }),
-                    command
+                    command,
                 )
             ) {
                 // Try to decode this file locally as redis has a limitation for files bigger than 20MB
@@ -935,7 +934,7 @@ class SocketCommands {
                             message.name,
                             buffer,
                             message.options,
-                            (error: Error) => callback({ error: error?.toString() }) // this is for back compatibility with js-controller@4.0 or older
+                            (error: Error) => callback({ error: error?.toString() }), // this is for back compatibility with js-controller@4.0 or older
                         )
                         .then(() => callback({}))
                         .catch((error: Error) => {
@@ -1034,7 +1033,7 @@ class SocketCommands {
             if (this._checkPermissions(socket, 'readFile', callback, fileName)) {
                 try {
                     this.adapter.readFile(_adapter, fileName, { user: socket._acl.user }, (error, ...args) =>
-                        SocketCommands._fixCallback(callback, error, ...args)
+                        SocketCommands._fixCallback(callback, error, ...args),
                     );
                 } catch (error) {
                     this.adapter.log.error(`[readFile] ERROR: ${error.toString()}`);
@@ -1043,12 +1042,7 @@ class SocketCommands {
             }
         };
 
-        this.commands['readFile64'] = (
-            socket,
-            _adapter,
-            fileName,
-            callback,
-        ) => {
+        this.commands['readFile64'] = (socket, _adapter, fileName, callback) => {
             // Read a file from ioBroker DB as base64 string
             // @param {string} _adapter - instance name, e.g. `vis.0`
             // @param {string} fileName - file name, e.g. `main/vis-views.json`
@@ -1091,14 +1085,7 @@ class SocketCommands {
             }
         };
 
-        this.commands['writeFile64'] = (
-            socket,
-            _adapter,
-            fileName,
-            data64,
-            options,
-            callback,
-        ) => {
+        this.commands['writeFile64'] = (socket, _adapter, fileName, data64, options, callback) => {
             // Write file into ioBroker DB as base64 string
             // @param {string} _adapter - instance name, e.g. `vis.0`
             // @param {string} fileName - file name, e.g. `main/vis-views.json`
@@ -1122,7 +1109,7 @@ class SocketCommands {
                 try {
                     const buffer = Buffer.from(data64, 'base64');
                     this.adapter.writeFile(_adapter, fileName, buffer, options, (error, ...args) =>
-                        SocketCommands._fixCallback(callback, error, ...args)
+                        SocketCommands._fixCallback(callback, error, ...args),
                     );
                 } catch (error) {
                     this.adapter.log.error(`[writeFile64] Cannot convert data: ${error.toString()}`);
@@ -1150,7 +1137,7 @@ class SocketCommands {
                 // const buffer = Buffer.from(data64, 'base64');
                 try {
                     this.adapter.writeFile(_adapter, fileName, data, options, (error, ...args) =>
-                        SocketCommands._fixCallback(callback, error, ...args)
+                        SocketCommands._fixCallback(callback, error, ...args),
                     );
                 } catch (error) {
                     this.adapter.log.error(`[writeFile] ERROR: ${error.toString()}`);
@@ -1176,12 +1163,7 @@ class SocketCommands {
             }
         };
 
-        this.commands['deleteFile'] = (
-            socket,
-            _adapter,
-            name,
-            callback,
-        ) => {
+        this.commands['deleteFile'] = (socket, _adapter, name, callback) => {
             // Delete file in ioBroker DB (same as unlink, but only for files)
             // @param {string} _adapter - instance name, e.g. `vis.0`
             // @param {string} name - file name, e.g. `main/vis-views.json`
@@ -1189,7 +1171,7 @@ class SocketCommands {
             if (this._checkPermissions(socket, 'unlink', callback, name)) {
                 try {
                     this.adapter.unlink(_adapter, name, { user: socket._acl.user }, (error, ...args) =>
-                        SocketCommands._fixCallback(callback, error, ...args)
+                        SocketCommands._fixCallback(callback, error, ...args),
                     );
                 } catch (error) {
                     this.adapter.log.error(`[deleteFile] ERROR: ${error.toString()}`);
@@ -1224,7 +1206,7 @@ class SocketCommands {
             if (this._checkPermissions(socket, 'rename', callback, oldName)) {
                 try {
                     this.adapter.rename(_adapter, oldName, newName, { user: socket._acl.user }, (error, ...args) =>
-                        SocketCommands._fixCallback(callback, error, ...args)
+                        SocketCommands._fixCallback(callback, error, ...args),
                     );
                 } catch (error) {
                     this.adapter.log.error(`[renameFile] ERROR: ${error.toString()}`);
@@ -1259,7 +1241,7 @@ class SocketCommands {
             if (this._checkPermissions(socket, 'mkdir', callback, dirName)) {
                 try {
                     this.adapter.mkdir(_adapter, dirName, { user: socket._acl.user }, (error, ...args) =>
-                        SocketCommands._fixCallback(callback, error, ...args)
+                        SocketCommands._fixCallback(callback, error, ...args),
                     );
                 } catch (error) {
                     this.adapter.log.error(`[mkdir] ERROR: ${error.toString()}`);
@@ -1288,7 +1270,7 @@ class SocketCommands {
             if (this._checkPermissions(socket, 'readDir', callback, dirName)) {
                 try {
                     this.adapter.readDir(_adapter, dirName, { user: socket._acl.user }, (error, ...args) =>
-                        SocketCommands._fixCallback(callback, error, ...args)
+                        SocketCommands._fixCallback(callback, error, ...args),
                     );
                 } catch (error) {
                     this.adapter.log.error(`[readDir] ERROR: ${error.toString()}`);
@@ -1303,7 +1285,7 @@ class SocketCommands {
             _adapter,
             /** file name, e.g. `main/vis-views.json` */
             fileName,
-            options: { mode?: number, user?: string, filter?: boolean },
+            options: { mode?: number; user?: string; filter?: boolean },
             callback?: (error: string | Error | null | undefined) => void,
         ) => {
             // Change file mode in ioBroker DB
@@ -1325,7 +1307,7 @@ class SocketCommands {
             if (this._checkPermissions(socket, 'chmodFile', callback, fileName)) {
                 try {
                     this.adapter.chmodFile(_adapter, fileName, options, (error, ...args) =>
-                        SocketCommands._fixCallback(callback as SocketCallback, error, ...args)
+                        SocketCommands._fixCallback(callback as SocketCallback, error, ...args),
                     );
                 } catch (error) {
                     this.adapter.log.error(`[chmodFile] ERROR: ${error.toString()}`);
@@ -1334,13 +1316,7 @@ class SocketCommands {
             }
         };
 
-        this.commands['chownFile'] = (
-            socket,
-            _adapter,
-            fileName,
-            options,
-            callback,
-        ) => {
+        this.commands['chownFile'] = (socket, _adapter, fileName, options, callback) => {
             // Change file owner in ioBroker DB
             // @param {string} _adapter - instance name, e.g. `vis.0`
             // @param {string} fileName - file name, e.g. `main/vis-views.json`
@@ -1351,7 +1327,7 @@ class SocketCommands {
                 options.user = socket._acl.user;
                 try {
                     this.adapter.chownFile(_adapter, fileName, options, (error, ...args) =>
-                        SocketCommands._fixCallback(callback as SocketCallback, error, ...args)
+                        SocketCommands._fixCallback(callback as SocketCallback, error, ...args),
                     );
                 } catch (error) {
                     this.adapter.log.error(`[chownFile] ERROR: ${error.toString()}`);
@@ -1368,7 +1344,7 @@ class SocketCommands {
             if (this._checkPermissions(socket, 'fileExists', callback, fileName)) {
                 try {
                     this.adapter.fileExists(_adapter, fileName, { user: socket._acl.user }, (error, ...args) =>
-                        SocketCommands._fixCallback(callback, error, ...args)
+                        SocketCommands._fixCallback(callback, error, ...args),
                     );
                 } catch (error) {
                     this.adapter.log.error(`[fileExists] ERROR: ${error.toString()}`);
@@ -1411,7 +1387,7 @@ class SocketCommands {
                             'instance',
                             {
                                 startkey: `system.adapter.${_adapterName}`,
-                                endkey: `system.adapter.${_adapterName}\u9999`
+                                endkey: `system.adapter.${_adapterName}\u9999`,
                             },
                             { user: socket._acl.user },
                             (error, doc) => {
@@ -1432,11 +1408,11 @@ class SocketCommands {
                                             .filter(
                                                 obj =>
                                                     obj &&
-                                                    (!adapterName || (obj.common && obj.common.name === adapterName))
-                                            )
+                                                    (!adapterName || (obj.common && obj.common.name === adapterName)),
+                                            ),
                                     );
                                 }
-                            }
+                            },
                         );
                     } catch (error) {
                         this.adapter.log.error(`[getAdapterInstances] ERROR: ${error.toString()}`);
@@ -1460,7 +1436,7 @@ class SocketCommands {
                 if (typeof callback === 'function') {
                     try {
                         this.adapter.getForeignStates(pattern || '*', { user: socket._acl.user }, (error, ...args) =>
-                            SocketCommands._fixCallback(callback, error, ...args)
+                            SocketCommands._fixCallback(callback, error, ...args),
                         );
                     } catch (error) {
                         this.adapter.log.error(`[getStates] ERROR: ${error.toString()}`);
@@ -1480,7 +1456,7 @@ class SocketCommands {
                 if (typeof callback === 'function') {
                     try {
                         this.adapter.getForeignStates(pattern, { user: socket._acl.user }, (error, ...args) =>
-                            SocketCommands._fixCallback(callback, error, ...args)
+                            SocketCommands._fixCallback(callback, error, ...args),
                         );
                     } catch (error) {
                         this.adapter.log.error(`[getForeignStates] ERROR: ${error}`);
@@ -1503,7 +1479,7 @@ class SocketCommands {
                     } else {
                         try {
                             this.adapter.getForeignState(id, { user: socket._acl.user }, (error, ...args) =>
-                                SocketCommands._fixCallback(callback, error, ...args)
+                                SocketCommands._fixCallback(callback, error, ...args),
                             );
                         } catch (error) {
                             this.adapter.log.error(`[getState] ERROR: ${error.toString()}`);
@@ -1533,7 +1509,7 @@ class SocketCommands {
 
                 try {
                     this.adapter.setForeignState(id, state, { user: socket._acl.user }, (error, ...args) =>
-                        SocketCommands._fixCallback(callback, error, ...args)
+                        SocketCommands._fixCallback(callback, error, ...args),
                     );
                 } catch (error) {
                     this.adapter.log.error(`[setState] ERROR: ${error.toString()}`);
@@ -1602,9 +1578,7 @@ class SocketCommands {
                     this.adapter.getForeignObject(id, { user: socket._acl.user }, (error, obj) => {
                         // overload language from current instance
                         // @ts-expect-error adapter could have _language attribute
-                        if (this.adapter._language &&
-                            id === 'system.config' && obj?.common
-                        ) {
+                        if (this.adapter._language && id === 'system.config' && obj?.common) {
                             // @ts-expect-error adapter could have _language attribute
                             (obj as ioBroker.SystemConfigObject).common.language = this.adapter._language;
                         }
@@ -1633,7 +1607,7 @@ class SocketCommands {
                     if (typeof callback === 'function') {
                         try {
                             this.adapter.getForeignObjects(list, { user: socket._acl.user }, (error, objs) =>
-                                SocketCommands._fixCallback(callback, error, objs)
+                                SocketCommands._fixCallback(callback, error, objs),
                             );
                         } catch (error) {
                             this.adapter.log.error(`[getObjects] ERROR: ${error.toString()}`);
@@ -1655,16 +1629,16 @@ class SocketCommands {
                                 const result: Record<string, ioBroker.Object> = {};
                                 try {
                                     const channels = await this.adapter.getForeignObjectsAsync('*', 'channel', null, {
-                                        user: socket._acl.user
+                                        user: socket._acl.user,
                                     });
                                     const devices = await this.adapter.getForeignObjectsAsync('*', 'device', null, {
-                                        user: socket._acl.user
+                                        user: socket._acl.user,
                                     });
                                     const enums = await this.adapter.getForeignObjectsAsync('*', 'enum', null, {
-                                        user: socket._acl.user
+                                        user: socket._acl.user,
                                     });
                                     const config = await this.adapter.getForeignObjectAsync('system.config', {
-                                        user: socket._acl.user
+                                        user: socket._acl.user,
                                     });
                                     Object.assign(result, states, channels, devices, enums);
                                     if (config) {
@@ -1675,15 +1649,13 @@ class SocketCommands {
                                 }
                                 // overload language
                                 // @ts-expect-error adapter could have _language attribute
-                                if (this.adapter._language &&
-                                    result['system.config']?.common
-                                ) {
+                                if (this.adapter._language && result['system.config']?.common) {
                                     // @ts-expect-error adapter could have _language attribute
                                     result['system.config'].common.language = this.adapter._language;
                                 }
 
                                 SocketCommands._fixCallback(callback, error, result);
-                            }
+                            },
                         );
                     } else {
                         this.adapter.log.warn('[getObjects] Invalid callback');
@@ -1774,13 +1746,19 @@ class SocketCommands {
                                         }
 
                                         const rootDepth = root.split('.').length;
-                                        const virtualObjects: Record<string, { id: string; value: {
-                                            _id: string;
-                                            common: Record<string, any>;
-                                            type: string;
-                                            virtual: boolean;
-                                            hasChildren: number;
-                                        }}> = {};
+                                        const virtualObjects: Record<
+                                            string,
+                                            {
+                                                id: string;
+                                                value: {
+                                                    _id: string;
+                                                    common: Record<string, any>;
+                                                    type: string;
+                                                    virtual: boolean;
+                                                    hasChildren: number;
+                                                };
+                                            }
+                                        > = {};
 
                                         for (let r = 0; r < result.rows.length; r++) {
                                             if (
@@ -1802,7 +1780,7 @@ class SocketCommands {
                                                                     common: {},
                                                                     type: 'folder',
                                                                     virtual: true,
-                                                                    hasChildren: 1
+                                                                    hasChildren: 1,
                                                                 },
                                                             };
                                                             rows.push(virtualObjects[id]);
@@ -1816,7 +1794,7 @@ class SocketCommands {
                                         result.rows = rows;
                                     }
                                     callback(err, result);
-                                }
+                                },
                             );
                         } else {
                             this.adapter.getObjectView(design, search, params, { user: socket._acl.user }, callback);
@@ -1839,7 +1817,7 @@ class SocketCommands {
             if (this._checkPermissions(socket, 'setObject', callback, id)) {
                 try {
                     this.adapter.setForeignObject(id, obj, { user: socket._acl.user }, (error, ...args) =>
-                        SocketCommands._fixCallback(callback, error, ...args)
+                        SocketCommands._fixCallback(callback, error, ...args),
                     );
                 } catch (error) {
                     this.adapter.log.error(`[setObject] ERROR: ${error.toString()}`);
@@ -1858,7 +1836,7 @@ class SocketCommands {
                 if (this._checkPermissions(socket, 'delObject', callback, id)) {
                     try {
                         this.adapter.delForeignObject(id, { user: socket._acl.user }, (error, ...args) =>
-                            SocketCommands._fixCallback(callback, error, ...args)
+                            SocketCommands._fixCallback(callback, error, ...args),
                         );
                     } catch (error) {
                         this.adapter.log.error(`[delObject] ERROR: ${error.toString()}`);
@@ -1892,7 +1870,7 @@ class SocketCommands {
             }
             // inform instance about new subscription
             this.adapter.sendTo(targetInstance, 'clientSubscribe', { type: messageType, sid, data }, result =>
-                SocketCommands._fixCallback(callback, null, result)
+                SocketCommands._fixCallback(callback, null, result),
             );
         };
 
@@ -1915,7 +1893,7 @@ class SocketCommands {
                     this.adapter.sendTo(targetInstance, 'clientUnsubscribe', {
                         type: [messageType],
                         sid,
-                        reason: 'client'
+                        reason: 'client',
                     });
                     SocketCommands._fixCallback(callback, null, true);
                     return;
@@ -1939,7 +1917,7 @@ class SocketCommands {
                 this.adapter.sendTo(targetInstance, 'clientUnsubscribe', {
                     type: this.clientSubscribes[socketId][targetInstance],
                     sid: socketId,
-                    reason: 'disconnect'
+                    reason: 'disconnect',
                 });
             });
             delete this.clientSubscribes[socketId];
@@ -1952,7 +1930,7 @@ class SocketCommands {
                 if (this._updateSession(socket)) {
                     this.commands[command](socket, ...args);
                 }
-            })
+            }),
         );
     }
 
@@ -1960,5 +1938,3 @@ class SocketCommands {
         // could be overloaded
     }
 }
-
-module.exports = SocketCommands;

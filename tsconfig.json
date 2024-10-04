@@ -36,7 +36,7 @@
     "sourceMap": true,
     "inlineSourceMap": false,
     "useUnknownInCatchVariables": false,
-    "types": ["@iobroker/types"]
+    "types": ["@iobroker/types", "@types/node"]
   },
   "include": [
     "src/**/*.ts",

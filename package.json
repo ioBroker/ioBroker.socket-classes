@@ -1,75 +1,70 @@
 {
-  "name": "@iobroker/socket-classes",
-  "version": "1.5.6",
-  "description": "ioBroker server-side web sockets",
-  "author": {
-    "name": "bluefox",
-    "email": "dogafox@gmail.com"
-  },
-  "publishConfig": {
-    "access": "public"
-  },
-  "homepage": "https://github.com/ioBroker/ioBroker.socket-classes",
-  "keywords": [
-    "ioBroker",
-    "web",
-    "socket",
-    "web-socket"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/ioBroker/ioBroker.socket-classes"
-  },
-  "dependencies": {
-    "@iobroker/adapter-core": "^3.1.6",
-    "axios": "^1.7.7",
-    "cookie-parser": "^1.4.6",
-    "passport": "^0.7.0"
-  },
-  "devDependencies": {
-    "@alcalzone/release-script": "^3.8.0",
-    "@alcalzone/release-script-plugin-license": "^3.7.0",
-    "@foxriver76/eslint-config": "^1.0.5",
-    "@iobroker/types": "^6.0.11",
-    "@types/axios": "^0.14.0",
-    "@typescript-eslint/eslint-plugin": "^8.3.0",
-    "chai": "^4.5.0",
-    "gulp": "^4.0.2",
-    "eslint": "^8.57.0",
-    "iobroker.js-controller": "^6.0.11",
-    "mocha": "^10.7.3",
-    "typescript": "^5.5.4"
-  },
-  "bugs": {
-    "url": "https://github.com/ioBroker/ioBroker.web/issues"
-  },
-  "main": "index.js",
-  "files": [
-    "LICENSE",
-    "lib/",
-    "index.js",
-    "lib/socketCommon.js",
-    "lib/socketAdmin.js"
-  ],
-  "scripts": {
-    "lint": "eslint .",
-    "test": "node node_modules/mocha/bin/mocha --exit",
-    "release": "release-script",
-    "release-patch": "release-script patch --no-update-lockfile --yes",
-    "release-minor": "release-script minor --no-update-lockfile --yes",
-    "release-major": "release-script major --no-update-lockfile --yes",
-    "update-packages": "ncu --upgrade",
-    "tsc": "tsc -p tsconfig.build.json",
-    "docs": "gulp"
-  },
-  "license": "MIT",
-  "maintainers": [
-    {
-      "name": "bluefox",
-      "email": "dogafox@gmail.com"
-    }
-  ],
-  "overrides": {
-    "@iobroker/adapter-core": "^3.1.6"
-  }
+    "name": "@iobroker/socket-classes",
+    "version": "1.5.6",
+    "description": "ioBroker server-side web sockets",
+    "author": {
+        "name": "bluefox",
+        "email": "dogafox@gmail.com"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
+    "homepage": "https://github.com/ioBroker/ioBroker.socket-classes",
+    "keywords": [
+        "ioBroker",
+        "web",
+        "socket",
+        "web-socket"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/ioBroker/ioBroker.socket-classes"
+    },
+    "dependencies": {
+        "@iobroker/adapter-core": "^3.2.2",
+        "axios": "^1.7.7",
+        "cookie-parser": "^1.4.6",
+        "passport": "^0.7.0"
+    },
+    "devDependencies": {
+        "@alcalzone/release-script": "^3.8.0",
+        "@alcalzone/release-script-plugin-license": "^3.7.0",
+        "@iobroker/eslint-config": "^0.1.6",
+        "@iobroker/ws-server": "^3.0.0",
+        "@iobroker/types": "^7.0.0-alpha.1-20241001-61327866b",
+        "@types/axios": "^0.14.0",
+        "@types/node": "^22.7.4",
+        "chai": "^4.5.0",
+        "iobroker.js-controller": "^7.0.0-alpha.1-20241001-61327866b",
+        "mocha": "^10.7.3",
+        "typescript": "^5.6.2"
+    },
+    "bugs": {
+        "url": "https://github.com/ioBroker/ioBroker.web/issues"
+    },
+    "main": "index.js",
+    "files": [
+        "LICENSE",
+        "lib/",
+        "index.js"
+    ],
+    "scripts": {
+        "lint": "eslint -c eslint.config.mjs",
+        "test": "node node_modules/mocha/bin/mocha --exit",
+        "release": "release-script",
+        "release-patch": "release-script patch --no-update-lockfile --yes",
+        "release-minor": "release-script minor --no-update-lockfile --yes",
+        "release-major": "release-script major --no-update-lockfile --yes",
+        "update-packages": "ncu --upgrade",
+        "tsc": "tsc -p tsconfig.build.json",
+        "docs": "node tasks",
+        "npm": "npm i -f"
+    },
+    "license": "MIT",
+    "maintainers": [
+        {
+            "name": "bluefox",
+            "email": "dogafox@gmail.com"
+        }
+    ]
 }

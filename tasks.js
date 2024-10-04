@@ -1,5 +1,5 @@
-const gulp = require('gulp');
-const fs = require('node:fs');
+const { readFileSync, writeFileSync } = require('node:fs');
+const SocketCommands = require('./lib/socketCommands');
 
 const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/gm;
 const ARGUMENT_NAMES = /([^\s,]+)/g;
@@ -11,6 +11,7 @@ function getParamNames(func) {
     }
     return result;
 }
+
 function getParamComments(func) {
     const fnStr = func
         .toString()
@@ -39,7 +40,7 @@ function getParamComments(func) {
             const parts = comments[i].slice(7).trim().split(' ');
             params[parts[1]] = {
                 type: parts[0].substring(1, parts[0].length - 1),
-                desc: parts.slice(3).join(' ')
+                desc: parts.slice(3).join(' '),
             };
         }
     }
@@ -48,7 +49,7 @@ function getParamComments(func) {
 }
 
 function replaceReadme(key, text) {
-    const readme = fs.readFileSync('README.md', 'utf8');
+    const readme = readFileSync('README.md', 'utf8');
     const lines = readme.split('\n');
     const result = [];
     let skip = false;
@@ -64,7 +65,7 @@ function replaceReadme(key, text) {
             result.push(lines[i]);
         }
     }
-    fs.writeFileSync('README.md', result.join('\n'));
+    writeFileSync('README.md', result.join('\n'));
 }
 
 function getCommands(Commands, index) {
@@ -96,19 +97,24 @@ function getCommands(Commands, index) {
     return links.concat(texts);
 }
 
-gulp.task('webList', done => {
+if (process.argv.includes('--webList')) {
     const SocketCommands = require('./lib/socketCommands');
     const texts = getCommands(SocketCommands, '_w');
 
     replaceReadme('WEB_METHODS', texts.join('\n'));
-    done();
-});
-
-gulp.task('adminList', done => {
+} else if (process.argv.includes('--adminList')) {
     const SocketCommands = require('./lib/socketCommandsAdmin');
     const texts = getCommands(SocketCommands, '_a');
 
     replaceReadme('ADMIN_METHODS', texts.join('\n'));
-    done();
-});
-gulp.task('default', gulp.series('webList', 'adminList'));
+} else {
+    let SocketCommands = require('./lib/socketCommands');
+    let texts = getCommands(SocketCommands, '_w');
+
+    replaceReadme('WEB_METHODS', texts.join('\n'));
+
+    SocketCommands = require('./lib/socketCommandsAdmin');
+    texts = getCommands(SocketCommands, '_a');
+
+    replaceReadme('ADMIN_METHODS', texts.join('\n'));
+}
