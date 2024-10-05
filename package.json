@@ -54,6 +54,7 @@
     "release-minor": "release-script minor --no-update-lockfile --yes",
     "release-major": "release-script major --no-update-lockfile --yes",
     "update-packages": "ncu --upgrade",
+    "npm": "npm install --ignore-script",
     "docs": "gulp"
   },
   "license": "MIT",
