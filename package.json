@@ -1,6 +1,6 @@
 {
     "name": "@iobroker/socket-classes",
-    "version": "1.5.6",
+    "version": "1.6.0",
     "description": "ioBroker server-side web sockets",
     "author": {
         "name": "bluefox",
@@ -31,11 +31,11 @@
         "@alcalzone/release-script-plugin-license": "^3.7.0",
         "@iobroker/eslint-config": "^0.1.6",
         "@iobroker/ws-server": "^3.0.0",
-        "@iobroker/types": "^7.0.0-alpha.1-20241001-61327866b",
+        "@iobroker/types": "^6.0.11",
         "@types/axios": "^0.14.0",
         "@types/node": "^22.7.4",
         "chai": "^4.5.0",
-        "iobroker.js-controller": "^7.0.0-alpha.1-20241001-61327866b",
+        "iobroker.js-controller": "^6.0.11",
         "mocha": "^10.7.3",
         "typescript": "^5.6.2"
     },
@@ -66,5 +66,8 @@
             "name": "bluefox",
             "email": "dogafox@gmail.com"
         }
-    ]
+    ],
+    "overrides": {
+        "@iobroker/adapter-core": "^3.1.6"
+    }
 }

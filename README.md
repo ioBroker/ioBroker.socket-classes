@@ -1,6 +1,6 @@
 # @iobroker/socket-classes
 
-This library is used for following adapters:
+This library is used at least for the following adapters:
 - [iobroker.admin](https://github.com/ioBroker/ioBroker.admin)
 - [iobroker.cloud](https://github.com/ioBroker/ioBroker.cloud)
 - [iobroker.socketio](https://github.com/ioBroker/ioBroker.socketio)
@@ -9,7 +9,7 @@ This library is used for following adapters:
 - [iobroker.iot](https://github.com/ioBroker/ioBroker.iot)
 
 ## Usage as admin
-```
+```js
 const TTL_SEC      = 3600;
 
 const SocketAdmin  = require('@iobroker/socket-classes').SocketAdmin;
@@ -40,7 +40,7 @@ io.close();
 ```
 
 ## Usage as socket (ws or socketio)
-```
+```js
 const TTL_SEC      = 3600;
 
 const ws           = require('@iobroker/ws-server');
@@ -65,12 +65,12 @@ io.close();
 
 ## GUI subscribes
 GUI client can send to desired instance the `subscribe` message
-```
+```js
     socket.emit('clientSubscribe', 'cameras.0', 'startCamera', {width: 640, height: 480}, result => console.log('Started: ' + result));
 ```
 
 The instance 'cameras.0' will receive message `clientSubscribe` with information who want to receive messages.
-```
+```js
 adapter.on('message', obj => {
     if (obj?.command === 'clientSubscribe') {
         if (obj?.message.type && obj.message.type.startsWith('startCamera/')) {
@@ -103,7 +103,7 @@ adapter.on('message', obj => {
 
 and after that client will receive messages from instance
 
-```
+```js
 function sendImage(camera, data) {
     this.subscribes.forEach(it => {
         if (it.camera !== camera) {
@@ -979,6 +979,9 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) Added support of iobroker.SocketIO with typescript
+
 ### 1.5.6 (2024-06-26)
 * (bluefox) Corrected call of getObjectView with null parameter
 
