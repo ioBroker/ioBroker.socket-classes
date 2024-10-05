@@ -38,6 +38,17 @@ export type PermissionCommands =
     | 'setState'
     | 'getObjectView'
     | 'delObject'
+
+    // admin
+    | 'getHostByIp'
+    | 'delGroup'
+    | 'addGroup'
+    | 'delUser'
+    | 'addUser'
+    | 'changePassword'
+    | 'readLogs'
+    | 'delState'
+    | 'extendObject'
 ;
 
 export const COMMANDS_PERMISSIONS: Record<PermissionCommands, { type: 'object' | 'state', operation: SocketOperation }> = {
@@ -115,6 +126,7 @@ export interface SocketClient {
     on: (command: SocketTextCommands, callback: (...args: any[]) => void) => void;
     _acl: {
         user: `system.user.${string}`;
+        groups: `system.group.${string}`[];
         object?: {
             read: boolean;
             write: boolean;
