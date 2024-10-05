@@ -979,7 +979,7 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
-### 1.6.0 (2024-10-04)
+### **WORK IN PROGRESS**
 * (bluefox) Added support of iobroker.SocketIO with typescript
 
 ### 1.5.6 (2024-06-26)

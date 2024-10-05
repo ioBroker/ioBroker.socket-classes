@@ -30,14 +30,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Use Node.js 20.x
         uses: actions/setup-node@v4
         with:
-          node-version: 18.x
+          node-version: 20.x
 
 
       - name: Install Dependencies
-        run: npm i -f
+        run: npm ci
 
 #      - name: Perform a type check
 #        run: npm run check:ts
@@ -57,7 +57,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        node-version: [16.x, 18.x, 20.x, 22.x]
+        node-version: [18.x, 20.x, 22.x]
         os: [ubuntu-latest]
 
     steps:
@@ -68,7 +68,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Install Dependencies
-        run: npm i -f
+        run: npm ci
 
       - name: Run local tests
         run: npm test
@@ -96,10 +96,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Use Node.js 20.x
         uses: actions/setup-node@v4
         with:
-          node-version: 18.x
+          node-version: 20.x
 
       - name: Extract the version and commit body from the tag
         id: extract_release
@@ -116,7 +116,7 @@ jobs:
           echo "::set-output name=BODY::$BODY"
 
       - name: Install Dependencies
-        run: npm i -f
+        run: npm ci
 
       - name: Run Lint
         run: npm run lint
@@ -138,20 +138,3 @@ jobs:
           # Prerelease versions create pre-releases on GitHub
           prerelease: ${{ contains(steps.extract_release.outputs.VERSION, '-') }}
           body: ${{ steps.extract_release.outputs.BODY }}
-
-      #- name: Notify Sentry.io about the release
-      #  run: |
-      #    npm i -g @sentry/cli
-      #    export SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
-      #    export SENTRY_URL=https://sentry.iobroker.net
-      #    export SENTRY_ORG=iobroker
-      #    export SENTRY_PROJECT=iobroker-socketio
-      #    export SENTRY_VERSION=iobroker.socketio@${{ steps.extract_release.outputs.VERSION }}
-      #    sentry-cli releases new $SENTRY_VERSION
-      #    sentry-cli releases finalize $SENTRY_VERSION
-
-        # Add the following line BEFORE finalize if repositories are connected in Sentry
-        # sentry-cli releases set-commits $SENTRY_VERSION --auto
-
-        # Add the following line BEFORE finalize if sourcemap uploads are needed
-        # sentry-cli releases files $SENTRY_VERSION upload-sourcemaps build/
