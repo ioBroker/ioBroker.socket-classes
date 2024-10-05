@@ -1,6 +1,6 @@
 # @iobroker/socket-classes
 
-This library is used for following adapters:
+This library is used at least for the following adapters:
 - [iobroker.admin](https://github.com/ioBroker/ioBroker.admin)
 - [iobroker.cloud](https://github.com/ioBroker/ioBroker.cloud)
 - [iobroker.socketio](https://github.com/ioBroker/ioBroker.socketio)
