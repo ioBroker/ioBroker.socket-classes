@@ -14,7 +14,6 @@ export type PermissionCommands =
     | 'getUserPermissions'
     | 'getVersion'
     | 'getAdapterName'
-
     | 'readFile'
     | 'readFile64'
     | 'writeFile64'
@@ -26,13 +25,11 @@ export type PermissionCommands =
     | 'chmodFile'
     | 'chownFile'
     | 'fileExists'
-
     | 'getObject'
     | 'setObject'
     | 'getObjects'
     | 'subscribeObjects'
     | 'unsubscribeObjects'
-
     | 'getStates'
     | 'getState'
     | 'setState'
@@ -48,10 +45,12 @@ export type PermissionCommands =
     | 'changePassword'
     | 'readLogs'
     | 'delState'
-    | 'extendObject'
-;
+    | 'extendObject';
 
-export const COMMANDS_PERMISSIONS: Record<PermissionCommands, { type: 'object' | 'state', operation: SocketOperation }> = {
+export const COMMANDS_PERMISSIONS: Record<
+    PermissionCommands,
+    { type: 'object' | 'state'; operation: SocketOperation }
+> = {
     getObject: { type: 'object', operation: 'read' },
     getObjects: { type: 'object', operation: 'list' },
     getObjectView: { type: 'object', operation: 'list' },
@@ -105,7 +104,7 @@ export const COMMANDS_PERMISSIONS: Record<PermissionCommands, { type: 'object' |
     authEnabled: { type: '', operation: '' },
     disconnect: { type: '', operation: '' },
     listPermissions: { type: '', operation: '' },
-    getUserPermissions: { type: 'object', operation: 'read' }
+    getUserPermissions: { type: 'object', operation: 'read' },
 };
 
 export type SocketSubscribeTypes = 'fileChange' | 'stateChange' | 'objectChange' | 'log';
@@ -133,19 +132,19 @@ export interface SocketClient {
             create: boolean;
             list: boolean;
             delete: boolean;
-        }
+        };
         state?: {
             read: boolean;
             write: boolean;
             create: boolean;
             list: boolean;
             delete: boolean;
-        }
+        };
     };
     subscribe: {
-        fileChange: { regex: RegExp, pattern: string }[];
-        stateChange: { regex: RegExp, pattern: string }[];
-        objectChange: { regex: RegExp, pattern: string }[];
-        log: { regex: RegExp, pattern: string }[];
+        fileChange: { regex: RegExp; pattern: string }[];
+        stateChange: { regex: RegExp; pattern: string }[];
+        objectChange: { regex: RegExp; pattern: string }[];
+        log: { regex: RegExp; pattern: string }[];
     };
 }

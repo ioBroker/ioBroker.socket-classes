@@ -1,7 +1,7 @@
 /**
  *      Class Socket
  *
- *      Copyright 2014-2023 bluefox <dogafox@gmail.com>,
+ *      Copyright 2014-2024 bluefox <dogafox@gmail.com>,
  *      MIT License
  *
  */
@@ -11,16 +11,41 @@ import { SocketIO } from '@iobroker/ws-server';
 import SocketCommands from './socketCommands';
 import { type Store } from './passportSocket';
 import { SocketClient, type SocketSubscribeTypes } from './types';
+import { AddressInfo } from 'node:net';
 
 interface SocketSettings {
     language?: ioBroker.Languages;
     defaultUser?: string;
-    ttl?: number | string;
+    ttl?: number;
     secure?: boolean;
     auth?: boolean;
     crossDomain?: boolean;
-    whiteListSettings?: boolean;
+    whiteListSettings?: any;
     extensions?: (socket: any) => void;
+    port?: number;
+
+    // socket.io attributes
+    compatibilityV2?: boolean;
+    forceWebSockets?: boolean;
+}
+
+interface SocketIoOptions {
+    transports?: 'websocket'[];
+    allowEIO3?: boolean;
+    cookie?: {
+        cookieName: string;
+        cookieHttpOnly: boolean;
+        cookiePath: string;
+    };
+    maxHttpBufferSize?: number;
+    pingInterval: number;
+    pingTimeout: number;
+    cors?: {
+        // for socket.4.x
+        origin: number;
+        allowedHeaders: string[];
+        credentials: boolean;
+    };
 }
 
 type Server = (HttpServer | HttpsServer) & { __inited?: boolean };
@@ -33,8 +58,7 @@ type Server = (HttpServer | HttpsServer) & { __inited?: boolean };
 class SocketCommon {
     static COMMAND_RE_AUTHENTICATE = 'reauthenticate';
 
-    // @ts-expect-error server actually cannot be null
-    private server: SocketIO;
+    private server: Server | null = null;
     private serverMode: boolean = false;
     private settings: SocketSettings;
     private readonly adapter: ioBroker.Adapter;
@@ -42,8 +66,10 @@ class SocketCommon {
     private store: Store | null = null; // will be set in __initAuthentication
     // @ts-expect-error commands actually cannot be null
     private commands: SocketCommands;
-    private noDisconnect: any;
+    private readonly noDisconnect: boolean;
     private readonly eventHandlers: Record<string, (socket: any, error?: string) => void> = {};
+    // Structure for socket.io 4
+    private allNamespaces: any;
 
     constructor(settings: SocketSettings, adapter: ioBroker.Adapter) {
         this.settings = settings || {};
@@ -56,23 +82,23 @@ class SocketCommon {
             this.settings.defaultUser = `system.user.${this.settings.defaultUser}`;
         }
 
-        this.settings.ttl = parseInt(this.settings.ttl as string, 10) || 3600;
+        this.settings.ttl = parseInt(this.settings.ttl as unknown as string, 10) || 3600;
     }
 
-    __getIsNoDisconnect() {
+    __getIsNoDisconnect(): boolean {
         throw new Error('"__getIsNoDisconnect" must be implemented in SocketCommon!');
     }
 
-    __initAuthentication(_authOptions: { store: Store; userKey: string; secret: string }) {
+    __initAuthentication(_authOptions: { store: Store; userKey: string; secret: string }): void {
         throw new Error('"__initAuthentication" must be implemented in SocketCommon!');
     }
 
     // Extract username from socket
-    __getUserFromSocket(_socket: SocketClient, _callback: (error: string, user?: string) => void) {
+    __getUserFromSocket(_socket: SocketClient, _callback: (error: string, user?: string) => void): void {
         throw new Error('"__getUserFromSocket" must be implemented in SocketCommon!');
     }
 
-    __getClientAddress(_socket: SocketClient) {
+    __getClientAddress(_socket: SocketClient): AddressInfo {
         throw new Error('"__getClientAddress" must be implemented in SocketCommon!');
     }
 
@@ -81,11 +107,11 @@ class SocketCommon {
         throw new Error('"__updateSession" must be implemented in SocketCommon!');
     }
 
-    __getSessionID(_socket: SocketClient) {
+    __getSessionID(_socket: SocketClient): string | null {
         throw new Error('"__getSessionID" must be implemented in SocketCommon!');
     }
 
-    addEventHandler(eventName: string, handler: (socket: any, error?: string) => void) {
+    addEventHandler(eventName: string, handler: (socket: any, error?: string) => void): void {
         this.eventHandlers[eventName] = handler;
     }
 
@@ -93,7 +119,7 @@ class SocketCommon {
         server: Server,
         socketClass: typeof SocketIO,
         authOptions: { store: Store; userKey: string; secret: string },
-        socketOptions,
+        socketOptions?: SocketIoOptions,
     ) {
         this.serverMode = !!socketClass;
 
@@ -159,12 +185,12 @@ class SocketCommon {
             });
         }
 
-        this.server.on('error', (error: Error, details) => {
+        this.server.on('error', (error: Error, details: unknown): void => {
             // ignore "failed connection" as it already shown
             if (!error?.message?.includes('failed connection')) {
                 if (
                     error?.message?.includes('authentication failed') ||
-                    (details && details.toString().includes('authentication failed'))
+                    details?.toString().includes('authentication failed')
                 ) {
                     this.adapter.log.debug(
                         `Error: ${error?.message || JSON.stringify(error)}${details ? ` - ${details}` : ''}`,
@@ -178,7 +204,7 @@ class SocketCommon {
         });
 
         // support of dynamic namespaces (because of reverse proxy)
-        this.allNamespaces?.on('error', (error: Error, details) => {
+        this.allNamespaces?.on('error', (error: Error, details: unknown): void => {
             // ignore "failed connection" as it already shown
             if (!error || !error.message || !error.message.includes('failed connection')) {
                 if (error && error.message && error.message.includes('authentication failed')) {

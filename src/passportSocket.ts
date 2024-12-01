@@ -64,7 +64,19 @@ export function authorize(options: {
     ) => void;
     fail: (data: any, message: string, critical: boolean, accept: (err: Error | null) => void) => void;
     success: (data: any, accept: (err: Error | null) => void) => void;
-}) {
+}): (
+    data: {
+        headers: {
+            cookie: string;
+        };
+        url: string;
+        query: Record<string, string>;
+        cookie: Record<string, string> | undefined;
+        sessionID: string;
+        user: { logged_in: boolean };
+    },
+    accept: (err: Error | null) => void,
+) => void {
     const defaults: { key: string; secret: null | string; store: Store | null; userProperty: 'user' } = {
         key: 'connect.sid',
         secret: null,
@@ -96,7 +108,7 @@ export function authorize(options: {
             user: { logged_in: boolean };
         },
         accept: (err: Error | null) => void,
-    ) {
+    ): void {
         data.query = getQuery(data.url);
 
         if (options.checkUser && data.query.user && data.query.pass) {
