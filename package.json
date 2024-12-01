@@ -22,8 +22,8 @@
   },
   "dependencies": {
     "@iobroker/adapter-core": "^3.2.2",
-    "axios": "^1.7.7",
-    "cookie-parser": "^1.4.6",
+    "axios": "^1.7.8",
+    "cookie-parser": "^1.4.7",
     "passport": "^0.7.0"
   },
   "devDependencies": {
@@ -33,7 +33,7 @@
     "chai": "^4.5.0",
     "gulp": "^4.0.2",
     "iobroker.js-controller": "^6.0.11",
-    "mocha": "^10.7.3"
+    "mocha": "^10.8.2"
   },
   "bugs": {
     "url": "https://github.com/ioBroker/ioBroker.web/issues"
