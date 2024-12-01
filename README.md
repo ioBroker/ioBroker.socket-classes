@@ -979,35 +979,38 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
+### 1.6.2 (2024-12-01)
+* (@GermanBluefox) Caught the error if no authentication and logout called
+
 ### 1.6.1 (2024-10-05)
-* (bluefox) Added support of iobroker.SocketIO with typescript
+* (@GermanBluefox) Added support of iobroker.SocketIO with typescript
 
 ### 1.5.6 (2024-06-26)
-* (bluefox) Corrected call of getObjectView with null parameter
+* (@GermanBluefox) Corrected call of getObjectView with null parameter
 
 ### 1.5.5 (2024-06-26)
-* (bluefox) updated packages
+* (@GermanBluefox) updated packages
 
 ### 1.5.4 (2024-06-02)
-* (bluefox) extend `getCompactInstances`method with version information
+* (@GermanBluefox) extend `getCompactInstances`method with version information
 
 ### 1.5.2 (2024-05-28)
 * (foxriver76) ensure compatible `adapter-core` version
 
 ### 1.5.0 (2024-02-22)
-* (bluefox) Extended getObjects function with the possibility to read the list of IDs in admin
+* (@GermanBluefox) Extended getObjects function with the possibility to read the list of IDs in admin
 
 ### 1.4.6 (2023-10-19)
-* (bluefox) Added `publishInstanceMessageAll` command
+* (@GermanBluefox) Added `publishInstanceMessageAll` command
 
 ### 1.4.4 (2023-10-11)
-* (bluefox) Caught errors by subscribe/unsubscribe
+* (@GermanBluefox) Caught errors by subscribe/unsubscribe
 
 ### 1.4.3 (2023-10-07)
 * (foxriver76) do not await the subscribes anymore
 
 ### 1.4.2 (2023-09-28)
-* (bluefox) Corrected error by unsubscribing on client disconnect
+* (@GermanBluefox) Corrected error by unsubscribing on client disconnect
 
 ### 1.4.1 (2023-09-12)
 * (foxriver76) do not cancel follow subscribes if one subscribe has an error
@@ -1016,126 +1019,126 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 * (foxriver76) fixed crash on invalid patterns with js-controller version 5
 
 ### 1.3.3 (2023-08-01)
-* (bluefox) Implemented subscribing of a client on messages from specific instance
-* (bluefox) Moved checkFeatureSupported to regular connection and not only admin
+* (@GermanBluefox) Implemented subscribing of a client on messages from specific instance
+* (@GermanBluefox) Moved checkFeatureSupported to regular connection and not only admin
 
 ### 1.2.0 (2023-07-07)
 * (foxriver76) fixed crash on invalid patterns with js-controller version 5
-* (bluefox) extended the getObjects function with the possibility to read the list of IDs
+* (@GermanBluefox) extended the getObjects function with the possibility to read the list of IDs
 
 ### 1.1.5 (2023-03-13)
-* (bluefox) Added command `name`
+* (@GermanBluefox) Added command `name`
 
 ### 1.1.3 (2023-03-12)
-* (bluefox) Treat `json5` as `json`
+* (@GermanBluefox) Treat `json5` as `json`
 
 ### 1.1.2 (2023-03-03)
-* (bluefox) Allow deletion of fullcalendar objects
+* (@GermanBluefox) Allow deletion of fullcalendar objects
 
 ### 1.1.1 (2022-12-22)
-* (bluefox) Corrected error with subscribe
+* (@GermanBluefox) Corrected error with subscribe
 
 ### 1.1.0 (2022-12-22)
-* (bluefox) Added user check to many commands
-* (bluefox) Downgrade axios to 0.27.2
+* (@GermanBluefox) Added user check to many commands
+* (@GermanBluefox) Downgrade axios to 0.27.2
 
 ### 1.0.2 (2022-11-08)
-* (bluefox) Function `getObjects`for web was extended by devices, channels and enums
+* (@GermanBluefox) Function `getObjects`for web was extended by devices, channels and enums
 
 ### 1.0.1 (2022-10-10)
-* (bluefox) Fixed error with delObject
+* (@GermanBluefox) Fixed error with delObject
 
 ### 0.5.5 (2022-10-09)
 * (Apollon77) Prepare for future js-controller versions
 
 ### 0.5.4 (2022-09-23)
-* (bluefox) Fixed error in `delObjects` method
+* (@GermanBluefox) Fixed error in `delObjects` method
 
 ### 0.5.3 (2022-08-24)
-* (bluefox) Caught error by subscribing
+* (@GermanBluefox) Caught error by subscribing
 
 ### 0.5.2 (2022-08-19)
-* (bluefox) Added command `getCompactSystemRepositories`
+* (@GermanBluefox) Added command `getCompactSystemRepositories`
 
 ### 0.5.0 (2022-07-20)
-* (bluefox) Buffer conversion errors caught and handled
+* (@GermanBluefox) Buffer conversion errors caught and handled
 
 ### 0.4.12 (2022-07-08)
-* (bluefox) Corrected getAdapterInstances method
+* (@GermanBluefox) Corrected getAdapterInstances method
 
 ### 0.4.11 (2022-07-05)
-* (bluefox) Corrected log transportation
+* (@GermanBluefox) Corrected log transportation
 
 ### 0.4.10 (2022-06-22)
-* (bluefox) Corrected getAdapterInstances
+* (@GermanBluefox) Corrected getAdapterInstances
 
 ### 0.4.9 (2022-06-20)
-* (bluefox) Do not show error with failed authentication
+* (@GermanBluefox) Do not show error with failed authentication
 
 ### 0.4.7 (2022-06-20)
-* (bluefox) Allowed overloading system language
+* (@GermanBluefox) Allowed overloading system language
 
 ### 0.4.6 (2022-06-20)
-* (bluefox) updated `passport`
+* (@GermanBluefox) updated `passport`
 
 ### 0.4.5 (2022-06-20)
-* (bluefox) allowed running socket.io behind reverse proxy
+* (@GermanBluefox) allowed running socket.io behind reverse proxy
 
 ### 0.4.4 (2022-06-09)
-* (bluefox) Do not show requireLog message
+* (@GermanBluefox) Do not show requireLog message
 
 ### 0.4.3 (2022-06-03)
-* (bluefox) Allowed call of getAdapterInstances for non admin
+* (@GermanBluefox) Allowed call of getAdapterInstances for non admin
 
 ### 0.4.2 (2022-05-23)
-* (bluefox) Corrected renameFile command for admin
+* (@GermanBluefox) Corrected renameFile command for admin
 
 ### 0.4.1 (2022-05-23)
-* (bluefox) Corrected changePassword command for admin
+* (@GermanBluefox) Corrected changePassword command for admin
 
 ### 0.4.0 (2022-05-19)
-* (bluefox) Added support of socket.io 4.x
+* (@GermanBluefox) Added support of socket.io 4.x
 
 ### 0.3.2 (2022-05-19)
-* (bluefox) Hide warn messages
+* (@GermanBluefox) Hide warn messages
 
 ### 0.3.1 (2022-05-16)
-* (bluefox) Added back compatibility with js-controller@4.0  for `writeDirAsZip`
+* (@GermanBluefox) Added back compatibility with js-controller@4.0  for `writeDirAsZip`
 
 ### 0.3.0 (2022-05-16)
-* (bluefox) Process `writeDirAsZip` locally
+* (@GermanBluefox) Process `writeDirAsZip` locally
 
 ### 0.2.1 (2022-05-12)
-* (bluefox) fixed `getObjects` command
+* (@GermanBluefox) fixed `getObjects` command
 
 ### 0.2.0 (2022-05-09)
-* (bluefox) fixed `delObjects` command
+* (@GermanBluefox) fixed `delObjects` command
 
 ### 0.1.10 (2022-05-09)
-* (bluefox) Added support for fileChanges
+* (@GermanBluefox) Added support for fileChanges
 
 ### 0.1.9 (2022-05-07)
-* (bluefox) Corrected readLogs command and implement file subscriptions
+* (@GermanBluefox) Corrected readLogs command and implement file subscriptions
 
 ### 0.1.7 (2022-05-05)
-* (bluefox) Caught some sentry errors
+* (@GermanBluefox) Caught some sentry errors
 
 ### 0.1.6 (2022-05-05)
-* (bluefox) fixed `delObject` command
+* (@GermanBluefox) fixed `delObject` command
 
 ### 0.1.5 (2022-04-25)
-* (bluefox) added updateRatings
+* (@GermanBluefox) added updateRatings
 
 ### 0.1.4 (2022-04-24)
-* (bluefox) added passportSocket
+* (@GermanBluefox) added passportSocket
 
 ### 0.1.2 (2022-04-24)
-* (bluefox) initial commit
+* (@GermanBluefox) initial commit
 
 ## License
 The MIT License (MIT)
 
-Copyright (c) 2020-2024 Bluefox <dogafox@gmail.com>
+Copyright (c) 2020-2024 @GermanBluefox <dogafox@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
