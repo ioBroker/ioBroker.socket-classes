@@ -979,7 +979,7 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 1.6.2 (2024-12-01)
 * (@GermanBluefox) Caught the error if no authentication and logout called
 
 ### 1.6.1 (2024-10-05)
