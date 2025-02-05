@@ -45,11 +45,10 @@
     "bugs": {
         "url": "https://github.com/ioBroker/ioBroker.web/issues"
     },
-    "main": "index.js",
+    "main": "dist/index.js",
     "files": [
         "LICENSE",
-        "lib/",
-        "index.js"
+        "dist/"
     ],
     "scripts": {
         "lint": "eslint -c eslint.config.mjs",
