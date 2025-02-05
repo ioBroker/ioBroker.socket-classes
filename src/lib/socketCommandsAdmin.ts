@@ -4,8 +4,9 @@ import type os from 'node:os';
 import { existsSync, readdirSync, lstatSync } from 'node:fs';
 
 import type { tools } from '@iobroker/js-controller-common-db';
-import SocketCommands, { type Ratings, type SocketDataContext } from './socketCommands';
-import type { SocketCallback, SocketClient } from './types';
+import { type Socket as WebSocketClient } from '@iobroker/ws-server';
+import { SocketCommands, type Ratings, type SocketDataContext } from './socketCommands';
+import type { SocketCallback } from '../types';
 
 export interface InstanceConfig {
     id: string;
@@ -44,7 +45,7 @@ interface SocketAdapterSettings {
     accessLimit?: any;
     accessAllowedConfigs?: string[];
     accessAllowedTabs?: string[];
-    extensions?: (socket: SocketClient) => void;
+    extensions?: (socket: WebSocketClient) => void;
 }
 
 export interface AdminTab {
@@ -77,7 +78,7 @@ export interface RepoAdapterObject extends ioBroker.AdapterCommon {
 const ACL_READ = 4;
 // const ACL_WRITE = 2;
 
-export default class SocketCommandsAdmin extends SocketCommands {
+export class SocketCommandsAdmin extends SocketCommands {
     static ALLOW_CACHE: string[] = [
         'getRepository',
         'getInstalled',
@@ -89,8 +90,10 @@ export default class SocketCommandsAdmin extends SocketCommands {
         'getLogs',
         'getHostInfo',
     ];
-    private readonly objects: Record<string, ioBroker.Object>;
+
     public readonly states: Record<string, ioBroker.State>;
+
+    private readonly objects: Record<string, ioBroker.Object>;
     private thresholdInterval: NodeJS.Timeout | null = null;
     private readonly cmdSessions: Record<string, any> = {};
     private eventsThreshold: {
@@ -109,7 +112,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
 
     constructor(
         adapter: ioBroker.Adapter,
-        updateSession: (socket: SocketClient) => boolean,
+        updateSession: (socket: WebSocketClient) => boolean,
         context: SocketDataContext,
         objects: Record<string, ioBroker.Object>,
         states: Record<string, ioBroker.State>,
@@ -140,7 +143,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
                     this.eventsThreshold.accidents++;
 
                     if (this.eventsThreshold.accidents >= this.eventsThreshold.repeatSeconds) {
-                        this._enableEventThreshold();
+                        this.#enableEventThreshold();
                     }
                 } else {
                     this.eventsThreshold.accidents = 0;
@@ -198,7 +201,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
         }
     }
 
-    async _readInstanceConfig(id: string, user: string, isTab: boolean, configs: InstanceConfig[]): Promise<void> {
+    async #readInstanceConfig(id: string, user: string, isTab: boolean, configs: InstanceConfig[]): Promise<void> {
         let obj: ioBroker.AdapterObject | null | undefined;
         try {
             obj = await this.adapter.getForeignObjectAsync<`system.adapter.${string}`>(`system.adapter.${id}`, {
@@ -221,10 +224,8 @@ export default class SocketCommandsAdmin extends SocketCommands {
                 jsonConfig: obj.common.jsonConfig,
                 version: obj.common.version,
             };
-            // @ts-expect-error Fixed in js-controller 7
             if (obj.common.adminUI?.config === 'materialize') {
                 config.materialize = true;
-                // @ts-expect-error Fixed in js-controller 7
             } else if (obj.common.adminUI?.config === 'json') {
                 config.jsonConfig = true;
             }
@@ -294,48 +295,47 @@ export default class SocketCommandsAdmin extends SocketCommands {
         }
     };
 
-    // remove this function when js.controller 4.x will be mainstream
-    _readLicenses(login: string, password: string): Promise<License[]> {
+    // remove this function when js.controller 4.x are mainstream
+    async #readLicenses(login: string, password: string): Promise<License[]> {
         const config = {
             headers: { Authorization: `Basic ${Buffer.from(`${login}:${password}`).toString('base64')}` },
             timeout: 4000,
             validateStatus: (status: number) => status < 400,
         };
 
-        return axios
-            .get(`https://iobroker.net:3001/api/v1/licenses`, config)
-            .then(response => {
-                if (response?.data?.length) {
-                    const now = Date.now();
-                    response.data = response.data.filter(
-                        (license: { validTill: string }) =>
-                            !license.validTill ||
-                            license.validTill === '0000-00-00 00:00:00' ||
-                            new Date(license.validTill).getTime() > now,
-                    );
-                }
-                return response.data;
-            })
-            .catch(error => {
-                if (error.response) {
-                    throw new Error(
-                        (error.response.data && error.response.data.error) ||
-                            error.response.data ||
-                            error.response.status,
-                    );
-                } else if (error.request) {
-                    throw new Error('no response');
-                } else {
-                    throw error;
-                }
-            });
+        try {
+            const response = await axios.get(`https://iobroker.net:3001/api/v1/licenses`, config);
+
+            if (response?.data?.length) {
+                const now = Date.now();
+                response.data = response.data.filter(
+                    (license: { validTill: string }) =>
+                        !license.validTill ||
+                        license.validTill === '0000-00-00 00:00:00' ||
+                        new Date(license.validTill).getTime() > now,
+                );
+            }
+            return response.data;
+        } catch (error) {
+            if (error.response) {
+                throw new Error(
+                    (error.response.data && error.response.data.error) || error.response.data || error.response.status,
+                );
+            }
+
+            if (error.request) {
+                throw new Error('no response');
+            }
+
+            throw error;
+        }
     }
 
-    // remove this function when js.controller 4.x will be mainstream
-    async _updateLicenses(login: string, password: string, options: { user: string }): Promise<License[]> {
+    // remove this function when js.controller 4.x is mainstream
+    async #updateLicenses(login: string, password: string, options: { user: string }): Promise<License[]> {
         // if login and password provided in the message, just try to read without saving it in system.licenses
         if (login && password) {
-            return this._readLicenses(login, password);
+            return this.#readLicenses(login, password);
         }
         // get actual object
         const systemLicenses = await this.adapter.getForeignObjectAsync('system.licenses', options);
@@ -357,7 +357,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
                 throw new Error('Cannot decode password');
             }
             try {
-                const licenses: License[] = await this._readLicenses(systemLicenses.native.login, password);
+                const licenses: License[] = await this.#readLicenses(systemLicenses.native.login, password);
                 // save licenses to system.licenses and remember the time
                 // merge the information together
                 const oldLicenses: License[] = systemLicenses.native.licenses || [];
@@ -437,7 +437,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
         }
     }
 
-    _enableEventThreshold(): void {
+    #enableEventThreshold(): void {
         if (!this.eventsThreshold.active) {
             this.eventsThreshold.active = true;
 
@@ -466,7 +466,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
         }
     }
 
-    _addUser(
+    #addUser(
         user: string,
         password: string,
         options: { user: string } | SocketCallback | null,
@@ -485,45 +485,46 @@ export default class SocketCommandsAdmin extends SocketCommands {
         }
 
         try {
-            void this.adapter.getForeignObject(`system.user.${user}`, options, (error, obj) => {
-                if (obj) {
-                    SocketCommands._fixCallback(callback, 'User yet exists');
-                } else {
-                    try {
-                        this.adapter.setForeignObject(
-                            `system.user.${user}`,
-                            {
-                                type: 'user',
-                                common: {
-                                    name: user,
-                                    enabled: true,
-                                    password: '',
+            void this.adapter
+                .getForeignObjectAsync(`system.user.${user}`, options)
+                .then(async (obj: ioBroker.UserObject | null | undefined): Promise<void> => {
+                    if (obj) {
+                        SocketCommands._fixCallback(callback, 'User yet exists');
+                    } else {
+                        try {
+                            await this.adapter.setForeignObject(
+                                `system.user.${user}`,
+                                {
+                                    type: 'user',
+                                    common: {
+                                        name: user,
+                                        enabled: true,
+                                        password: '',
+                                    },
+                                    native: {},
                                 },
-                                native: {},
-                            },
-                            options,
-                            async () => {
-                                try {
-                                    await this.adapter.setPassword(user, password, options || {}, callback);
-                                } catch (error) {
-                                    this.adapter.log.error(`[_addUser] cannot set password: ${error.toString()}`);
-                                    SocketCommands._fixCallback(callback, error);
-                                }
-                            },
-                        );
-                    } catch (error) {
-                        this.adapter.log.error(`[_addUser] cannot save user: ${error.toString()}`);
-                        SocketCommands._fixCallback(callback, error);
+                                options,
+                            );
+
+                            try {
+                                await this.adapter.setPassword(user, password, options || {}, callback);
+                            } catch (error) {
+                                this.adapter.log.error(`[#addUser] cannot set password: ${error.toString()}`);
+                                SocketCommands._fixCallback(callback, error);
+                            }
+                        } catch (error) {
+                            this.adapter.log.error(`[#addUser] cannot save user: ${error.toString()}`);
+                            SocketCommands._fixCallback(callback, error);
+                        }
                     }
-                }
-            });
+                });
         } catch (error) {
-            this.adapter.log.error(`[_addUser] cannot read user: ${error.toString()}`);
+            this.adapter.log.error(`[#addUser] cannot read user: ${error.toString()}`);
             SocketCommands._fixCallback(callback, error);
         }
     }
 
-    _delUser(user: string, options: { user: string } | null, callback?: SocketCallback): void {
+    #delUser(user: string, options: { user: string } | null, callback?: SocketCallback): void {
         try {
             void this.adapter.getForeignObject(`system.user.${user}`, options, (error, obj) => {
                 if (error || !obj) {
@@ -538,19 +539,19 @@ export default class SocketCommandsAdmin extends SocketCommands {
                                 SocketCommands._fixCallback(callback, error),
                             );
                         } catch (error) {
-                            this.adapter.log.error(`[_delUser] cannot delete user: ${error.toString()}`);
+                            this.adapter.log.error(`[#delUser] cannot delete user: ${error.toString()}`);
                             SocketCommands._fixCallback(callback, error);
                         }
                     }
                 }
             });
         } catch (error) {
-            this.adapter.log.error(`[_delUser] cannot read user: ${error.toString()}`);
+            this.adapter.log.error(`[#delUser] cannot read user: ${error.toString()}`);
             SocketCommands._fixCallback(callback, error);
         }
     }
 
-    _addGroup(
+    #addGroup(
         group: string,
         desc: ioBroker.StringOrTranslated | null,
         acl: Omit<ioBroker.PermissionSet, 'user' | 'groups'> | null,
@@ -624,23 +625,23 @@ export default class SocketCommandsAdmin extends SocketCommands {
                             native: {},
                         };
                         try {
-                            this.adapter.setForeignObject(`system.group.${group}`, obj, options, error =>
+                            void this.adapter.setForeignObject(`system.group.${group}`, obj, options, error =>
                                 SocketCommands._fixCallback(callback, error, obj),
                             );
                         } catch (error) {
-                            this.adapter.log.error(`[_addGroup] cannot write group: ${error.toString()}`);
+                            this.adapter.log.error(`[#addGroup] cannot write group: ${error.toString()}`);
                             SocketCommands._fixCallback(callback, error);
                         }
                     }
                 },
             );
         } catch (error) {
-            this.adapter.log.error(`[_addGroup] cannot read group: ${error.toString()}`);
+            this.adapter.log.error(`[#addGroup] cannot read group: ${error.toString()}`);
             SocketCommands._fixCallback(callback, error);
         }
     }
 
-    _delGroup(group: string, options: { user: string }, callback: SocketCallback): void {
+    #delGroup(group: string, options: { user: string }, callback: SocketCallback): void {
         try {
             void this.adapter.getForeignObject(`system.group.${group}`, options, (error, obj) => {
                 if (error || !obj) {
@@ -655,19 +656,19 @@ export default class SocketCommandsAdmin extends SocketCommands {
                                 SocketCommands._fixCallback(callback, error),
                             );
                         } catch (error) {
-                            this.adapter.log.error(`[_delGroup] cannot delete group: ${error.toString()}`);
+                            this.adapter.log.error(`[#delGroup] cannot delete group: ${error.toString()}`);
                             SocketCommands._fixCallback(callback, error);
                         }
                     }
                 }
             });
         } catch (error) {
-            this.adapter.log.error(`[_delGroup] cannot read group: ${error.toString()}`);
+            this.adapter.log.error(`[#delGroup] cannot read group: ${error.toString()}`);
             SocketCommands._fixCallback(callback, error);
         }
     }
 
-    static _checkObject(
+    static #checkObject(
         obj: ioBroker.Object,
         options: { user: string; groups: string[] },
         flag: 'list' | number,
@@ -701,23 +702,23 @@ export default class SocketCommandsAdmin extends SocketCommands {
         return true;
     }
 
-    _getAllObjects(socket: SocketClient, callback: SocketCallback): void {
+    #getAllObjects(socket: WebSocketClient, callback: SocketCallback): void {
         if (typeof callback !== 'function') {
-            return this.adapter.log.warn('[_getAllObjects] Invalid callback');
+            return this.adapter.log.warn('[#getAllObjects] Invalid callback');
         }
 
         if (this._checkPermissions(socket, 'getObjects', callback)) {
             if (this.objects) {
                 if (
                     socket._acl &&
-                    socket._acl.user !== 'system.user.admin' &&
+                    socket._acl?.user !== 'system.user.admin' &&
                     !socket._acl.groups.includes('system.group.administrator')
                 ) {
                     const result: Record<string, ioBroker.Object> = {};
                     for (const id in this.objects) {
                         if (
                             Object.prototype.hasOwnProperty.call(this.objects, id) &&
-                            SocketCommandsAdmin._checkObject(this.objects[id], socket._acl, ACL_READ /* 'read' */)
+                            SocketCommandsAdmin.#checkObject(this.objects[id], socket._acl, ACL_READ /* 'read' */)
                         ) {
                             result[id] = this.objects[id];
                         }
@@ -728,18 +729,18 @@ export default class SocketCommandsAdmin extends SocketCommands {
                 }
             } else {
                 try {
-                    this.adapter.getObjectList({ include_docs: true }, { user: socket._acl.user }, (_error, res) => {
+                    this.adapter.getObjectList({ include_docs: true }, { user: socket._acl?.user }, (_error, res) => {
                         this.adapter.log.info('received all objects');
                         const rows = res?.rows || [];
                         const objects: Record<string, ioBroker.Object> = {};
 
                         if (
                             socket._acl &&
-                            socket._acl.user !== 'system.user.admin' &&
+                            socket._acl?.user !== 'system.user.admin' &&
                             !socket._acl.groups.includes('system.group.administrator')
                         ) {
                             for (let i = 0; i < rows.length; i++) {
-                                if (SocketCommandsAdmin._checkObject(rows[i].doc, socket._acl, ACL_READ)) {
+                                if (SocketCommandsAdmin.#checkObject(rows[i].doc, socket._acl, ACL_READ)) {
                                     objects[rows[i].doc._id] = rows[i].doc;
                                 }
                             }
@@ -752,39 +753,39 @@ export default class SocketCommandsAdmin extends SocketCommands {
                         }
                     });
                 } catch (error) {
-                    this.adapter.log.error(`[_getAllObjects] ERROR: ${error.toString()}`);
+                    this.adapter.log.error(`[#getAllObjects] ERROR: ${error.toString()}`);
                     SocketCommands._fixCallback(callback, error);
                 }
             }
         }
     }
 
-    _initCommandsUser(): void {
-        this.commands.addUser = (socket: SocketClient, user: string, pass: string, callback?: SocketCallback) => {
+    #initCommandsUser(): void {
+        this.commands.addUser = (socket: WebSocketClient, user: string, pass: string, callback?: SocketCallback) => {
             // Add new user
             // @param {string} user - user name, like `benjamin`
             // @param {string} pass - user password
             // @param {function} callback - `function (error)`
             if (this._checkPermissions(socket, 'addUser', callback, user)) {
-                this._addUser(user, pass, { user: socket._acl.user }, (error, ...args) =>
+                this.#addUser(user, pass, { user: socket._acl?.user || '' }, (error, ...args) =>
                     SocketCommands._fixCallback(callback, error, ...args),
                 );
             }
         };
 
-        this.commands.delUser = (socket: SocketClient, user: string, callback?: SocketCallback) => {
+        this.commands.delUser = (socket: WebSocketClient, user: string, callback?: SocketCallback) => {
             // Delete existing user. Admin cannot be deleted.
             // @param {string} user - user name, like 'benjamin
             // @param {function} callback - `function (error)`
             if (this._checkPermissions(socket, 'delUser', callback, user)) {
-                this._delUser(user, { user: socket._acl.user }, (error, ...args) =>
+                this.#delUser(user, { user: socket._acl?.user || '' }, (error, ...args) =>
                     SocketCommands._fixCallback(callback, error, ...args),
                 );
             }
         };
 
         this.commands.addGroup = (
-            socket: SocketClient,
+            socket: WebSocketClient,
             group: string,
             desc: null | ioBroker.StringOrTranslated,
             acl: Omit<ioBroker.PermissionSet, 'user' | 'groups'> | null,
@@ -796,25 +797,25 @@ export default class SocketCommandsAdmin extends SocketCommands {
             // @param {object} acl - optional access control list object, like `{"object":{"list":true,"read":true,"write":false,"delete":false},"state":{"list":true,"read":true,"write":true,"create":true,"delete":false},"users":{"list":true,"read":true,"write":false,"create":false,"delete":false},"other":{"execute":false,"http":true,"sendto":false},"file":{"list":true,"read":true,"write":false,"create":false,"delete":false}}`
             // @param {function} callback - `function (error)`
             if (this._checkPermissions(socket, 'addGroup', callback, group)) {
-                this._addGroup(group, desc, acl, { user: socket._acl.user }, (error, ...args) =>
+                this.#addGroup(group, desc, acl, { user: socket._acl?.user || '' }, (error, ...args) =>
                     SocketCommands._fixCallback(callback, error, ...args),
                 );
             }
         };
 
-        this.commands.delGroup = (socket: SocketClient, group: string, callback?: SocketCallback): void => {
+        this.commands.delGroup = (socket: WebSocketClient, group: string, callback?: SocketCallback): void => {
             // Delete the existing group. Administrator group cannot be deleted.
             // @param {string} group - group name, like 'users`
             // @param {function} callback - `function (error)`
             if (this._checkPermissions(socket, 'delGroup', callback, group)) {
-                this._delGroup(group, { user: socket._acl.user }, (error, ...args) =>
+                this.#delGroup(group, { user: socket._acl?.user || '' }, (error, ...args) =>
                     SocketCommands._fixCallback(callback, error, ...args),
                 );
             }
         };
 
         this.commands.changePassword = (
-            socket: SocketClient,
+            socket: WebSocketClient,
             user: string,
             pass: string,
             callback?: SocketCallback,
@@ -823,9 +824,9 @@ export default class SocketCommandsAdmin extends SocketCommands {
             // @param {string} user - user name, like 'benjamin`
             // @param {string} pass - new password
             // @param {function} callback - `function (error)`
-            if (user === socket._acl.user || this._checkPermissions(socket, 'changePassword', callback, user)) {
+            if (user === socket._acl?.user || this._checkPermissions(socket, 'changePassword', callback, user)) {
                 try {
-                    void this.adapter.setPassword(user, pass, { user: socket._acl.user }, (error, ...args) =>
+                    void this.adapter.setPassword(user, pass, { user: socket._acl?.user }, (error, ...args) =>
                         SocketCommands._fixCallback(callback, error, ...args),
                     );
                 } catch (error) {
@@ -836,8 +837,8 @@ export default class SocketCommandsAdmin extends SocketCommands {
         };
     }
 
-    _initCommandsAdmin(): void {
-        this.commands.getHostByIp = (socket: SocketClient, ip: string, callback: SocketCallback): void => {
+    #initCommandsAdmin(): void {
+        this.commands.getHostByIp = (socket: WebSocketClient, ip: string, callback: SocketCallback): void => {
             // Read the host object by IP address
             // @param {string} ip - ip address. IPv4 or IPv6
             // @param {function} callback - `function (ip, obj)`. If host is not found, obj is null
@@ -846,7 +847,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
             }
             if (this._checkPermissions(socket, 'getHostByIp', callback, ip)) {
                 try {
-                    this.adapter.getObjectView('system', 'host', {}, { user: socket._acl.user }, (error, data) => {
+                    this.adapter.getObjectView('system', 'host', {}, { user: socket._acl?.user }, (error, data) => {
                         if (data && data.rows && data.rows.length) {
                             for (let i = 0; i < data.rows.length; i++) {
                                 const obj = data.rows[i].value;
@@ -880,7 +881,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
-        this.commands.requireLog = (socket: SocketClient, isEnabled: boolean, callback?: SocketCallback): void => {
+        this.commands.requireLog = (socket: WebSocketClient, isEnabled: boolean, callback?: SocketCallback): void => {
             // Activate or deactivate logging events. Events will be sent to the socket as `log` event. Adapter must have `common.logTransporter = true`
             // @param {boolean} isEnabled - is logging enabled
             // @param {function} callback - `function (error)`
@@ -897,7 +898,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
-        this.commands.readLogs = (socket: SocketClient, host: string, callback: SocketCallback): void => {
+        this.commands.readLogs = (socket: WebSocketClient, host: string, callback: SocketCallback): void => {
             // Get logs file from given host
             // @param {string} host - host id, like 'system.host.raspberrypi'
             // @param {function} callback - `function (error, files)`, where `files` is array of `{fileName: `log/hostname/transport/file`, size: 123}`
@@ -979,7 +980,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
-        this.commands.delState = (socket: SocketClient, id: string, callback?: SocketCallback): void => {
+        this.commands.delState = (socket: WebSocketClient, id: string, callback?: SocketCallback): void => {
             // Delete state. The corresponding object will be deleted too.
             // @param {string} id - state ID
             // @param {function} callback - `function (error)`
@@ -989,7 +990,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
                     delete this.states[id];
                 }
                 try {
-                    this.adapter.delForeignState(id, { user: socket._acl.user }, (error, ...args) =>
+                    this.adapter.delForeignState(id, { user: socket._acl?.user }, (error, ...args) =>
                         SocketCommands._fixCallback(callback, error, ...args),
                     );
                 } catch (error) {
@@ -1002,7 +1003,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
         // commands will be executed on host/controller
         // following response commands are expected: cmdStdout, cmdStderr, cmdExit
         this.commands.cmdExec = (
-            socket: SocketClient,
+            socket: WebSocketClient,
             host: string,
             id: number,
             cmd: string,
@@ -1027,17 +1028,17 @@ export default class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
-        this.commands.eventsThreshold = (_socket: SocketClient, isActive: boolean): void => {
+        this.commands.eventsThreshold = (_socket: WebSocketClient, isActive: boolean): void => {
             // Used only for admin to the limited number of events to the front-end.
             // @param {boolean} isActive - if true, then events will be limited
             if (!isActive) {
                 this.disableEventThreshold();
             } else {
-                this._enableEventThreshold();
+                this.#enableEventThreshold();
             }
         };
 
-        this.commands.getRatings = (_socket: SocketClient, update?: boolean, callback?: SocketCallback): void => {
+        this.commands.getRatings = (_socket: WebSocketClient, update?: boolean, callback?: SocketCallback): void => {
             // Read ratings of adapters
             // @param {boolean} update - if true, the ratings will be read from central server, if false from local cache
             // @param {function} callback - `function (error, ratings)`, where `ratings` is object like `{accuweather: {rating: {r: 3.33, c: 3}, 1.2.1: {r: 3, c: 1}},…}`
@@ -1048,13 +1049,13 @@ export default class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
-        this.commands.getCurrentInstance = (_socket: SocketClient, callback: SocketCallback): void => {
+        this.commands.getCurrentInstance = (_socket: WebSocketClient, callback: SocketCallback): void => {
             // Return current instance name like `admin.0`
             // @param {function} callback - `function (error, namespace)`
             SocketCommands._fixCallback(callback, null, this.adapter.namespace);
         };
 
-        this.commands.decrypt = (socket: SocketClient, encryptedText: string, callback: SocketCallback): void => {
+        this.commands.decrypt = (socket: WebSocketClient, encryptedText: string, callback: SocketCallback): void => {
             // Decrypts text with the system secret key
             // @param {string} encryptedText - encrypted text
             // @param {function} callback - `function (error, decryptedText)`
@@ -1062,7 +1063,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
                 SocketCommands._fixCallback(callback, null, this.adapter.decrypt(this.secret, encryptedText));
             } else {
                 try {
-                    void this.adapter.getForeignObject('system.config', { user: socket._acl.user }, (error, obj) => {
+                    void this.adapter.getForeignObject('system.config', { user: socket._acl?.user }, (error, obj) => {
                         if (obj && obj.native && obj.native.secret) {
                             this.secret = obj.native.secret;
                             SocketCommands._fixCallback(
@@ -1082,14 +1083,14 @@ export default class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
-        this.commands.encrypt = (socket: SocketClient, plainText: string, callback: SocketCallback): void => {
+        this.commands.encrypt = (socket: WebSocketClient, plainText: string, callback: SocketCallback): void => {
             // Encrypts text with the system secret key
             // @param {string} plainText - normal text
             // @param {function} callback - `function (error, encryptedText)`
             if (this.secret) {
                 SocketCommands._fixCallback(callback, null, this.adapter.encrypt(this.secret, plainText));
             } else {
-                void this.adapter.getForeignObject('system.config', { user: socket._acl.user }, (error, obj) => {
+                void this.adapter.getForeignObject('system.config', { user: socket._acl?.user }, (error, obj) => {
                     if (obj && obj.native && obj.native.secret) {
                         this.secret = obj.native.secret;
                         try {
@@ -1107,22 +1108,22 @@ export default class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
-        this.commands.getIsEasyModeStrict = (_socket: SocketClient, callback: SocketCallback): void => {
+        this.commands.getIsEasyModeStrict = (_socket: WebSocketClient, callback: SocketCallback): void => {
             // Returns if admin has easy mode enabled
             // @param {function} callback - `function (error, isEasyModeStrict)`
             SocketCommands._fixCallback(callback, null, (this.adapter.config as SocketAdapterSettings).accessLimit);
         };
 
-        this.commands.getEasyMode = (socket: SocketClient, callback: SocketCallback): void => {
+        this.commands.getEasyMode = (socket: WebSocketClient, callback: SocketCallback): void => {
             // Get easy mode configuration
             // @param {function} callback - `function (error, easyModeConfig)`, where `easyModeConfig` is object like `{strict: true, configs: [{_id: 'system.adapter.javascript.0', common: {...}}, {...}]}`
             // }`
             if (this._checkPermissions(socket, 'getObject', callback)) {
                 let user: string;
                 if ((this.adapter.config as SocketAdapterSettings).auth) {
-                    user = socket._acl.user;
+                    user = socket._acl?.user || '';
                 } else {
-                    user = (this.adapter.config as SocketAdapterSettings).defaultUser || socket._acl.user;
+                    user = (this.adapter.config as SocketAdapterSettings).defaultUser || socket._acl?.user || '';
                 }
 
                 if (!user.startsWith('system.user.')) {
@@ -1133,10 +1134,10 @@ export default class SocketCommandsAdmin extends SocketCommands {
                     const configs: InstanceConfig[] = [];
                     const promises: Promise<void>[] = [];
                     (this.adapter.config as SocketAdapterSettings).accessAllowedConfigs?.forEach(id =>
-                        promises.push(this._readInstanceConfig(id, user, false, configs)),
+                        promises.push(this.#readInstanceConfig(id, user, false, configs)),
                     );
                     (this.adapter.config as SocketAdapterSettings).accessAllowedTabs?.forEach(id =>
-                        promises.push(this._readInstanceConfig(id, user, true, configs)),
+                        promises.push(this.#readInstanceConfig(id, user, true, configs)),
                     );
 
                     void Promise.all(promises).then(() => {
@@ -1165,7 +1166,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
                                     }
                                     if (!obj.common.noConfig) {
                                         promises.push(
-                                            this._readInstanceConfig(
+                                            this.#readInstanceConfig(
                                                 obj._id.substring('system.adapter.'.length),
                                                 user,
                                                 false,
@@ -1187,7 +1188,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
-        this.commands.getAdapters = (socket: SocketClient, adapterName, callback: SocketCallback): void => {
+        this.commands.getAdapters = (socket: WebSocketClient, adapterName, callback: SocketCallback): void => {
             // Read all adapters objects
             // @param {string} adapterName - optional adapter name
             // @param {function} callback - `function (error, results)`, where `results` is array of objects like `{_id: 'system.adapter.javascript', common: {...}}`
@@ -1199,7 +1200,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
                         startkey: `system.adapter.${adapterName || ''}`,
                         endkey: `system.adapter.${adapterName || '\u9999'}`,
                     },
-                    { user: socket._acl.user },
+                    { user: socket._acl?.user },
                     (error, doc) => {
                         if (error) {
                             callback(error);
@@ -1226,7 +1227,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
         };
 
         this.commands.updateLicenses = (
-            socket: SocketClient,
+            socket: WebSocketClient,
             login: string,
             password: string,
             callback?: SocketCallback,
@@ -1256,15 +1257,15 @@ export default class SocketCommandsAdmin extends SocketCommands {
                         }
                     });
                 } else {
-                    // remove this branch when js-controller 4.x will be mainstream
-                    this._updateLicenses(login, password, { user: socket._acl.user })
+                    // remove this branch when js-controller 4.x is mainstream
+                    this.#updateLicenses(login, password, { user: socket._acl?.user || '' })
                         .then(licenses => SocketCommands._fixCallback(callback, null, licenses))
                         .catch(error => SocketCommands._fixCallback(callback, error));
                 }
             }
         };
 
-        this.commands.getCompactInstances = (socket: SocketClient, callback: SocketCallback): void => {
+        this.commands.getCompactInstances = (socket: WebSocketClient, callback: SocketCallback): void => {
             // Read all instances in short form to save bandwidth
             // @param {function} callback - `function (error, results)`, where `results` is an object like `{'system.adapter.javascript.0': {adminTab, name, icon, enabled}}`
             if (typeof callback === 'function') {
@@ -1273,7 +1274,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
                         'system',
                         'instance',
                         { startkey: `system.adapter.`, endkey: `system.adapter.\u9999` },
-                        { user: socket._acl.user },
+                        { user: socket._acl?.user },
                         (error, doc) => {
                             if (error) {
                                 SocketCommands._fixCallback(callback, error);
@@ -1308,7 +1309,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
-        this.commands.getCompactAdapters = (socket: SocketClient, callback: SocketCallback): void => {
+        this.commands.getCompactAdapters = (socket: WebSocketClient, callback: SocketCallback): void => {
             // Read all adapters in short for to save bandwidth
             // @param {function} callback - `function (error, results)`, where `results` is an object like `{'javascript': {icon, v: '1.0.1', iv: 'ignoredVersion}}`
             if (typeof callback === 'function') {
@@ -1317,7 +1318,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
                         'system',
                         'adapter',
                         { startkey: `system.adapter.`, endkey: `system.adapter.\u9999` },
-                        { user: socket._acl.user },
+                        { user: socket._acl?.user },
                         (error, doc) => {
                             if (error) {
                                 SocketCommands._fixCallback(callback, error);
@@ -1343,7 +1344,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
         };
 
         this.commands.getCompactInstalled = (
-            socket: SocketClient,
+            socket: WebSocketClient,
             host: string,
             callback: (result: string | Record<string, { version: string }>) => void,
         ): void => {
@@ -1370,11 +1371,11 @@ export default class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
-        this.commands.getCompactSystemConfig = (socket: SocketClient, callback: SocketCallback): void => {
+        this.commands.getCompactSystemConfig = (socket: WebSocketClient, callback: SocketCallback): void => {
             // Read system config in short form to save bandwidth
             // @param {function} callback - `function (error, systemConfig)`, where `systemConfig` is an object like `{common: {...}, native: {secret: 'aaa'}}`
             if (this._checkPermissions(socket, 'getObject', callback)) {
-                void this.adapter.getForeignObject('system.config', { user: socket._acl.user }, (error, obj) => {
+                void this.adapter.getForeignObject('system.config', { user: socket._acl?.user }, (error, obj) => {
                     obj = obj || ({} as ioBroker.SystemConfigObject);
                     const secret = obj && obj.native && obj.native.secret;
                     // @ts-expect-error to save the memory
@@ -1387,11 +1388,11 @@ export default class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
-        this.commands.getCompactSystemRepositories = (socket: SocketClient, callback: SocketCallback): void => {
+        this.commands.getCompactSystemRepositories = (socket: WebSocketClient, callback: SocketCallback): void => {
             // Read repositories from cache in short form to save bandwidth
             // @param {function} callback - `function (error, repositories)`, where `repositories` is an object like `{_id: 'system.repositories', common: {...}, native: {repositories: {default: {json: {_repoInfo: {...}}}}}}`
             if (this._checkPermissions(socket, 'getObject', callback)) {
-                void this.adapter.getForeignObject('system.repositories', { user: socket._acl.user }, (error, obj) => {
+                void this.adapter.getForeignObject('system.repositories', { user: socket._acl?.user }, (error, obj) => {
                     obj &&
                         obj.native &&
                         obj.native.repositories &&
@@ -1409,7 +1410,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
         };
 
         this.commands.getCompactRepository = (
-            socket: SocketClient,
+            socket: WebSocketClient,
             host: string,
             callback: (result: Record<string, { version: string; icon?: string }>) => void,
         ): void => {
@@ -1433,7 +1434,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
-        this.commands.getCompactHosts = (socket: SocketClient, callback: SocketCallback): void => {
+        this.commands.getCompactHosts = (socket: WebSocketClient, callback: SocketCallback): void => {
             // Read all hosts in short form to save bandwidth
             // @param {function} callback - `function (error, hosts)`, where `hosts` is an array of objects like `[{_id:'system.host.raspi',common:{name:'raspi',icon:'icon',color:'blue',installedVersion:'2.1.0'},native:{hardware:{networkInterfaces:[...]}}}]`
             if (this._checkPermissions(socket, 'getObject', callback)) {
@@ -1441,7 +1442,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
                     'system',
                     'host',
                     { startkey: 'system.host.', endkey: 'system.host.\u9999' },
-                    { user: socket._acl.user },
+                    { user: socket._acl?.user },
                     (error, doc) => {
                         if (error) {
                             SocketCommands._fixCallback(callback, error);
@@ -1489,18 +1490,18 @@ export default class SocketCommandsAdmin extends SocketCommands {
         };
     }
 
-    __initCommandsCommon(): void {
-        super.__initCommandsCommon();
+    protected _initCommandsCommon(): void {
+        super._initCommandsCommon();
 
-        this._initCommandsAdmin();
-        this._initCommandsUser();
+        this.#initCommandsAdmin();
+        this.#initCommandsUser();
     }
 
-    __initCommandsFiles(): void {
-        super.__initCommandsFiles();
+    protected _initCommandsFiles(): void {
+        super._initCommandsFiles();
 
         this.commands.writeFile = (
-            socket: SocketClient,
+            socket: WebSocketClient,
             _adapter,
             fileName,
             data64,
@@ -1516,14 +1517,14 @@ export default class SocketCommandsAdmin extends SocketCommands {
             if (this._checkPermissions(socket, 'writeFile', callback, fileName)) {
                 if (typeof options === 'function') {
                     callback = options;
-                    options = { user: socket._acl.user };
+                    options = { user: socket._acl?.user };
                 }
                 options = options || {};
-                options.user = socket._acl.user;
+                options.user = socket._acl?.user;
 
                 try {
                     const buffer = Buffer.from(data64, 'base64');
-                    this.adapter.writeFile(_adapter, fileName, buffer, { user: socket._acl.user }, (error, ...args) =>
+                    this.adapter.writeFile(_adapter, fileName, buffer, { user: socket._acl?.user }, (error, ...args) =>
                         SocketCommands._fixCallback(callback, error, ...args),
                     );
                 } catch (error) {
@@ -1534,18 +1535,18 @@ export default class SocketCommandsAdmin extends SocketCommands {
         };
     }
 
-    __initCommandsObjects(): void {
-        super.__initCommandsObjects();
+    _initCommandsObjects(): void {
+        super._initCommandsObjects();
 
-        this.commands.getAllObjects = (socket: SocketClient, callback: SocketCallback): void => {
+        this.commands.getAllObjects = (socket: WebSocketClient, callback: SocketCallback): void => {
             // Read absolutely all objects
             // @param {function} callback - `function (error, objects)`, where `objects` is an object like `{'system.adapter.admin.0': {...}, 'system.adapter.web.0': {...}}`
-            return this._getAllObjects(socket, callback);
+            return this.#getAllObjects(socket, callback);
         };
 
         // Identical to getAllObjects
         this.commands.getObjects = (
-            socket: SocketClient,
+            socket: WebSocketClient,
             list: string[] | SocketCallback | null,
             callback: SocketCallback,
         ): void => {
@@ -1560,7 +1561,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
                 if (this._checkPermissions(socket, 'getObject', callback)) {
                     if (typeof callback === 'function') {
                         try {
-                            this.adapter.getForeignObjects(list, { user: socket._acl.user }, (error, objs) =>
+                            this.adapter.getForeignObjects(list, { user: socket._acl?.user }, (error, objs) =>
                                 SocketCommands._fixCallback(callback, error, objs),
                             );
                         } catch (error) {
@@ -1572,12 +1573,12 @@ export default class SocketCommandsAdmin extends SocketCommands {
                     }
                 }
             } else {
-                this._getAllObjects(socket, callback);
+                this.#getAllObjects(socket, callback);
             }
         };
 
         this.commands.extendObject = (
-            socket: SocketClient,
+            socket: WebSocketClient,
             id: string,
             obj: Partial<ioBroker.Object>,
             callback?: SocketCallback,
@@ -1588,7 +1589,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
             // @param {function} callback - `function (error)`
             if (this._checkPermissions(socket, 'extendObject', callback, id)) {
                 try {
-                    this.adapter.extendForeignObject(id, obj, { user: socket._acl.user }, (error, ...args) =>
+                    this.adapter.extendForeignObject(id, obj, { user: socket._acl?.user }, (error, ...args) =>
                         SocketCommands._fixCallback(callback, error, ...args),
                     );
                 } catch (error) {
@@ -1598,7 +1599,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
-        this.commands.getForeignObjects = (socket: SocketClient, pattern, type, callback?: SocketCallback): void => {
+        this.commands.getForeignObjects = (socket: WebSocketClient, pattern, type, callback?: SocketCallback): void => {
             // Read objects by pattern
             // @param {string} pattern - pattern like `system.adapter.admin.0.*`
             // @param {string} type - type of objects to delete, like `state`, `channel`, `device`, `host`, `adapter`. Default - `state`
@@ -1611,7 +1612,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
 
                 if (typeof callback === 'function') {
                     try {
-                        this.adapter.getForeignObjects(pattern, type, { user: socket._acl.user }, (error, ...args) =>
+                        this.adapter.getForeignObjects(pattern, type, { user: socket._acl?.user }, (error, ...args) =>
                             SocketCommands._fixCallback(callback, error, ...args),
                         );
                     } catch (error) {
@@ -1625,7 +1626,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
         };
 
         this.commands.delObject = (
-            socket: SocketClient,
+            socket: WebSocketClient,
             id: string,
             options?: ioBroker.DelObjectOptions | SocketCallback | null,
             callback?: SocketCallback,
@@ -1642,7 +1643,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
                 if (!options || typeof options !== 'object') {
                     options = {};
                 }
-                options.user = socket._acl.user;
+                options.user = socket._acl?.user;
                 try {
                     // options.recursive = true; // the only difference between delObject and delObjects is this line
                     this.adapter.delForeignObject(id, options, (error, ...args) =>
@@ -1656,7 +1657,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
         };
 
         this.commands.delObjects = (
-            socket: SocketClient,
+            socket: WebSocketClient,
             id: string,
             options?: ioBroker.DelObjectOptions | SocketCallback | null,
             callback?: SocketCallback,
@@ -1669,7 +1670,7 @@ export default class SocketCommandsAdmin extends SocketCommands {
                 if (!options || typeof options !== 'object') {
                     options = {};
                 }
-                options.user = socket._acl.user;
+                options.user = socket._acl?.user;
                 options.recursive = true; // the only difference between delObject and delObjects is this line
                 try {
                     this.adapter.delForeignObject(id, options, (error, ...args) =>

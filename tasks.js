@@ -1,5 +1,4 @@
-const { readFileSync, writeFileSync } = require('node:fs');
-const SocketCommands = require('./lib/socketCommands');
+const { mkdirSync, readFileSync, writeFileSync, copyFileSync, existsSync } = require('node:fs');
 
 const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/gm;
 const ARGUMENT_NAMES = /([^\s,]+)/g;
@@ -98,22 +97,27 @@ function getCommands(Commands, index) {
 }
 
 if (process.argv.includes('--webList')) {
-    const SocketCommands = require('./lib/socketCommands');
+    const SocketCommands = require('./dist/lib/socketCommands');
     const texts = getCommands(SocketCommands, '_w');
 
     replaceReadme('WEB_METHODS', texts.join('\n'));
 } else if (process.argv.includes('--adminList')) {
-    const SocketCommands = require('./lib/socketCommandsAdmin');
+    const SocketCommands = require('./dist/lib/socketCommandsAdmin');
     const texts = getCommands(SocketCommands, '_a');
 
     replaceReadme('ADMIN_METHODS', texts.join('\n'));
+} else if (process.argv.includes('--prebuild')) {
+    if (!existsSync(`${__dirname}/dist`)) {
+        mkdirSync(`${__dirname}/dist`);
+    }
+    copyFileSync(`${__dirname}/src/types.d.ts`, `${__dirname}/dist/types.d.ts`);
 } else {
-    let SocketCommands = require('./lib/socketCommands');
+    let SocketCommands = require('./dist/lib/socketCommands');
     let texts = getCommands(SocketCommands, '_w');
 
     replaceReadme('WEB_METHODS', texts.join('\n'));
 
-    SocketCommands = require('./lib/socketCommandsAdmin');
+    SocketCommands = require('./dist/lib/socketCommandsAdmin');
     texts = getCommands(SocketCommands, '_a');
 
     replaceReadme('ADMIN_METHODS', texts.join('\n'));

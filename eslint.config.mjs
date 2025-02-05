@@ -10,9 +10,11 @@ export default [
                 },
                 tsconfigRootDir: import.meta.dirname,
                 project: './tsconfig.json',
-                // projectService: true,
             },
         },
+    },
+    {
+        ignores: ['dist/*', 'test/*', 'eslint.config.mjs', 'prettier.config.mjs', 'tasks.js'],
     },
     {
         // disable temporary the rule 'jsdoc/require-param' and enable 'jsdoc/require-jsdoc'
