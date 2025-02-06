@@ -376,7 +376,7 @@ Write a file into ioBroker DB as base64 string
 * `fileName` *string*: file name, e.g. `main/vis-views.json`
 * `data64` *string*: file content as base64 string
 * `options` *{mode?: number} | ((error: null | undefined | Error | string) => void)*: optional `{mode: 0x0644}`
-* callback?: '--'
+* `callback?` *(error: null | undefined | Error | string) => void*: Callback `(error: null | undefined | Error | string) => void`
 
 #### <a name="writefile_w"></a>`writeFile(adapter, fileName, data, options, callback?)`
 Write a file into ioBroker DB as text
@@ -385,7 +385,7 @@ This function is overloaded in admin (because admin accepts only base64)
 * `fileName` *string*: file name, e.g. `main/vis-views.json`
 * `data` *string*: file content as text
 * `options` *{mode?: number} | ((error: null | undefined | Error | string) => void)*: optional `{mode: 0x0644}`
-* callback?: '--'
+* `callback?` *(error: null | undefined | Error | string) => void*: Callback `(error: null | undefined | Error | string) => void`
 
 #### <a name="unlink_w"></a>`unlink(adapter, name, callback)`
 Delete file in ioBroker DB
@@ -430,21 +430,21 @@ Read content of folder in ioBroker DB
 * `adapter` *string*: instance name, e.g. `vis.0`
 * `dirName` *string*: folder name, e.g. `main`
 * `options` *object | ((error: null | undefined | Error | string, files: ioBroker.ReadDirResult[]) => void)*: for future use
-* callback?: '--'
+* `callback?` *(error: null | undefined | Error | string, files: ioBroker.ReadDirResult[]) => void*: Callback `(error: null | undefined | Error | string, files: Array<{file: string, isDir: boolean, stats: {size: number}, modifiedAt: number, acl: {owner: string, ownerGroup: string, permissions: number, read: boolean, write: boolean}}>) => void`
 
 #### <a name="chmodfile_w"></a>`chmodFile(adapter, fileName, options, callback?)`
 Change a file mode in ioBroker DB
 * `adapter` *string*: instance name, e.g. `vis.0`
 * `fileName` *string*: file name, e.g. `main/vis-views.json`
 * `options` *{mode?: number}*: options `{mode: 0x644}`
-* callback?: '--'
+* `callback?` *(error: string | Error | null | undefined) => void*: Callback `(error: string | Error | null | undefined) => void`
 
 #### <a name="chownfile_w"></a>`chownFile(adapter, fileName, options, callback?)`
 Change file owner in ioBroker DB
 * `adapter` *string*: instance name, e.g. `vis.0`
 * `fileName` *string*: file name, e.g. `main/vis-views.json`
 * `options` *{owner: `system.user.${string}`; ownerGroup?: `system.group.${string}`}*: options `{owner: 'system.user.user', ownerGroup: 'system.group.administrator'}` or `system.user.user`. If ownerGroup is not defined, it will be taken from owner.
-* callback?: '--'
+* `callback?` *(error: null | undefined | Error | string) => void*: Callback `(error: null | undefined | Error | string) => void`
 
 #### <a name="fileexists_w"></a>`fileExists(adapter, fileName, callback)`
 Check if the file or folder exists in ioBroker DB
@@ -645,17 +645,17 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 #### <a name="gethostbyip_a"></a>`getHostByIp(ip, callback?)`
 Read the host object by IP address.
 * `ip` *string*: - IP address, e.g., `192.168.1.1`. IPv4 or IPv6
-* callback?: '--'
+* `callback?` *(error: string | null | Error | undefined, hostObject?: ioBroker.HostObject | null) => void*: - Callback function `(ip: string, obj: ioBroker.HostObject | null) => void`
 
 #### <a name="requirelog_a"></a>`requireLog(isEnabled, callback?)`
 Activate or deactivate logging events. Events will be sent to the socket as `log` event. Adapter must have `common.logTransporter = true`.
 * `isEnabled` *boolean*: - Is logging enabled
-* callback?: '--'
+* `callback?` *(error: string | null | Error | undefined) => void*: - Callback function `(error: string | null) => void`
 
 #### <a name="readlogs_a"></a>`readLogs(host, callback?)`
 Get the log files from the given host.
 * `host` *string*: - Host ID, e.g., `system.host.raspberrypi`
-* callback?: '--'
+* `callback?` *(error: string | null | Error | undefined, list?: {fileName: string; size: number}[]) => void*: - Callback function `(error: string | null, list?: { fileName: string; size: number }[]) => void`
 
 #### <a name="cmdexec_a"></a>`cmdExec(host, id, cmd, callback?)`
 Execute the shell command on host/controller.
@@ -663,7 +663,7 @@ Following response commands are expected: `cmdStdout`, `cmdStderr`, `cmdExit`.
 * `host` *string*: - Host name, e.g., `system.host.raspberrypi`
 * `id` *number*: - Session ID, e.g., `Date.now()`. This session ID will come in events `cmdStdout`, `cmdStderr`, `cmdExit`
 * `cmd` *string*: - Command to execute
-* callback?: '--'
+* `callback?` *(error: string | null | Error | undefined) => void*: - Callback function `(error: string | null) => void`
 
 #### <a name="eventsthreshold_a"></a>`eventsThreshold(isActive)`
 Enable or disable the event threshold. Used only for admin to limit the number of events to the front-end.
@@ -672,7 +672,7 @@ Enable or disable the event threshold. Used only for admin to limit the number o
 #### <a name="getratings_a"></a>`getRatings(update, callback?)`
 Get the ratings of adapters.
 * `update` *boolean | ((error: string | null | Error | undefined, ratings?: Ratings) => void)*: - If true, the ratings will be read from the central server, if false from the local cache
-* callback?: '--'
+* `callback?` *(error: string | null | Error | undefined, ratings?: Ratings) => void*: - Callback function `(error: string | null, ratings?: Ratings) => void`
 
 #### <a name="getcurrentinstance_a"></a>`getCurrentInstance(callback)`
 Get the current instance name, like "admin.0"
@@ -741,7 +741,7 @@ Get all hosts in a compact form to save bandwidth.
 #### <a name="delstate_a"></a>`delState(id, callback?)`
 Delete a state. The corresponding object will be deleted too.
 * `id` *string*: - State ID
-* callback?: '--'
+* `callback?` *(error: string | null | Error | undefined) => void*: - Callback function `(error: string | null) => void`
 
 #### <a name="getstates_a"></a>`getStates(pattern, callback)`
 Get states by pattern of current adapter
@@ -803,30 +803,30 @@ The events will come as 'stateChange' events to the socket.
 Add a new user.
 * `user` *string*: - User name, e.g., `benjamin`
 * `pass` *string*: - User password
-* callback?: '--'
+* `callback?` *(error: string | null | Error | undefined) => void*: - Callback function `(error: string | null) => void`
 
 #### <a name="deluser_a"></a>`delUser(user, callback?)`
 Delete an existing user. Admin cannot be deleted.
 * `user` *string*: - User name, e.g., `benjamin`
-* callback?: '--'
+* `callback?` *(error: string | null | Error | undefined) => void*: - Callback function `(error: string | null) => void`
 
 #### <a name="addgroup_a"></a>`addGroup(group, desc, acl, callback?)`
 Add a new group.
 * `group` *string*: - Group name, e.g., `users`
 * `desc` *ioBroker.StringOrTranslated | null*: - Optional description
 * `acl` *Omit<ioBroker.PermissionSet, 'user' | 'groups'> | null*: - Optional access control list object, e.g., `{"object":{"list":true,"read":true,"write":false,"delete":false},"state":{"list":true,"read":true,"write":true,"create":true,"delete":false},"users":{"list":true,"read":true,"write":false,"create":false,"delete":false},"other":{"execute":false,"http":true,"sendto":false},"file":{"list":true,"read":true,"write":false,"create":false,"delete":false}}`
-* callback?: '--'
+* `callback?` *(error: string | null | Error | undefined) => void*: - Callback function `(error: string | null) => void`
 
 #### <a name="delgroup_a"></a>`delGroup(group, callback?)`
 Delete an existing group. Administrator group cannot be deleted.
 * `group` *string*: - Group name, e.g., `users`
-* callback?: '--'
+* `callback?` *(error: string | null | Error | undefined) => void*: - Callback function `(error: string | null) => void`
 
 #### <a name="changepassword_a"></a>`changePassword(user, pass, callback?)`
 Change user password.
 * `user` *string*: - User name, e.g., `benjamin`
 * `pass` *string*: - New password
-* callback?: '--'
+* `callback?` *(error: string | null | Error | undefined) => void*: - Callback function `(error: string | null) => void`
 
 ### Objects
 #### <a name="getobject_a"></a>`getObject(id, callback)`
@@ -877,21 +877,21 @@ Read absolutely all objects.
 Extend the existing object.
 * `id` *string*: - Object ID
 * `obj` *Partial<ioBroker.Object>*: - New parts of the object, e.g., `{common: {name: 'new name'}}`
-* callback?: '--'
+* `callback?` *(error: string | null | Error | undefined) => void*: - Callback function `(error: string | null) => void`
 
 #### <a name="getforeignobjects_a"></a>`getForeignObjects(pattern, type, callback?)`
 Read objects by pattern.
 * `pattern` *string*: - Pattern like `system.adapter.admin.0.*`
 * `type` * ioBroker.ObjectType | undefined | ((error: string | null | Error | undefined, objects?: Record<string, ioBroker.Object>) => void)*: - Type of objects to delete, like `state`, `channel`, `device`, `host`, `adapter`. Default - `state`
-* callback?: '--'
+* `callback?` *(error: string | null | Error | undefined, objects?: Record<string, ioBroker.Object>) => void*: - Callback function `(error: string | null, objects?: Record<string, ioBroker.Object>) => void`
 
 #### <a name="delobjects_a"></a>`delObjects(id, options?, callback?)`
 Delete an object or objects recursively.
 Objects with `dontDelete` cannot be deleted.
 Same as `delObject` but with `recursive: true`.
 * `id` *string*: - Object ID, like 'adapterName.0.channel'
-* options?: '--'
-* callback?: '--'
+* `options?` *ioBroker.DelObjectOptions | ((error: string | null | Error | undefined) => void) | null*: - Options for deletion.
+* `callback?` *(error: string | null | Error | undefined) => void*: - Callback function `(error: string | null) => void`
 
 ### Files
 #### <a name="readfile_a"></a>`readFile(adapter, fileName, callback)`
@@ -912,7 +912,7 @@ Write a file into ioBroker DB as base64 string
 * `fileName` *string*: file name, e.g. `main/vis-views.json`
 * `data64` *string*: file content as base64 string
 * `options` *{mode?: number} | ((error: null | undefined | Error | string) => void)*: optional `{mode: 0x0644}`
-* callback?: '--'
+* `callback?` *(error: null | undefined | Error | string) => void*: Callback `(error: null | undefined | Error | string) => void`
 
 #### <a name="writefile_a"></a>`writeFile(adapter, fileName, data, options, callback?)`
 Write a file into ioBroker DB as text
@@ -921,7 +921,7 @@ This function is overloaded in admin (because admin accepts only base64)
 * `fileName` *string*: file name, e.g. `main/vis-views.json`
 * `data` *string*: file content as text
 * `options` *{mode?: number} | ((error: null | undefined | Error | string) => void)*: optional `{mode: 0x0644}`
-* callback?: '--'
+* `callback?` *(error: null | undefined | Error | string) => void*: Callback `(error: null | undefined | Error | string) => void`
 
 #### <a name="unlink_a"></a>`unlink(adapter, name, callback)`
 Delete file in ioBroker DB
@@ -966,21 +966,21 @@ Read content of folder in ioBroker DB
 * `adapter` *string*: instance name, e.g. `vis.0`
 * `dirName` *string*: folder name, e.g. `main`
 * `options` *object | ((error: null | undefined | Error | string, files: ioBroker.ReadDirResult[]) => void)*: for future use
-* callback?: '--'
+* `callback?` *(error: null | undefined | Error | string, files: ioBroker.ReadDirResult[]) => void*: Callback `(error: null | undefined | Error | string, files: Array<{file: string, isDir: boolean, stats: {size: number}, modifiedAt: number, acl: {owner: string, ownerGroup: string, permissions: number, read: boolean, write: boolean}}>) => void`
 
 #### <a name="chmodfile_a"></a>`chmodFile(adapter, fileName, options, callback?)`
 Change a file mode in ioBroker DB
 * `adapter` *string*: instance name, e.g. `vis.0`
 * `fileName` *string*: file name, e.g. `main/vis-views.json`
 * `options` *{mode?: number}*: options `{mode: 0x644}`
-* callback?: '--'
+* `callback?` *(error: string | Error | null | undefined) => void*: Callback `(error: string | Error | null | undefined) => void`
 
 #### <a name="chownfile_a"></a>`chownFile(adapter, fileName, options, callback?)`
 Change file owner in ioBroker DB
 * `adapter` *string*: instance name, e.g. `vis.0`
 * `fileName` *string*: file name, e.g. `main/vis-views.json`
 * `options` *{owner: `system.user.${string}`; ownerGroup?: `system.group.${string}`}*: options `{owner: 'system.user.user', ownerGroup: 'system.group.administrator'}` or `system.user.user`. If ownerGroup is not defined, it will be taken from owner.
-* callback?: '--'
+* `callback?` *(error: null | undefined | Error | string) => void*: Callback `(error: null | undefined | Error | string) => void`
 
 #### <a name="fileexists_a"></a>`fileExists(adapter, fileName, callback)`
 Check if the file or folder exists in ioBroker DB

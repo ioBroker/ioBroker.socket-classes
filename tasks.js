@@ -106,10 +106,15 @@ function extractFunctionDescription(fileContent, command) {
     const types = parseFunctionSignature(paramsDefinitions);
 
     const params = types.map(t => {
+        const description = paramsDescriptions.find(it => it.name === t.name.replace('?', ''))?.description;
+        if (!description) {
+            debugger
+        }
+
         return {
             name: t.name,
             type: t.type,
-            description: paramsDescriptions.find(it => it.name === t.name)?.description,
+            description,
         };
     });
 
