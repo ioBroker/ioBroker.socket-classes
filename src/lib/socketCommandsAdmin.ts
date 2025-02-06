@@ -5,7 +5,7 @@ import { existsSync, readdirSync, lstatSync } from 'node:fs';
 
 import type { tools } from '@iobroker/js-controller-common-db';
 import { type Socket as WebSocketClient } from '@iobroker/ws-server';
-import { SocketCommands, type Ratings, type SocketDataContext } from './socketCommands';
+import { type Ratings, SocketCommands, type SocketDataContext } from './socketCommands';
 import type { SocketCallback } from '../types';
 
 export interface InstanceConfig {
@@ -20,6 +20,58 @@ export interface InstanceConfig {
     version: string;
     tab?: boolean;
     config?: boolean;
+}
+
+export interface CompactAdapterInfo {
+    icon: ioBroker.AdapterCommon['icon'];
+    v: ioBroker.AdapterCommon['version'];
+    iv?: ioBroker.AdapterCommon['ignoreVersion'];
+}
+
+export type CompactSystemRepositoryEntry = {
+    link: string;
+    hash?: string;
+    stable?: boolean;
+    json:
+        | {
+              _repoInfo: {
+                  stable?: boolean;
+                  name?: ioBroker.StringOrTranslated;
+              };
+          }
+        | null
+        | undefined;
+};
+
+export type CompactSystemRepository = {
+    _id: ioBroker.HostObject['_id'];
+    common: {
+        name: ioBroker.HostCommon['name'];
+        dontDelete: boolean;
+    };
+    native: {
+        repositories: Record<string, CompactSystemRepositoryEntry>;
+    };
+};
+
+export interface License {
+    id: string;
+    product: string;
+    time: number;
+    uuid: string;
+    validTill: string;
+    version: string;
+    usedBy: string;
+    invoice: string;
+    json: string;
+}
+
+export interface CompactInstanceInfo {
+    adminTab: ioBroker.AdapterCommon['adminTab'];
+    name: ioBroker.InstanceCommon['name'];
+    icon: ioBroker.InstanceCommon['icon'];
+    enabled: ioBroker.InstanceCommon['enabled'];
+    version: ioBroker.InstanceCommon['version'];
 }
 
 export interface License {
@@ -47,6 +99,21 @@ interface SocketAdapterSettings {
     accessAllowedTabs?: string[];
     extensions?: (socket: WebSocketClient) => void;
 }
+
+export type CompactHost = {
+    _id: ioBroker.HostObject['_id'];
+    common: {
+        name: ioBroker.HostCommon['name'];
+        icon: ioBroker.HostCommon['icon'];
+        color: string;
+        installedVersion: ioBroker.HostCommon['installedVersion'];
+    };
+    native: {
+        hardware: {
+            networkInterfaces?: ioBroker.HostNative['hardware']['networkInterfaces'];
+        };
+    };
+};
 
 export interface AdminTab {
     name?: ioBroker.StringOrTranslated;
@@ -177,7 +244,7 @@ export class SocketCommandsAdmin extends SocketCommands {
                 typeof this.context.ratings !== 'object' ||
                 Array.isArray(this.context.ratings)
             ) {
-                // @ts-expect-error historical
+                // @ts-expect-error exception
                 this.context.ratings = { uuid: _uuid };
             } else {
                 this.context.ratings.uuid = _uuid;
@@ -760,7 +827,7 @@ export class SocketCommandsAdmin extends SocketCommands {
         }
     }
 
-    #initCommandsUser(): void {
+    _initCommandsUser(): void {
         /**
          * #DOCUMENTATION users
          * Add a new user.
@@ -875,7 +942,7 @@ export class SocketCommandsAdmin extends SocketCommands {
         };
     }
 
-    #initCommandsAdmin(): void {
+    _initCommandsAdmin(): void {
         /**
          * #DOCUMENTATION admin
          * Read the host object by IP address.
@@ -1046,10 +1113,19 @@ export class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
-        this.commands.delState = (socket: WebSocketClient, id: string, callback?: SocketCallback): void => {
-            // Delete state. The corresponding object will be deleted too.
-            // @param {string} id - state ID
-            // @param {function} callback - `function (error)`
+        /**
+         * #DOCUMENTATION states
+         * Delete a state. The corresponding object will be deleted too.
+         *
+         * @param socket - WebSocket client instance
+         * @param id - State ID
+         * @param callback - Callback function `(error: string | null) => void`
+         */
+        this.commands.delState = (
+            socket: WebSocketClient,
+            id: string,
+            callback?: (error: string | null | Error | undefined) => void,
+        ): void => {
             if (this._checkPermissions(socket, 'delState', callback, id)) {
                 // clear cache
                 if (this.states && this.states[id]) {
@@ -1066,21 +1142,28 @@ export class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
-        // commands will be executed on host/controller
-        // following response commands are expected: cmdStdout, cmdStderr, cmdExit
+        /**
+         * #DOCUMENTATION admin
+         * Execute the shell command on host/controller.
+         * Following response commands are expected: `cmdStdout`, `cmdStderr`, `cmdExit`.
+         *
+         * @param socket - WebSocket client instance
+         * @param host - Host name, e.g., `system.host.raspberrypi`
+         * @param id - Session ID, e.g., `Date.now()`. This session ID will come in events `cmdStdout`, `cmdStderr`, `cmdExit`
+         * @param cmd - Command to execute
+         * @param callback - Callback function `(error: string | null) => void`
+         */
         this.commands.cmdExec = (
             socket: WebSocketClient,
             host: string,
             id: number,
             cmd: string,
-            callback?: SocketCallback,
+            callback?: (error: string | null | Error | undefined) => void,
         ): void => {
-            // Execute the shell command on host/controller. Following response commands are expected: ´cmdStdout, cmdStderr, cmdExit´
-            // @param {string} host - host name, like 'system.host.raspberrypi'
-            // @param {string} id - session ID, like `Date.now()´. This session ID will come in events `cmdStdout, cmdStderr, cmdExit`
-            // @param {string} cmd - command
-            // @param {function} callback - `function (error)`
-            if (this._checkPermissions(socket, 'cmdExec', callback, cmd)) {
+            if (id === undefined) {
+                this.adapter.log.error(`cmdExec no session ID for "${cmd}"`);
+                SocketCommands._fixCallback(callback, 'no session ID');
+            } else if (this._checkPermissions(socket, 'cmdExec', callback, cmd)) {
                 this.adapter.log.debug(`cmdExec on ${host}(${id}): ${cmd}`);
                 // remember socket for this ID.
                 this.cmdSessions[id] = { socket };
@@ -1094,9 +1177,14 @@ export class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
+        /**
+         * #DOCUMENTATION admin
+         * Enable or disable the event threshold. Used only for admin to limit the number of events to the front-end.
+         *
+         * @param _socket - WebSocket client instance
+         * @param isActive - If true, then events will be limited
+         */
         this.commands.eventsThreshold = (_socket: WebSocketClient, isActive: boolean): void => {
-            // Used only for admin to the limited number of events to the front-end.
-            // @param {boolean} isActive - if true, then events will be limited
             if (!isActive) {
                 this.disableEventThreshold();
             } else {
@@ -1104,10 +1192,24 @@ export class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
-        this.commands.getRatings = (_socket: WebSocketClient, update?: boolean, callback?: SocketCallback): void => {
-            // Read ratings of adapters
-            // @param {boolean} update - if true, the ratings will be read from central server, if false from local cache
-            // @param {function} callback - `function (error, ratings)`, where `ratings` is object like `{accuweather: {rating: {r: 3.33, c: 3}, 1.2.1: {r: 3, c: 1}},…}`
+        /**
+         * #DOCUMENTATION admin
+         * Get the ratings of adapters.
+         *
+         * @param _socket - WebSocket client instance
+         * @param update - If true, the ratings will be read from the central server, if false from the local cache
+         * @param callback - Callback function `(error: string | null, ratings?: Ratings) => void`
+         */
+        this.commands.getRatings = (
+            _socket: WebSocketClient,
+            update: boolean | ((error: string | null | Error | undefined, ratings?: Ratings) => void),
+            callback?: (error: string | null | Error | undefined, ratings?: Ratings) => void,
+        ): void => {
+            if (typeof update === 'function') {
+                callback = update;
+                update = false;
+            }
+
             if (update || !this.context.ratings) {
                 void this.updateRatings().then(() => SocketCommands._fixCallback(callback, null, this.context.ratings));
             } else {
@@ -1115,16 +1217,33 @@ export class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
-        this.commands.getCurrentInstance = (_socket: WebSocketClient, callback: SocketCallback): void => {
-            // Return current instance name like `admin.0`
-            // @param {function} callback - `function (error, namespace)`
+        /**
+         * #DOCUMENTATION admin
+         * Get the current instance name, like "admin.0"
+         *
+         * @param _socket - WebSocket client instance
+         * @param callback - Callback function `(error: string | null, namespace?: string) => void`
+         */
+        this.commands.getCurrentInstance = (
+            _socket: WebSocketClient,
+            callback: (error: string | null | Error | undefined, namespace: string) => void,
+        ): void => {
             SocketCommands._fixCallback(callback, null, this.adapter.namespace);
         };
 
-        this.commands.decrypt = (socket: WebSocketClient, encryptedText: string, callback: SocketCallback): void => {
-            // Decrypts text with the system secret key
-            // @param {string} encryptedText - encrypted text
-            // @param {function} callback - `function (error, decryptedText)`
+        /**
+         * #DOCUMENTATION admin
+         * Decrypts text with the system secret key.
+         *
+         * @param socket - WebSocket client instance
+         * @param encryptedText - Encrypted text
+         * @param callback - Callback function `(error: string | null, decryptedText?: string) => void`
+         */
+        this.commands.decrypt = (
+            socket: WebSocketClient,
+            encryptedText: string,
+            callback: (error: string | null | Error | undefined, decryptedText?: string) => void,
+        ): void => {
             if (this.secret) {
                 SocketCommands._fixCallback(callback, null, this.adapter.decrypt(this.secret, encryptedText));
             } else {
@@ -1149,10 +1268,19 @@ export class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
-        this.commands.encrypt = (socket: WebSocketClient, plainText: string, callback: SocketCallback): void => {
-            // Encrypts text with the system secret key
-            // @param {string} plainText - normal text
-            // @param {function} callback - `function (error, encryptedText)`
+        /**
+         * #DOCUMENTATION admin
+         * Encrypts text with the system secret key.
+         *
+         * @param socket - WebSocket client instance
+         * @param plainText - Plain text to encrypt
+         * @param callback - Callback function `(error: string | null, encryptedText?: string) => void`
+         */
+        this.commands.encrypt = (
+            socket: WebSocketClient,
+            plainText: string,
+            callback: (error: string | null | Error | undefined, encryptedText?: string) => void,
+        ): void => {
             if (this.secret) {
                 SocketCommands._fixCallback(callback, null, this.adapter.encrypt(this.secret, plainText));
             } else {
@@ -1174,16 +1302,34 @@ export class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
-        this.commands.getIsEasyModeStrict = (_socket: WebSocketClient, callback: SocketCallback): void => {
-            // Returns if admin has easy mode enabled
-            // @param {function} callback - `function (error, isEasyModeStrict)`
+        /**
+         * #DOCUMENTATION admin
+         * Get if the admin has easy mode enabled.
+         *
+         * @param _socket - WebSocket client instance
+         * @param callback - Callback function `(error: string | null, isEasyModeStrict?: boolean) => void`
+         */
+        this.commands.getIsEasyModeStrict = (
+            _socket: WebSocketClient,
+            callback: (error: string | null | Error | undefined, isEasyModeStrict?: boolean) => void,
+        ): void => {
             SocketCommands._fixCallback(callback, null, (this.adapter.config as SocketAdapterSettings).accessLimit);
         };
 
-        this.commands.getEasyMode = (socket: WebSocketClient, callback: SocketCallback): void => {
-            // Get easy mode configuration
-            // @param {function} callback - `function (error, easyModeConfig)`, where `easyModeConfig` is object like `{strict: true, configs: [{_id: 'system.adapter.javascript.0', common: {...}}, {...}]}`
-            // }`
+        /**
+         * #DOCUMENTATION admin
+         * Get easy mode configuration.
+         *
+         * @param socket - WebSocket client instance
+         * @param callback - Callback function `(error: string | null, easyModeConfig?: { strict: boolean; configs: InstanceConfig[] }) => void`
+         */
+        this.commands.getEasyMode = (
+            socket: WebSocketClient,
+            callback: (
+                error: string | null | Error | undefined,
+                easyModeConfig?: { strict: boolean; configs: InstanceConfig[] },
+            ) => void,
+        ): void => {
             if (this._checkPermissions(socket, 'getObject', callback)) {
                 let user: string;
                 if ((this.adapter.config as SocketAdapterSettings).auth) {
@@ -1254,10 +1400,19 @@ export class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
-        this.commands.getAdapters = (socket: WebSocketClient, adapterName, callback: SocketCallback): void => {
-            // Read all adapters objects
-            // @param {string} adapterName - optional adapter name
-            // @param {function} callback - `function (error, results)`, where `results` is array of objects like `{_id: 'system.adapter.javascript', common: {...}}`
+        /**
+         * #DOCUMENTATION admin
+         * Get all adapter as objects.
+         *
+         * @param socket - WebSocket client instance
+         * @param adapterName - Optional adapter name
+         * @param callback - Callback function `(error: string | null, results?: ioBroker.Object[]) => void`
+         */
+        this.commands.getAdapters = (
+            socket: WebSocketClient,
+            adapterName: string,
+            callback: (error: string | null | Error | undefined, result?: ioBroker.AdapterObject[]) => void,
+        ): void => {
             if (typeof callback === 'function' && this._checkPermissions(socket, 'getObject', callback)) {
                 this.adapter.getObjectView(
                     'system',
@@ -1292,16 +1447,21 @@ export class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
+        /**
+         * #DOCUMENTATION admin
+         * Read software licenses (vis, knx, ...) from ioBroker.net cloud for given user
+         *
+         * @param socket - WebSocket client instance
+         * @param login - Cloud login
+         * @param password - Cloud password
+         * @param callback - Callback function `(error: string | null, results?: License[]) => void`
+         */
         this.commands.updateLicenses = (
             socket: WebSocketClient,
             login: string,
             password: string,
-            callback?: SocketCallback,
+            callback: (error: string | null | Error | undefined, result?: License[]) => void,
         ): void => {
-            // Read software licenses (vis, knx, ...) from ioBroker.net cloud for given user
-            // @param {string} login - cloud login
-            // @param {string} password - cloud password
-            // @param {function} callback - `function (error, results)`, where `results` is array of objects like `[{"json":"xxx","id":"ab","email":"dogafox@gmail.com","product":"iobroker.knx.year","version":"2","invoice":"Pxx","uuid":"uuid","time":"2021-11-16T19:53:02.000Z","validTill":"2022-11-16T22:59:59.000Z","datapoints":1000}]`
             if (this._checkPermissions(socket, 'setObject', callback, login, password)) {
                 if (this.adapter.supportsFeature('CONTROLLER_LICENSE_MANAGER')) {
                     let timeout: NodeJS.Timeout | null = setTimeout(() => {
@@ -1319,7 +1479,7 @@ export class SocketCommandsAdmin extends SocketCommands {
                         if (timeout) {
                             clearTimeout(timeout);
                             timeout = null;
-                            SocketCommands._fixCallback(callback, result.error, result && result.result);
+                            SocketCommands._fixCallback(callback, result.error, result?.result);
                         }
                     });
                 } else {
@@ -1331,9 +1491,17 @@ export class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
-        this.commands.getCompactInstances = (socket: WebSocketClient, callback: SocketCallback): void => {
-            // Read all instances in short form to save bandwidth
-            // @param {function} callback - `function (error, results)`, where `results` is an object like `{'system.adapter.javascript.0': {adminTab, name, icon, enabled}}`
+        /**
+         * #DOCUMENTATION admin
+         * Get all instances in a compact form to save bandwidth.
+         *
+         * @param socket - WebSocket client instance
+         * @param callback - Callback function `(error: string | null, results?: Record<string, { adminTab: boolean; name: string; icon: string; enabled: boolean }>) => void`
+         */
+        this.commands.getCompactInstances = (
+            socket: WebSocketClient,
+            callback: (error: string | null | Error | undefined, result?: Record<string, CompactInstanceInfo>) => void,
+        ): void => {
             if (typeof callback === 'function') {
                 if (this._checkPermissions(socket, 'getObject', callback)) {
                     this.adapter.getObjectView(
@@ -1375,9 +1543,17 @@ export class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
-        this.commands.getCompactAdapters = (socket: WebSocketClient, callback: SocketCallback): void => {
-            // Read all adapters in short for to save bandwidth
-            // @param {function} callback - `function (error, results)`, where `results` is an object like `{'javascript': {icon, v: '1.0.1', iv: 'ignoredVersion}}`
+        /**
+         * #DOCUMENTATION admin
+         * Get all adapters in a compact form to save bandwidth.
+         *
+         * @param socket - WebSocket client instance
+         * @param callback - Callback function `(error: string | null, results?: Record<string, { icon: string; v: string; iv: string }>) => void`
+         */
+        this.commands.getCompactAdapters = (
+            socket: WebSocketClient,
+            callback: (error: string | null | Error | undefined, result?: Record<string, CompactAdapterInfo>) => void,
+        ): void => {
             if (typeof callback === 'function') {
                 if (this._checkPermissions(socket, 'getObject', callback)) {
                     this.adapter.getObjectView(
@@ -1394,13 +1570,14 @@ export class SocketCommandsAdmin extends SocketCommands {
 
                                 doc?.rows.forEach(item => {
                                     const obj = item.value;
-                                    if (obj && obj.common && obj.common.name) {
+                                    if (obj?.common?.name) {
                                         result[obj.common.name] = { icon: obj.common.icon, v: obj.common.version };
                                         if (obj.common.ignoreVersion) {
                                             result[obj.common.name].iv = obj.common.ignoreVersion;
                                         }
                                     }
                                 });
+
                                 SocketCommands._fixCallback(callback, null, result);
                             }
                         },
@@ -1409,22 +1586,23 @@ export class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
+        /**
+         * #DOCUMENTATION admin
+         * Get all installed adapters in a compact form to save bandwidth.
+         *
+         * @param socket - WebSocket client instance
+         * @param host - Host name, e.g., `system.host.raspberrypi`
+         * @param callback - Callback function `(error: string | null, results?: Record<string, { version: string }>) => void`
+         */
         this.commands.getCompactInstalled = (
             socket: WebSocketClient,
             host: string,
-            callback: (result: string | Record<string, { version: string }>) => void,
+            callback: (result?: Record<string, { version: string }>) => void,
         ): void => {
-            // Read all installed adapters in short form to save bandwidth
-            // @param {function} callback - `function (error, results)`, where `results` is an object like `{'javascript': {version: '1.0.1'}}``
             if (typeof callback === 'function') {
                 if (this._checkPermissions(socket, 'sendToHost', callback as SocketCallback)) {
                     this._sendToHost(host, 'getInstalled', null, (data: any) => {
                         const castData: Record<string, tools.AdapterInformation> = data;
-                        // todo: return type is
-                        // { ...installedInfo, hosts }
-                        // installedInfo = Record<string, AdapterInformation>
-                        // hosts = Record<string, HostInformation>
-
                         const result: Record<string, { version: string }> = {};
                         Object.keys(castData).forEach(name => {
                             if (name !== 'hosts') {
@@ -1437,13 +1615,24 @@ export class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
-        this.commands.getCompactSystemConfig = (socket: WebSocketClient, callback: SocketCallback): void => {
-            // Read system config in short form to save bandwidth
-            // @param {function} callback - `function (error, systemConfig)`, where `systemConfig` is an object like `{common: {...}, native: {secret: 'aaa'}}`
+        /**
+         * #DOCUMENTATION admin
+         * Get the system configuration in a compact form to save bandwidth.
+         *
+         * @param socket - WebSocket client instance
+         * @param callback - Callback function `(error: string | null, systemConfig?: { common: any; native?: { secret: string } }) => void`
+         */
+        this.commands.getCompactSystemConfig = (
+            socket: WebSocketClient,
+            callback: (
+                error: string | null | Error | undefined,
+                systemConfig?: { common: ioBroker.SystemConfigCommon; native?: { secret: string } },
+            ) => void,
+        ): void => {
             if (this._checkPermissions(socket, 'getObject', callback)) {
                 void this.adapter.getForeignObject('system.config', { user: socket._acl?.user }, (error, obj) => {
-                    obj = obj || ({} as ioBroker.SystemConfigObject);
-                    const secret = obj && obj.native && obj.native.secret;
+                    obj ||= {} as ioBroker.SystemConfigObject;
+                    const secret = obj?.native?.secret;
                     // @ts-expect-error to save the memory
                     delete obj.native;
                     if (secret) {
@@ -1454,9 +1643,17 @@ export class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
-        this.commands.getCompactSystemRepositories = (socket: WebSocketClient, callback: SocketCallback): void => {
-            // Read repositories from cache in short form to save bandwidth
-            // @param {function} callback - `function (error, repositories)`, where `repositories` is an object like `{_id: 'system.repositories', common: {...}, native: {repositories: {default: {json: {_repoInfo: {...}}}}}}`
+        /**
+         * #DOCUMENTATION admin
+         * Get system repositories in a compact form to save bandwidth.
+         *
+         * @param socket - WebSocket client instance
+         * @param callback - Callback function `(error: string | null, systemRepositories?: { common: any; native?: { repositories: Record<string, { json: { _repoInfo: any } } } } }) => void`
+         */
+        this.commands.getCompactSystemRepositories = (
+            socket: WebSocketClient,
+            callback: (error: string | null | Error | undefined, systemRepositories?: CompactSystemRepository) => void,
+        ): void => {
             if (this._checkPermissions(socket, 'getObject', callback)) {
                 void this.adapter.getForeignObject('system.repositories', { user: socket._acl?.user }, (error, obj) => {
                     obj &&
@@ -1475,19 +1672,25 @@ export class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
+        /**
+         * #DOCUMENTATION admin
+         * Get the repository in a compact form to save bandwidth.
+         *
+         * @param socket - WebSocket client instance
+         * @param host - Host name, e.g., `system.host.raspberrypi`
+         * @param callback - Callback function `(error: string | null, results?: Record<string, { version: string; icon?: string }>) => void`
+         */
         this.commands.getCompactRepository = (
             socket: WebSocketClient,
             host: string,
             callback: (result: Record<string, { version: string; icon?: string }>) => void,
         ): void => {
-            // Read current repository in short form to save bandwidth
-            // @param {function} callback - `function (error, repository)`, where `repository` is an object like `{'javascript': {version: '1.0.1', icon}, 'admin': {version: '1.0.1', icon}}`
             if (this._checkPermissions(socket, 'sendToHost', callback as any as SocketCallback)) {
                 this._sendToHost(host, 'getRepository', null, (data: any) => {
                     // Extract only the version and icon
                     const castData: Record<string, RepoAdapterObject> = data;
                     const result: Record<string, { version: string; icon?: string }> = {};
-                    castData &&
+                    if (castData) {
                         Object.keys(castData).forEach(
                             name =>
                                 (result[name] = {
@@ -1495,14 +1698,23 @@ export class SocketCommandsAdmin extends SocketCommands {
                                     icon: castData[name].extIcon,
                                 }),
                         );
+                    }
                     callback(result);
                 });
             }
         };
 
-        this.commands.getCompactHosts = (socket: WebSocketClient, callback: SocketCallback): void => {
-            // Read all hosts in short form to save bandwidth
-            // @param {function} callback - `function (error, hosts)`, where `hosts` is an array of objects like `[{_id:'system.host.raspi',common:{name:'raspi',icon:'icon',color:'blue',installedVersion:'2.1.0'},native:{hardware:{networkInterfaces:[...]}}}]`
+        /**
+         * #DOCUMENTATION admin
+         * Get all hosts in a compact form to save bandwidth.
+         *
+         * @param socket - WebSocket client instance
+         * @param callback - Callback function `(error: string | null, results?: Record<string, { common: { name: string; icon: string; color: string; installedVersion: string }; native: { hardware: { networkInterfaces: any[] } } }>) => void`
+         */
+        this.commands.getCompactHosts = (
+            socket: WebSocketClient,
+            callback: (error: string | null | Error | undefined, hosts?: CompactHost[]) => void,
+        ): void => {
             if (this._checkPermissions(socket, 'getObject', callback)) {
                 this.adapter.getObjectView(
                     'system',
@@ -1530,7 +1742,7 @@ export class SocketCommandsAdmin extends SocketCommands {
                             doc?.rows.map(item => {
                                 const host = item.value;
                                 if (host) {
-                                    host.common = host.common || {};
+                                    host.common ||= {} as ioBroker.HostCommon;
                                     result.push({
                                         _id: host._id,
                                         common: {
@@ -1559,8 +1771,8 @@ export class SocketCommandsAdmin extends SocketCommands {
     protected _initCommandsCommon(): void {
         super._initCommandsCommon();
 
-        this.#initCommandsAdmin();
-        this.#initCommandsUser();
+        this._initCommandsAdmin();
+        this._initCommandsUser();
     }
 
     protected _initCommandsFiles(): void {

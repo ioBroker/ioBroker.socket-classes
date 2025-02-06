@@ -44,7 +44,6 @@ function authorize(options) {
         throw new Error("cookieParser is required use require('cookie-parser'), connect.cookieParser or express.cookieParser");
     }
     return function (data, accept) {
-        var _a;
         data.query = getQuery(data.url);
         if (options.checkUser && data.query.user && data.query.pass) {
             return options.checkUser(data.query.user, data.query.pass, (error, result) => {
@@ -66,7 +65,7 @@ function authorize(options) {
         data[auth.userProperty] = {
             logged_in: false,
         };
-        (_a = auth.store) === null || _a === void 0 ? void 0 : _a.get(data.sessionID, (err, session) => {
+        auth.store?.get(data.sessionID, (err, session) => {
             if (err) {
                 return auth.fail(data, `Error in session store:\n${err.message}`, true, accept);
             }

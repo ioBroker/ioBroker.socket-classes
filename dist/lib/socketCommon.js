@@ -70,7 +70,6 @@ class SocketCommon {
         this.wsRoutes[path] = handler;
     }
     start(server, socketClass, authOptions, socketOptions) {
-        var _a, _b;
         this.serverMode = !!socketClass;
         this.commands || (this.commands = new socketCommands_1.SocketCommands(this.adapter, socket => this.__updateSession(socket), this.context));
         if (!server) {
@@ -113,47 +112,43 @@ class SocketCommon {
                 this.server.set('origins', '*:*');
             }
             this.server.on('connection', (socket, cb) => {
-                var _a, _b, _c, _d;
                 // Support of handlers for web sockets by path
                 // Todo: support of wildcards like /cameras.0/*
-                if (((_b = (_a = socket.conn) === null || _a === void 0 ? void 0 : _a.request) === null || _b === void 0 ? void 0 : _b.pathname) && this.wsRoutes[socket.conn.request.pathname]) {
+                if (socket.conn?.request?.pathname && this.wsRoutes[socket.conn.request.pathname]) {
                     this.wsRoutes[socket.conn.request.pathname](socket, cb);
                     return;
                 }
-                (_d = (_c = this.eventHandlers).connect) === null || _d === void 0 ? void 0 : _d.call(_c, socket);
+                this.eventHandlers.connect?.(socket);
                 this._initSocket(socket, cb);
             });
             // support of dynamic namespaces (because of reverse proxy) for socket.io 4
-            (_a = this.allNamespaces) === null || _a === void 0 ? void 0 : _a.on('connection', (socket, cb) => {
-                var _a, _b, _c, _d;
+            this.allNamespaces?.on('connection', (socket, cb) => {
                 // Support of handlers for web sockets by path
                 // Todo: support of wildcards like /cameras.0/*
-                if (((_b = (_a = socket.conn) === null || _a === void 0 ? void 0 : _a.request) === null || _b === void 0 ? void 0 : _b.pathname) && this.wsRoutes[socket.conn.request.pathname]) {
+                if (socket.conn?.request?.pathname && this.wsRoutes[socket.conn.request.pathname]) {
                     this.wsRoutes[socket.conn.request.pathname](socket, cb);
                     return;
                 }
-                (_d = (_c = this.eventHandlers).connect) === null || _d === void 0 ? void 0 : _d.call(_c, socket);
+                this.eventHandlers.connect?.(socket);
                 this._initSocket(socket, cb);
             });
         }
         this.server.on('error', (error, details) => {
-            var _a, _b;
             // ignore "failed connection" as it already shown
-            if (!((_a = error === null || error === void 0 ? void 0 : error.message) === null || _a === void 0 ? void 0 : _a.includes('failed connection'))) {
-                if (((_b = error === null || error === void 0 ? void 0 : error.message) === null || _b === void 0 ? void 0 : _b.includes('authentication failed')) ||
-                    (details === null || details === void 0 ? void 0 : details.toString().includes('authentication failed'))) {
-                    this.adapter.log.debug(`Error: ${(error === null || error === void 0 ? void 0 : error.message) || JSON.stringify(error)}${details ? ` - ${!details || typeof details === 'object' ? JSON.stringify(details) : details.toString()}` : ''}`);
+            if (!error?.message?.includes('failed connection')) {
+                if (error?.message?.includes('authentication failed') ||
+                    details?.toString().includes('authentication failed')) {
+                    this.adapter.log.debug(`Error: ${error?.message || JSON.stringify(error)}${details ? ` - ${!details || typeof details === 'object' ? JSON.stringify(details) : details.toString()}` : ''}`);
                 }
                 else {
-                    this.adapter.log.error(`Error: ${(error === null || error === void 0 ? void 0 : error.message) || JSON.stringify(error)}${details ? ` - ${!details || typeof details === 'object' ? JSON.stringify(details) : details.toString()}` : ''}`);
+                    this.adapter.log.error(`Error: ${error?.message || JSON.stringify(error)}${details ? ` - ${!details || typeof details === 'object' ? JSON.stringify(details) : details.toString()}` : ''}`);
                 }
             }
         });
         // support of dynamic namespaces (because of reverse proxy)
-        (_b = this.allNamespaces) === null || _b === void 0 ? void 0 : _b.on('error', (error, details) => {
-            var _a;
+        this.allNamespaces?.on('error', (error, details) => {
             // ignore "failed connection" as it already shown
-            if (!((_a = error === null || error === void 0 ? void 0 : error.message) === null || _a === void 0 ? void 0 : _a.includes('failed connection'))) {
+            if (!error?.message?.includes('failed connection')) {
                 if (error && error.message && error.message.includes('authentication failed')) {
                     this.adapter.log.debug(`Error: ${(error && error.message) || JSON.stringify(error)}${details ? ` - ${!details || typeof details === 'object' ? JSON.stringify(details) : details.toString()}` : ''}`);
                 }
@@ -206,8 +201,7 @@ class SocketCommon {
         return this.commands.unsubscribeSocket(socket, type);
     }
     _unsubscribeAll() {
-        var _a, _b;
-        if ((_a = this.server) === null || _a === void 0 ? void 0 : _a.ioBroker) {
+        if (this.server?.ioBroker) {
             // this could be an object or array
             const sockets = this.getSocketsList();
             // this could be an object or array: an array is ioBroker, object is socket.io
@@ -222,7 +216,7 @@ class SocketCommon {
                 });
             }
         }
-        else if ((_b = this.server) === null || _b === void 0 ? void 0 : _b.sockets) {
+        else if (this.server?.sockets) {
             // It is socket.io
             for (const socket in this.server.sockets) {
                 if (Object.prototype.hasOwnProperty.call(this.server.sockets, socket)) {
@@ -331,12 +325,11 @@ class SocketCommon {
     }
     // install event handlers on socket
     _socketEvents(socket, address, cb) {
-        var _a, _b, _c;
         if (this.serverMode) {
-            this.adapter.log.info(`==> Connected ${(_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user} from ${address}`);
+            this.adapter.log.info(`==> Connected ${socket._acl?.user} from ${address}`);
         }
         else {
-            this.adapter.log.info(`Trying to connect as ${(_b = socket._acl) === null || _b === void 0 ? void 0 : _b.user} to ${address}`);
+            this.adapter.log.info(`Trying to connect as ${socket._acl?.user} to ${address}`);
         }
         __classPrivateFieldGet(this, _SocketCommon_instances, "m", _SocketCommon_updateConnectedInfo).call(this);
         if (!this.commands.getCommandHandler('name')) {
@@ -360,19 +353,18 @@ class SocketCommon {
         this.commands.applyCommands(socket);
         // disconnect
         socket.on('disconnect', (error) => {
-            var _a, _b, _c;
             this.commands.unsubscribeSocket(socket);
             __classPrivateFieldGet(this, _SocketCommon_instances, "m", _SocketCommon_updateConnectedInfo).call(this);
             // Disable logging if no one browser is connected
             if (this.adapter.requireLog && this.commands && this.commands.isLogEnabled()) {
                 this.adapter.log.debug('Disable logging, because no one socket connected');
-                void this.adapter.requireLog(!!((_b = (_a = this.server) === null || _a === void 0 ? void 0 : _a.engine) === null || _b === void 0 ? void 0 : _b.clientsCount));
+                void this.adapter.requireLog(!!this.server?.engine?.clientsCount);
             }
             if (this.eventHandlers.disconnect) {
-                this.eventHandlers.disconnect(socket, error === null || error === void 0 ? void 0 : error.toString());
+                this.eventHandlers.disconnect(socket, error?.toString());
             }
             else {
-                this.adapter.log.info(`<== Disconnect ${(_c = socket._acl) === null || _c === void 0 ? void 0 : _c.user} from ${this.__getClientAddress(socket).address} ${socket._name || ''}`);
+                this.adapter.log.info(`<== Disconnect ${socket._acl?.user} from ${this.__getClientAddress(socket).address} ${socket._name || ''}`);
             }
         });
         if (typeof this.settings.extensions === 'function') {
@@ -385,9 +377,8 @@ class SocketCommon {
                 socket._secure = true;
                 socket._sessionID = sessionId;
                 // Get user for session
-                (_c = this.store) === null || _c === void 0 ? void 0 : _c.get(socket._sessionID, (err, obj) => {
-                    var _a;
-                    if (!(obj === null || obj === void 0 ? void 0 : obj.passport)) {
+                this.store?.get(socket._sessionID, (err, obj) => {
+                    if (!obj?.passport) {
                         if (socket._acl) {
                             socket._acl.user = '';
                         }
@@ -398,7 +389,7 @@ class SocketCommon {
                         }
                     }
                     if (socket._authPending) {
-                        socket._authPending(!!((_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user), true);
+                        socket._authPending(!!socket._acl?.user, true);
                         delete socket._authPending;
                     }
                 });
@@ -414,9 +405,8 @@ class SocketCommon {
         this.commands.addCommandHandler(command, handler);
     }
     sendLog(obj) {
-        var _a, _b;
         // TODO Build in some threshold
-        (_b = (_a = this.server) === null || _a === void 0 ? void 0 : _a.sockets) === null || _b === void 0 ? void 0 : _b.emit('log', obj);
+        this.server?.sockets?.emit('log', obj);
     }
     publish(socket, type, id, obj) {
         return this.commands.publish(socket, type, id, obj);
@@ -428,8 +418,7 @@ class SocketCommon {
         return this.commands.publishFile(socket, id, fileName, size);
     }
     getSocketsList() {
-        var _a;
-        if ((_a = this.server) === null || _a === void 0 ? void 0 : _a.sockets) {
+        if (this.server?.sockets) {
             // this could be an object or array
             return this.server.sockets.sockets || this.server.sockets.connected;
         }
@@ -456,12 +445,11 @@ class SocketCommon {
         }
     }
     close() {
-        var _a, _b;
         this._unsubscribeAll();
         this.commands.destroy();
         // IO server will be closed
         try {
-            (_b = (_a = this.server) === null || _a === void 0 ? void 0 : _a.close) === null || _b === void 0 ? void 0 : _b.call(_a);
+            this.server?.close?.();
             this.server = null;
         }
         catch {

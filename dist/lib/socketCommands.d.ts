@@ -70,7 +70,6 @@ export declare class SocketCommands {
      * @param obj Instance or adapter object to be converted
      */
     protected fixAdminUI(obj: ioBroker.AdapterObject | ioBroker.InstanceObject): void;
-    /** Init common commands that not belong to stats, objects or files */
     protected _initCommandsCommon(): void;
     /** Init commands for files */
     protected _initCommandsFiles(): void;

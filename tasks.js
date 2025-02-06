@@ -176,13 +176,18 @@ function getCommands(Commands, content, index) {
 }
 
 if (process.argv.includes('--webList')) {
-    const SocketCommands = require('./dist/lib/socketCommands');
-    const texts = getCommands(SocketCommands, '_w');
+    const content =
+        readFileSync('src/lib/socketCommands.ts').toString('utf-8');
+    const { SocketCommands } = require('./dist/lib/socketCommands');
+    const texts = getCommands(SocketCommands, content, '_w');
 
     replaceReadme('WEB_METHODS', texts.join('\n'));
 } else if (process.argv.includes('--adminList')) {
-    const SocketCommands = require('./dist/lib/socketCommandsAdmin');
-    const texts = getCommands(SocketCommands, '_a');
+    const content =
+        readFileSync('src/lib/socketCommands.ts').toString('utf-8') +
+        readFileSync('src/lib/socketCommandsAdmin.ts').toString('utf-8');
+    const { SocketCommandsAdmin } = require('./dist/lib/socketCommandsAdmin');
+    const texts = getCommands(SocketCommandsAdmin, content, '_a');
 
     replaceReadme('ADMIN_METHODS', texts.join('\n'));
 } else if (process.argv.includes('--prebuild')) {
@@ -191,14 +196,16 @@ if (process.argv.includes('--webList')) {
     }
     copyFileSync(`${__dirname}/src/types.d.ts`, `${__dirname}/dist/types.d.ts`);
 } else {
-    const content = readFileSync('src/lib/socketCommands.ts').toString('utf-8');
+    const content =
+        readFileSync('src/lib/socketCommands.ts').toString('utf-8') +
+        readFileSync('src/lib/socketCommandsAdmin.ts').toString('utf-8');
     const { SocketCommands } = require('./dist/lib/socketCommands');
     let texts = getCommands(SocketCommands, content, '_w');
 
     replaceReadme('WEB_METHODS', texts.join('\n'));
 
-    // const { SocketCommandsAdmin } = require('./dist/lib/socketCommandsAdmin');
-    // texts = getCommands(SocketCommandsAdmin, content, '_a');
+    const { SocketCommandsAdmin } = require('./dist/lib/socketCommandsAdmin');
+    texts = getCommands(SocketCommandsAdmin, content, '_a');
 
-    // replaceReadme('ADMIN_METHODS', texts.join('\n'));
+    replaceReadme('ADMIN_METHODS', texts.join('\n'));
 }

@@ -1,5 +1,5 @@
 import { type Socket as WebSocketClient } from '@iobroker/ws-server';
-import { SocketCommands, type Ratings, type SocketDataContext } from './socketCommands';
+import { type Ratings, SocketCommands, type SocketDataContext } from './socketCommands';
 export interface InstanceConfig {
     id: string;
     title: ioBroker.StringOrTranslated | undefined;
@@ -13,6 +13,50 @@ export interface InstanceConfig {
     tab?: boolean;
     config?: boolean;
 }
+export interface CompactAdapterInfo {
+    icon: ioBroker.AdapterCommon['icon'];
+    v: ioBroker.AdapterCommon['version'];
+    iv?: ioBroker.AdapterCommon['ignoreVersion'];
+}
+export type CompactSystemRepositoryEntry = {
+    link: string;
+    hash?: string;
+    stable?: boolean;
+    json: {
+        _repoInfo: {
+            stable?: boolean;
+            name?: ioBroker.StringOrTranslated;
+        };
+    } | null | undefined;
+};
+export type CompactSystemRepository = {
+    _id: ioBroker.HostObject['_id'];
+    common: {
+        name: ioBroker.HostCommon['name'];
+        dontDelete: boolean;
+    };
+    native: {
+        repositories: Record<string, CompactSystemRepositoryEntry>;
+    };
+};
+export interface License {
+    id: string;
+    product: string;
+    time: number;
+    uuid: string;
+    validTill: string;
+    version: string;
+    usedBy: string;
+    invoice: string;
+    json: string;
+}
+export interface CompactInstanceInfo {
+    adminTab: ioBroker.AdapterCommon['adminTab'];
+    name: ioBroker.InstanceCommon['name'];
+    icon: ioBroker.InstanceCommon['icon'];
+    enabled: ioBroker.InstanceCommon['enabled'];
+    version: ioBroker.InstanceCommon['version'];
+}
 export interface License {
     id: string;
     product: string;
@@ -24,6 +68,20 @@ export interface License {
     json: string;
     invoice: string;
 }
+export type CompactHost = {
+    _id: ioBroker.HostObject['_id'];
+    common: {
+        name: ioBroker.HostCommon['name'];
+        icon: ioBroker.HostCommon['icon'];
+        color: string;
+        installedVersion: ioBroker.HostCommon['installedVersion'];
+    };
+    native: {
+        hardware: {
+            networkInterfaces?: ioBroker.HostNative['hardware']['networkInterfaces'];
+        };
+    };
+};
 export interface AdminTab {
     name?: ioBroker.StringOrTranslated;
     /** Base 64 icon for the tab */
@@ -70,6 +128,8 @@ export declare class SocketCommandsAdmin extends SocketCommands {
         result?: any;
     }) => void) => void;
     disableEventThreshold(): void;
+    _initCommandsUser(): void;
+    _initCommandsAdmin(): void;
     protected _initCommandsCommon(): void;
     protected _initCommandsFiles(): void;
     _initCommandsObjects(): void;
