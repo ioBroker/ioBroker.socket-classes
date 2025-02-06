@@ -12,9 +12,59 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
 };
 var _SocketCommands_instances, _SocketCommands_logEnabled, _SocketCommands_clientSubscribes, _SocketCommands_updateSession, _SocketCommands_rename, _SocketCommands_unlink, _SocketCommands_subscribeStates, _SocketCommands_unsubscribeStates, _SocketCommands_subscribeFiles, _SocketCommands_httpGet, _SocketCommands_initCommands, _SocketCommands_informAboutDisconnect;
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SocketCommands = void 0;
+exports.SocketCommands = exports.COMMANDS_PERMISSIONS = void 0;
 const adapter_core_1 = require("@iobroker/adapter-core"); // Get common adapter utils
-const types_1 = require("../types");
+exports.COMMANDS_PERMISSIONS = {
+    getObject: { type: 'object', operation: 'read' },
+    getObjects: { type: 'object', operation: 'list' },
+    getObjectView: { type: 'object', operation: 'list' },
+    setObject: { type: 'object', operation: 'write' },
+    requireLog: { type: 'object', operation: 'write' }, // just mapping to some command
+    delObject: { type: 'object', operation: 'delete' },
+    extendObject: { type: 'object', operation: 'write' },
+    getHostByIp: { type: 'object', operation: 'list' },
+    subscribeObjects: { type: 'object', operation: 'read' },
+    unsubscribeObjects: { type: 'object', operation: 'read' },
+    getStates: { type: 'state', operation: 'list' },
+    getState: { type: 'state', operation: 'read' },
+    setState: { type: 'state', operation: 'write' },
+    delState: { type: 'state', operation: 'delete' },
+    createState: { type: 'state', operation: 'create' },
+    subscribe: { type: 'state', operation: 'read' },
+    unsubscribe: { type: 'state', operation: 'read' },
+    getStateHistory: { type: 'state', operation: 'read' },
+    getVersion: { type: '', operation: '' },
+    getAdapterName: { type: '', operation: '' },
+    addUser: { type: 'users', operation: 'create' },
+    delUser: { type: 'users', operation: 'delete' },
+    addGroup: { type: 'users', operation: 'create' },
+    delGroup: { type: 'users', operation: 'delete' },
+    changePassword: { type: 'users', operation: 'write' },
+    httpGet: { type: 'other', operation: 'http' },
+    cmdExec: { type: 'other', operation: 'execute' },
+    sendTo: { type: 'other', operation: 'sendto' },
+    sendToHost: { type: 'other', operation: 'sendto' },
+    readLogs: { type: 'other', operation: 'execute' },
+    readDir: { type: 'file', operation: 'list' },
+    createFile: { type: 'file', operation: 'create' },
+    writeFile: { type: 'file', operation: 'write' },
+    readFile: { type: 'file', operation: 'read' },
+    fileExists: { type: 'file', operation: 'read' },
+    deleteFile: { type: 'file', operation: 'delete' },
+    readFile64: { type: 'file', operation: 'read' },
+    writeFile64: { type: 'file', operation: 'write' },
+    unlink: { type: 'file', operation: 'delete' },
+    rename: { type: 'file', operation: 'write' },
+    mkdir: { type: 'file', operation: 'write' },
+    chmodFile: { type: 'file', operation: 'write' },
+    chownFile: { type: 'file', operation: 'write' },
+    subscribeFiles: { type: 'file', operation: 'read' },
+    unsubscribeFiles: { type: 'file', operation: 'read' },
+    authEnabled: { type: '', operation: '' },
+    disconnect: { type: '', operation: '' },
+    listPermissions: { type: '', operation: '' },
+    getUserPermissions: { type: 'object', operation: 'read' },
+};
 const pattern2RegEx = adapter_core_1.commonTools.pattern2RegEx;
 let axiosGet = null;
 let zipFiles = null;
@@ -751,7 +801,7 @@ class SocketCommands {
          * List commands and permissions
          *
          * @param _socket Socket instance (not used)
-         * @param callback callback `(permissions: Record<string, { type: 'object' | 'state'; operation: SocketOperation }>) => void`
+         * @param callback callback `(permissions: Record<string, { type: 'object' | 'state' | 'users' | 'other' | 'file' | ''; operation: SocketOperation }>) => void`
          */
         this.commands.listPermissions = (_socket, callback) => {
             if (typeof callback === 'function') {
@@ -821,16 +871,20 @@ class SocketCommands {
     }
     /** Init commands for files */
     _initCommandsFiles() {
-        // file operations
-        this.commands.readFile = (socket, _adapter, fileName, callback) => {
+        /**
+         * #DOCUMENTATION files
+         * Read a file from ioBroker DB
+         *
+         * @param socket Socket instance
+         * @param adapter instance name, e.g. `vis.0`
+         * @param fileName file name, e.g. `main/vis-views.json`
+         * @param callback Callback `(error: null | undefined | Error | string, data: Buffer | string, mimeType: string) => void`
+         */
+        this.commands.readFile = (socket, adapter, fileName, callback) => {
             var _a;
-            // Read file from ioBroker DB
-            // @param {string} _adapter - instance name, e.g. `vis.0`
-            // @param {string} fileName - file name, e.g. `main/vis-views.json`
-            // @param {function} callback - `function (error, data, mimeType)`
             if (this._checkPermissions(socket, 'readFile', callback, fileName)) {
                 try {
-                    this.adapter.readFile(_adapter, fileName, { user: (_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user }, (error, ...args) => SocketCommands._fixCallback(callback, error, ...args));
+                    this.adapter.readFile(adapter, fileName, { user: (_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user }, (error, ...args) => SocketCommands._fixCallback(callback, error, ...args));
                 }
                 catch (error) {
                     this.adapter.log.error(`[readFile] ERROR: ${error.toString()}`);
@@ -838,15 +892,20 @@ class SocketCommands {
                 }
             }
         };
-        this.commands.readFile64 = (socket, _adapter, fileName, callback) => {
+        /**
+         * #DOCUMENTATION files
+         * Read a file from ioBroker DB as base64 string
+         *
+         * @param socket Socket instance
+         * @param adapter instance name, e.g. `vis.0`
+         * @param fileName file name, e.g. `main/vis-views.json`
+         * @param callback Callback `(error: null | undefined | Error | string, base64: string, mimeType: string) => void`
+         */
+        this.commands.readFile64 = (socket, adapter, fileName, callback) => {
             var _a;
-            // Read a file from ioBroker DB as base64 string
-            // @param {string} _adapter - instance name, e.g. `vis.0`
-            // @param {string} fileName - file name, e.g. `main/vis-views.json`
-            // @param {function} callback - `function (error, base64, mimeType)`
             if (this._checkPermissions(socket, 'readFile64', callback, fileName)) {
                 try {
-                    this.adapter.readFile(_adapter, fileName, { user: (_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user }, (error, buffer, type) => {
+                    this.adapter.readFile(adapter, fileName, { user: (_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user }, (error, buffer, type) => {
                         let data64;
                         if (buffer) {
                             try {
@@ -883,20 +942,30 @@ class SocketCommands {
                 }
             }
         };
-        this.commands.writeFile64 = (socket, _adapter, fileName, data64, options, callback) => {
-            var _a, _b;
-            // Write file into ioBroker DB as base64 string
-            // @param {string} _adapter - instance name, e.g. `vis.0`
-            // @param {string} fileName - file name, e.g. `main/vis-views.json`
-            // @param {string} data64 - file content as base64 string
-            // @param {object} options - optional `{mode: 0x0644}`
-            // @param {function} callback - `function (error)`
+        /**
+         * #DOCUMENTATION files
+         * Write a file into ioBroker DB as base64 string
+         *
+         * @param socket Socket instance
+         * @param adapter instance name, e.g. `vis.0`
+         * @param fileName file name, e.g. `main/vis-views.json`
+         * @param data64 file content as base64 string
+         * @param options optional `{mode: 0x0644}`
+         * @param callback Callback `(error: null | undefined | Error | string) => void`
+         */
+        this.commands.writeFile64 = (socket, adapter, fileName, data64, options, callback) => {
+            var _a, _b, _c;
+            let _options;
             if (typeof options === 'function') {
                 callback = options;
-                options = { user: (_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user };
+                _options = { user: (_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user };
             }
-            options = options || {};
-            options.user = (_b = socket._acl) === null || _b === void 0 ? void 0 : _b.user;
+            else if (!options || options.mode === undefined) {
+                _options = { user: (_b = socket._acl) === null || _b === void 0 ? void 0 : _b.user };
+            }
+            else {
+                _options = { user: (_c = socket._acl) === null || _c === void 0 ? void 0 : _c.user, mode: options.mode };
+            }
             if (this._checkPermissions(socket, 'writeFile64', callback, fileName)) {
                 if (!data64) {
                     return SocketCommands._fixCallback(callback, 'No data provided');
@@ -904,7 +973,7 @@ class SocketCommands {
                 // Convert base 64 to buffer
                 try {
                     const buffer = Buffer.from(data64, 'base64');
-                    this.adapter.writeFile(_adapter, fileName, buffer, options, (error, ...args) => SocketCommands._fixCallback(callback, error, ...args));
+                    this.adapter.writeFile(adapter, fileName, buffer, _options, (error, ...args) => SocketCommands._fixCallback(callback, error, ...args));
                 }
                 catch (error) {
                     this.adapter.log.error(`[writeFile64] Cannot convert data: ${error.toString()}`);
@@ -912,26 +981,37 @@ class SocketCommands {
                 }
             }
         };
-        // this function is overloaded in admin (because admin accepts only base64)
-        this.commands.writeFile = (socket, _adapter, fileName, data, options, callback) => {
-            var _a, _b;
-            // Write file into ioBroker DB as text **DEPRECATED**
-            // @param {string} _adapter - instance name, e.g. `vis.0`
-            // @param {string} fileName - file name, e.g. `main/vis-views.json`
-            // @param {string} data64 - file content as base64 string
-            // @param {object} options - optional `{mode: 0x644}`
-            // @param {function} callback - `function (error)`
+        /**
+         * #DOCUMENTATION files
+         * Write a file into ioBroker DB as text
+         *
+         * This function is overloaded in admin (because admin accepts only base64)
+         *
+         * @deprecated
+         * @param socket Socket instance
+         * @param adapter instance name, e.g. `vis.0`
+         * @param fileName file name, e.g. `main/vis-views.json`
+         * @param data file content as text
+         * @param options optional `{mode: 0x0644}`
+         * @param callback Callback `(error: null | undefined | Error | string) => void`
+         */
+        this.commands.writeFile = (socket, adapter, fileName, data, options, callback) => {
+            var _a, _b, _c;
             if (this._checkPermissions(socket, 'writeFile', callback, fileName)) {
+                let _options;
                 if (typeof options === 'function') {
                     callback = options;
-                    options = { user: (_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user };
+                    _options = { user: (_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user };
                 }
-                options = options || {};
-                options.user = (_b = socket._acl) === null || _b === void 0 ? void 0 : _b.user;
+                else if (!options || options.mode === undefined) {
+                    _options = { user: (_b = socket._acl) === null || _b === void 0 ? void 0 : _b.user };
+                }
+                else {
+                    _options = { user: (_c = socket._acl) === null || _c === void 0 ? void 0 : _c.user, mode: options.mode };
+                }
                 this.adapter.log.debug('writeFile deprecated. Please use writeFile64');
-                // const buffer = Buffer.from(data64, 'base64');
                 try {
-                    this.adapter.writeFile(_adapter, fileName, data, options, (error, ...args) => SocketCommands._fixCallback(callback, error, ...args));
+                    this.adapter.writeFile(adapter, fileName, data, _options, (error, ...args) => SocketCommands._fixCallback(callback, error, ...args));
                 }
                 catch (error) {
                     this.adapter.log.error(`[writeFile] ERROR: ${error.toString()}`);
@@ -939,15 +1019,20 @@ class SocketCommands {
                 }
             }
         };
-        this.commands.unlink = (socket, _adapter, name, callback) => {
+        /**
+         * #DOCUMENTATION files
+         * Delete file in ioBroker DB
+         *
+         * @param socket Socket instance
+         * @param adapter instance name, e.g. `vis.0`
+         * @param name file name, e.g. `main/vis-views.json`
+         * @param callback Callback `(error: null | undefined | Error | string) => void`
+         */
+        this.commands.unlink = (socket, adapter, name, callback) => {
             var _a;
-            // Delete file in ioBroker DB
-            // @param {string} _adapter - instance name, e.g. `vis.0`
-            // @param {string} name - file name, e.g. `main/vis-views.json`
-            // @param {function} callback - `function (error)`
             if (this._checkPermissions(socket, 'unlink', callback, name)) {
                 try {
-                    __classPrivateFieldGet(this, _SocketCommands_instances, "m", _SocketCommands_unlink).call(this, _adapter, name, { user: (_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user })
+                    __classPrivateFieldGet(this, _SocketCommands_instances, "m", _SocketCommands_unlink).call(this, adapter, name, { user: (_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user })
                         .then(() => SocketCommands._fixCallback(callback, undefined))
                         .catch(error => SocketCommands._fixCallback(callback, error));
                 }
@@ -957,15 +1042,20 @@ class SocketCommands {
                 }
             }
         };
-        this.commands.deleteFile = (socket, _adapter, name, callback) => {
+        /**
+         * #DOCUMENTATION files
+         * Delete a file in ioBroker DB (same as "unlink", but only for files)
+         *
+         * @param socket Socket instance
+         * @param adapter instance name, e.g. `vis.0`
+         * @param name file name, e.g. `main/vis-views.json`
+         * @param callback Callback `(error: null | undefined | Error | string) => void`
+         */
+        this.commands.deleteFile = (socket, adapter, name, callback) => {
             var _a;
-            // Delete file in ioBroker DB (same as unlink, but only for files)
-            // @param {string} _adapter - instance name, e.g. `vis.0`
-            // @param {string} name - file name, e.g. `main/vis-views.json`
-            // @param {function} callback - `function (error)`
             if (this._checkPermissions(socket, 'unlink', callback, name)) {
                 try {
-                    this.adapter.unlink(_adapter, name, { user: (_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user }, (error, ...args) => SocketCommands._fixCallback(callback, error, ...args));
+                    this.adapter.unlink(adapter, name, { user: (_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user }, (error, ...args) => SocketCommands._fixCallback(callback, error, ...args));
                 }
                 catch (error) {
                     this.adapter.log.error(`[deleteFile] ERROR: ${error.toString()}`);
@@ -973,15 +1063,20 @@ class SocketCommands {
                 }
             }
         };
-        this.commands.deleteFolder = (socket, _adapter, name, callback) => {
+        /**
+         * #DOCUMENTATION files
+         * Delete folder in ioBroker DB (same as `unlink`, but only for folders)
+         *
+         * @param socket Socket instance
+         * @param adapter instance name, e.g. `vis.0`
+         * @param name folder name, e.g. `main`
+         * @param callback Callback `(error: null | undefined | Error | string) => void`
+         */
+        this.commands.deleteFolder = (socket, adapter, name, callback) => {
             var _a;
-            // Delete file in ioBroker DB (same as `unlink`, but only for folders)
-            // @param {string} _adapter - instance name, e.g. `vis.0`
-            // @param {string} name - folder name, e.g. `main`
-            // @param {function} callback - `function (error)`
             if (this._checkPermissions(socket, 'unlink', callback, name)) {
                 try {
-                    __classPrivateFieldGet(this, _SocketCommands_instances, "m", _SocketCommands_unlink).call(this, _adapter, name, { user: (_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user })
+                    __classPrivateFieldGet(this, _SocketCommands_instances, "m", _SocketCommands_unlink).call(this, adapter, name, { user: (_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user })
                         .then(() => SocketCommands._fixCallback(callback, null))
                         .catch(error => SocketCommands._fixCallback(callback, error));
                 }
@@ -991,16 +1086,21 @@ class SocketCommands {
                 }
             }
         };
-        this.commands.renameFile = (socket, _adapter, oldName, newName, callback) => {
+        /**
+         * #DOCUMENTATION files
+         * Rename a file in ioBroker DB
+         *
+         * @param socket Socket instance
+         * @param adapter instance name, e.g. `vis.0`
+         * @param oldName current file name, e.g. `main/vis-views.json`
+         * @param newName new file name, e.g. `main/vis-views-new.json`
+         * @param callback Callback `(error: null | undefined | Error | string) => void`
+         */
+        this.commands.renameFile = (socket, adapter, oldName, newName, callback) => {
             var _a;
-            // Rename file in ioBroker DB
-            // @param {string} _adapter - instance name, e.g. `vis.0`
-            // @param {string} oldName - current file name, e.g. `main/vis-views.json`
-            // @param {string} newName - new file name, e.g. `main/vis-views-new.json`
-            // @param {function} callback - `function (error)`
             if (this._checkPermissions(socket, 'rename', callback, oldName)) {
                 try {
-                    this.adapter.rename(_adapter, oldName, newName, { user: (_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user }, (error, ...args) => SocketCommands._fixCallback(callback, error, ...args));
+                    this.adapter.rename(adapter, oldName, newName, { user: (_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user }, (error, ...args) => SocketCommands._fixCallback(callback, error, ...args));
                 }
                 catch (error) {
                     this.adapter.log.error(`[renameFile] ERROR: ${error.toString()}`);
@@ -1008,16 +1108,21 @@ class SocketCommands {
                 }
             }
         };
-        this.commands.rename = (socket, _adapter, oldName, newName, callback) => {
+        /**
+         * #DOCUMENTATION files
+         * Rename file or folder in ioBroker DB
+         *
+         * @param socket Socket instance
+         * @param adapter instance name, e.g. `vis.0`
+         * @param oldName current file name, e.g. `main/vis-views.json`
+         * @param newName new file name, e.g. `main/vis-views-new.json`
+         * @param callback Callback `(error: null | undefined | Error | string) => void`
+         */
+        this.commands.rename = (socket, adapter, oldName, newName, callback) => {
             var _a;
-            // Rename file or folder in ioBroker DB
-            // @param {string} _adapter - instance name, e.g. `vis.0`
-            // @param {string} oldName - current file name, e.g. `main/vis-views.json`
-            // @param {string} newName - new file name, e.g. `main/vis-views-new.json`
-            // @param {function} callback - `function (error)`
             if (this._checkPermissions(socket, 'rename', callback, oldName)) {
                 try {
-                    __classPrivateFieldGet(this, _SocketCommands_instances, "m", _SocketCommands_rename).call(this, _adapter, oldName, newName, { user: (_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user })
+                    __classPrivateFieldGet(this, _SocketCommands_instances, "m", _SocketCommands_rename).call(this, adapter, oldName, newName, { user: (_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user })
                         .then(() => SocketCommands._fixCallback(callback, undefined))
                         .catch(error => SocketCommands._fixCallback(callback, error));
                 }
@@ -1027,15 +1132,20 @@ class SocketCommands {
                 }
             }
         };
-        this.commands.mkdir = (socket, _adapter, dirName, callback) => {
+        /**
+         * #DOCUMENTATION files
+         * Create a folder in ioBroker DB
+         *
+         * @param socket Socket instance
+         * @param adapter instance name, e.g. `vis.0`
+         * @param dirName desired folder name, e.g. `main`
+         * @param callback Callback `(error: null | undefined | Error | string) => void`
+         */
+        this.commands.mkdir = (socket, adapter, dirName, callback) => {
             var _a;
-            // Create folder in ioBroker DB
-            // @param {string} _adapter - instance name, e.g. `vis.0`
-            // @param {string} dirName - desired folder name, e.g. `main`
-            // @param {function} callback - `function (error)`
             if (this._checkPermissions(socket, 'mkdir', callback, dirName)) {
                 try {
-                    this.adapter.mkdir(_adapter, dirName, { user: (_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user }, (error, ...args) => SocketCommands._fixCallback(callback, error, ...args));
+                    this.adapter.mkdir(adapter, dirName, { user: (_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user }, (error, ...args) => SocketCommands._fixCallback(callback, error, ...args));
                 }
                 catch (error) {
                     this.adapter.log.error(`[mkdir] ERROR: ${error.toString()}`);
@@ -1043,25 +1153,24 @@ class SocketCommands {
                 }
             }
         };
-        this.commands.readDir = (socket, _adapter, dirName, options, callback) => {
-            var _a, _b;
-            // Read content of folder in ioBroker DB
-            // @param {string} _adapter - instance name, e.g. `vis.0`
-            // @param {string} dirName - folder name, e.g. `main`
-            // @param {object} options - optional `{filter: '*'}` or `{filter: '*.json'}`
-            // @param {function} callback - `function (error, files)` where `files` is an array of objects, like `{file: 'vis-views.json', isDir: false, stats: {size: 123}, modifiedAt: 1661336290090, acl: {owner: 'system.user.admin', ownerGroup: 'system.group.administrator', permissions: 1632, read: true, write: true}`
+        /**
+         * #DOCUMENTATION files
+         * Read content of folder in ioBroker DB
+         *
+         * @param socket Socket instance
+         * @param adapter instance name, e.g. `vis.0`
+         * @param dirName folder name, e.g. `main`
+         * @param options for future use
+         * @param callback Callback `(error: null | undefined | Error | string, files: Array<{file: string, isDir: boolean, stats: {size: number}, modifiedAt: number, acl: {owner: string, ownerGroup: string, permissions: number, read: boolean, write: boolean}}>) => void`
+         */
+        this.commands.readDir = (socket, adapter, dirName, options, callback) => {
+            var _a;
             if (typeof options === 'function') {
                 callback = options;
-                options = {};
-            }
-            options = options || {};
-            options.user = (_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user;
-            if (options.filter === undefined) {
-                options.filter = true;
             }
             if (this._checkPermissions(socket, 'readDir', callback, dirName)) {
                 try {
-                    this.adapter.readDir(_adapter, dirName, { user: (_b = socket._acl) === null || _b === void 0 ? void 0 : _b.user }, (error, ...args) => SocketCommands._fixCallback(callback, error, ...args));
+                    this.adapter.readDir(adapter, dirName, { user: (_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user }, (error, ...args) => SocketCommands._fixCallback(callback, error, ...args));
                 }
                 catch (error) {
                     this.adapter.log.error(`[readDir] ERROR: ${error.toString()}`);
@@ -1069,29 +1178,31 @@ class SocketCommands {
                 }
             }
         };
-        this.commands.chmodFile = (socket, 
-        /** instance name, e.g. `vis.0` */
-        adapter, 
-        /** file name, e.g. `main/vis-views.json` */
-        fileName, options, callback) => {
+        /**
+         * #DOCUMENTATION files
+         * Change a file mode in ioBroker DB
+         *
+         * @param socket Socket instance
+         * @param adapter instance name, e.g. `vis.0`
+         * @param fileName file name, e.g. `main/vis-views.json`
+         * @param options options `{mode: 0x644}`
+         * @param options.mode File mode in linux format 0x644. The first digit is user, second group, third others. Bit 1 is `execute`, bit 2 is `write`, bit 3 is `read`
+         * @param callback Callback `(error: string | Error | null | undefined) => void`
+         */
+        this.commands.chmodFile = (socket, adapter, fileName, options, callback) => {
             var _a;
-            // Change file mode in ioBroker DB
-            // @param {string} _adapter - instance name, e.g. `vis.0`
-            // @param {string} fileName - file name, e.g. `main/vis-views.json`
-            // @param {object} options - `{mode: 0x644}` or 0x644. The first digit is user, second group, third others. Bit 1 is `execute`, bit 2 is `write`, bit 3 is `read`
-            // @param {function} callback - `function (error)`
-            if (typeof options === 'function') {
-                callback = options;
-                options = {};
+            let _options;
+            if ((options === null || options === void 0 ? void 0 : options.mode) !== undefined) {
+                _options = { user: (_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user, mode: options.mode };
             }
-            options = options || {};
-            options.user = (_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user;
-            if (options.filter === undefined) {
-                options.filter = true;
+            else {
+                this.adapter.log.error(`[chownFile] ERROR: no options`);
+                SocketCommands._fixCallback(callback, 'no options');
+                return;
             }
             if (this._checkPermissions(socket, 'chmodFile', callback, fileName)) {
                 try {
-                    this.adapter.chmodFile(adapter, fileName, options, (error, ...args) => SocketCommands._fixCallback(callback, error, ...args));
+                    this.adapter.chmodFile(adapter, fileName, _options, (error, ...args) => SocketCommands._fixCallback(callback, error, ...args));
                 }
                 catch (error) {
                     this.adapter.log.error(`[chmodFile] ERROR: ${error.toString()}`);
@@ -1099,18 +1210,32 @@ class SocketCommands {
                 }
             }
         };
-        this.commands.chownFile = (socket, _adapter, fileName, options, callback) => {
+        /**
+         * #DOCUMENTATION files
+         * Change file owner in ioBroker DB
+         *
+         * @param socket Socket instance
+         * @param adapter instance name, e.g. `vis.0`
+         * @param fileName file name, e.g. `main/vis-views.json`
+         * @param options options `{owner: 'system.user.user', ownerGroup: 'system.group.administrator'}` or `system.user.user`. If ownerGroup is not defined, it will be taken from owner.
+         * @param options.owner New owner, like 'system.user.user'
+         * @param options.ownerGroup New owner group, like 'system.group.administrator' If ownerGroup is not defined, it will be taken from owner.
+         * @param callback Callback `(error: null | undefined | Error | string) => void`
+         */
+        this.commands.chownFile = (socket, adapter, fileName, options, callback) => {
             var _a;
-            // Change file owner in ioBroker DB
-            // @param {string} _adapter - instance name, e.g. `vis.0`
-            // @param {string} fileName - file name, e.g. `main/vis-views.json`
-            // @param {object} options - `{owner: 'system.user.user', ownerGroup: ''system.group.administrator'}` or 'system.user.user'. If ownerGroup is not defined, it will be taken from owner.
-            // @param {function} callback - `function (error)`
+            let _options;
+            if (options) {
+                _options = { user: (_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user, owner: options.owner, ownerGroup: options.ownerGroup };
+            }
+            else {
+                this.adapter.log.error(`[chownFile] ERROR: no options`);
+                SocketCommands._fixCallback(callback, 'no options');
+                return;
+            }
             if (this._checkPermissions(socket, 'chownFile', callback, fileName)) {
-                options = options || {};
-                options.user = (_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user;
                 try {
-                    this.adapter.chownFile(_adapter, fileName, options, (error, ...args) => SocketCommands._fixCallback(callback, error, ...args));
+                    this.adapter.chownFile(adapter, fileName, _options, (error, ...args) => SocketCommands._fixCallback(callback, error, ...args));
                 }
                 catch (error) {
                     this.adapter.log.error(`[chownFile] ERROR: ${error.toString()}`);
@@ -1118,15 +1243,20 @@ class SocketCommands {
                 }
             }
         };
-        this.commands.fileExists = (socket, _adapter, fileName, callback) => {
+        /**
+         * #DOCUMENTATION files
+         * Check if the file or folder exists in ioBroker DB
+         *
+         * @param socket Socket instance
+         * @param adapter instance name, e.g. `vis.0`
+         * @param fileName file name, e.g. `main/vis-views.json`
+         * @param callback Callback `(error: null | undefined | Error | string, exists?: boolean) => void`
+         */
+        this.commands.fileExists = (socket, adapter, fileName, callback) => {
             var _a;
-            // Check if the file or folder exists in ioBroker DB
-            // @param {string} _adapter - instance name, e.g. `vis.0`
-            // @param {string} fileName - file name, e.g. `main/vis-views.json`
-            // @param {function} callback - `function (error, isExist)`
             if (this._checkPermissions(socket, 'fileExists', callback, fileName)) {
                 try {
-                    this.adapter.fileExists(_adapter, fileName, { user: (_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user }, (error, ...args) => SocketCommands._fixCallback(callback, error, ...args));
+                    this.adapter.fileExists(adapter, fileName, { user: (_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user }, (error, ...args) => SocketCommands._fixCallback(callback, error, ...args));
                 }
                 catch (error) {
                     this.adapter.log.error(`[fileExists] ERROR: ${error.toString()}`);
@@ -1134,25 +1264,40 @@ class SocketCommands {
                 }
             }
         };
+        /**
+         * #DOCUMENTATION files
+         * Subscribe to file changes in ioBroker DB
+         *
+         * @param socket Socket instance
+         * @param id instance name, e.g. `vis.0` or any object ID of type `meta`. `id` could have wildcards `*` too.
+         * @param pattern file name pattern, e.g. `main/*.json` or array of names
+         * @param callback Callback `(error: null | undefined | Error | string) => void`
+         */
         this.commands.subscribeFiles = (socket, id, pattern, callback) => {
-            // Subscribe to file changes in ioBroker DB
-            // @param {string} id - instance name, e.g. `vis.0` or any object ID of type `meta`. `id` could have wildcards `*` too.
-            // @param {string} pattern - file name pattern, e.g. `main/*.json`
-            // @param {function} callback - `function (error)`
             return __classPrivateFieldGet(this, _SocketCommands_instances, "m", _SocketCommands_subscribeFiles).call(this, socket, id, pattern, callback);
         };
+        /**
+         * #DOCUMENTATION files
+         * Unsubscribe from file changes in ioBroker DB
+         *
+         * @param socket Socket instance
+         * @param id instance name, e.g. `vis.0` or any object ID of type `meta`. `id` could have wildcards `*` too.
+         * @param pattern file name pattern, e.g. `main/*.json` or array of names
+         * @param callback Callback `(error: null | undefined | Error | string) => void`
+         */
         this.commands.unsubscribeFiles = (socket, id, pattern, callback) => {
-            // Unsubscribe from file changes in ioBroker DB
-            // @param {string} id - instance name, e.g. `vis.0` or any object ID of type `meta`. `id` could have wildcards `*` too.
-            // @param {string} pattern - file name pattern, e.g. `main/*.json`
-            // @param {function} callback - `function (error)`
             return this._unsubscribeFiles(socket, id, pattern, callback);
         };
+        /**
+         * #DOCUMENTATION commands
+         * Read all instances of the given adapter, or all instances of all adapters if adapterName is not defined
+         *
+         * @param socket Socket instance
+         * @param adapterName adapter name, e.g. `history`. To get all instances of all adapters just place here "".
+         * @param callback callback `(error: null | undefined | Error | string, instanceList?: ioBroker.InstanceObject[]) => void`
+         */
         this.commands.getAdapterInstances = (socket, adapterName, callback) => {
             var _a;
-            // Read all instances of the given adapter, or all instances of all adapters if adapterName is not defined
-            // @param {string} adapterName - optional adapter name, e.g. `history`.
-            // @param {function} callback - `function (error, instanceList)`, where instanceList is an array of instance objects, e.g. `{_id: 'system.adapter.history.0', common: {name: 'history', ...}, native: {...}}`
             if (typeof callback === 'function') {
                 if (this._checkPermissions(socket, 'getObject', callback)) {
                     let _adapterName = adapterName !== undefined && adapterName !== null ? adapterName : this.adapterName || '';
@@ -1173,11 +1318,9 @@ class SocketCommands {
                                     if (obj.common) {
                                         delete obj.common.news;
                                     }
-                                    // @ts-expect-error fixed in js-controller 7
                                     this.fixAdminUI(obj);
                                     return obj;
-                                }).filter(obj => obj &&
-                                    (!adapterName || (obj.common && obj.common.name === adapterName))));
+                                }).filter(obj => { var _a; return obj && (!adapterName || ((_a = obj.common) === null || _a === void 0 ? void 0 : _a.name) === adapterName); }));
                             }
                         });
                     }
@@ -1191,15 +1334,20 @@ class SocketCommands {
     }
     /** Init commands for states */
     _initCommandsStates() {
+        /**
+         * #DOCUMENTATION states
+         * Get states by pattern of current adapter
+         *
+         * @param socket Socket instance
+         * @param pattern optional pattern, like `system.adapter.*` or array of state IDs. If the pattern is omitted, you will get ALL states of current adapter
+         * @param callback callback `(error: null | undefined | Error | string, states?: Record<string, ioBroker.State>) => void`
+         */
         this.commands.getStates = (socket, pattern, callback) => {
             var _a;
-            // Read states by pattern
-            // @param {string} pattern - optional pattern, like `system.adapter.*` or array of state IDs
-            // @param {function} callback - `function (error, states)`, where `states` is an object like `{'system.adapter.history.0': {_id: 'system.adapter.history.0', common: {name: 'history', ...}, native: {...}, 'system.adapter.history.1': {...}}}`
             if (this._checkPermissions(socket, 'getStates', callback, pattern)) {
                 if (typeof pattern === 'function') {
                     callback = pattern;
-                    pattern = null;
+                    pattern = undefined;
                 }
                 if (typeof callback === 'function') {
                     try {
@@ -1215,31 +1363,29 @@ class SocketCommands {
                 }
             }
         };
+        /**
+         * #DOCUMENTATION states
+         * Same as getStates
+         *
+         * @deprecated
+         * @param socket Socket instance
+         * @param pattern pattern like `system.adapter.*` or array of state IDs
+         * @param callback callback `(error: null | undefined | Error | string, states?: Record<string, ioBroker.State>) => void`
+         */
         this.commands.getForeignStates = (socket, pattern, callback) => {
-            var _a;
-            // Read all states (which might not belong to this adapter) which match the given pattern
-            // @param {string} pattern - pattern like `system.adapter.*` or array of state IDs
-            // @param {function} callback - `function (error)`
-            if (this._checkPermissions(socket, 'getStates', callback)) {
-                if (typeof callback === 'function') {
-                    try {
-                        this.adapter.getForeignStates(pattern, { user: (_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user }, (error, ...args) => SocketCommands._fixCallback(callback, error, ...args));
-                    }
-                    catch (error) {
-                        this.adapter.log.error(`[getForeignStates] ERROR: ${error}`);
-                        SocketCommands._fixCallback(callback, error);
-                    }
-                }
-                else {
-                    this.adapter.log.warn('[getForeignStates] Invalid callback');
-                }
-            }
+            this.adapter.log.info('Use getStates');
+            this.commands.getStates(socket, pattern, callback);
         };
+        /**
+         * #DOCUMENTATION states
+         * Get a state by ID
+         *
+         * @param socket Socket instance
+         * @param id State ID, e.g. `system.adapter.admin.0.memRss`
+         * @param callback Callback `(error: null | undefined | Error | string, state?: ioBroker.State) => void`
+         */
         this.commands.getState = (socket, id, callback) => {
             var _a;
-            // Read one state.
-            // @param {string} id - State ID like, 'system.adapter.admin.0.memRss'
-            // @param {function} callback - `function (error, state)`, where `state` is an object like `{val: 123, ts: 1663915537418, ack: true, from: 'system.adapter.admin.0', q: 0, lc: 1663915537418, c: 'javascript.0'}`
             if (this._checkPermissions(socket, 'getState', callback, id)) {
                 if (typeof callback === 'function') {
                     if (this.states && this.states[id]) {
@@ -1266,22 +1412,27 @@ class SocketCommands {
                 }
             }
         };
+        /**
+         * #DOCUMENTATION states
+         * Set a state by ID
+         *
+         * @param socket Socket instance
+         * @param id State ID, e.g. `system.adapter.admin.0.memRss`
+         * @param state State value or object, e.g. `{val: 123, ack: true}`
+         * @param callback Callback `(error: null | undefined | Error | string, state?: ioBroker.State) => void`
+         */
         this.commands.setState = (socket, id, state, callback) => {
-            var _a;
-            // Write one state.
-            // @param {string} id - State ID like, 'system.adapter.admin.0.memRss'
-            // @param {any} state - value or object like `{val: 123, ack: true}`
-            // @param {function} callback - `function (error, state)`, where `state` is an object like `{val: 123, ts: 1663915537418, ack: true, from: 'system.adapter.admin.0', q: 0, lc: 1663915537418, c: 'javascript.0'}`
+            var _a, _b;
             if (this._checkPermissions(socket, 'setState', callback, id)) {
                 if (typeof state !== 'object') {
                     state = { val: state };
                 }
                 // clear cache
-                if (this.states && this.states[id]) {
+                if ((_a = this.states) === null || _a === void 0 ? void 0 : _a[id]) {
                     delete this.states[id];
                 }
                 try {
-                    this.adapter.setForeignState(id, state, { user: (_a = socket._acl) === null || _a === void 0 ? void 0 : _a.user }, (error, ...args) => SocketCommands._fixCallback(callback, error, ...args));
+                    this.adapter.setForeignState(id, state, { user: (_b = socket._acl) === null || _b === void 0 ? void 0 : _b.user }, (error, ...args) => SocketCommands._fixCallback(callback, error, ...args));
                 }
                 catch (error) {
                     this.adapter.log.error(`[setState] ERROR: ${error.toString()}`);
@@ -1289,48 +1440,83 @@ class SocketCommands {
                 }
             }
         };
+        /**
+         * #DOCUMENTATION states
+         * Get a binary state by ID
+         *
+         * @deprecated
+         * @param _socket Socket instance (not used)
+         * @param id State ID, e.g. `javascript.0.binary`
+         * @param callback Callback `(error: null | undefined | Error | string, base64?: string) => void`
+         */
         this.commands.getBinaryState = (_socket, id, callback) => {
-            // Read one binary state.
-            // @param {string} id - State ID like, 'javascript.0.binary'
-            // @param {function} callback - `function (error, base64)`
             if (typeof callback === 'function') {
                 this.adapter.log.warn(`getBinaryState is deprecated, but called for ${id}`);
                 callback('This function is deprecated');
             }
         };
-        this.commands.setBinaryState = (_socket, id, base64, callback) => {
-            // Write one binary state.
-            // @param {string} id - State ID like, 'javascript.0.binary'
-            // @param {string} base64 - State value as base64 string. Binary states have no acknowledged flag.
-            // @param {function} callback - `function (error)`
+        /**
+         * #DOCUMENTATION states
+         * Set a binary state by ID
+         *
+         * @deprecated
+         * @param _socket Socket instance
+         * @param id State ID, e.g. `javascript.0.binary`
+         * @param _base64 State value as base64 string. Binary states have no acknowledged flag.
+         * @param callback Callback `(error: null | undefined | Error | string) => void`
+         */
+        this.commands.setBinaryState = (_socket, id, _base64, callback) => {
             if (typeof callback === 'function') {
                 this.adapter.log.warn(`setBinaryState is deprecated, but called for ${id}`);
                 callback('This function is deprecated');
             }
         };
+        /**
+         * #DOCUMENTATION states
+         * Subscribe to state changes by pattern.
+         * The events will come as 'stateChange' events to the socket.
+         *
+         * @param socket Socket instance
+         * @param pattern Pattern like `system.adapter.*` or array of states like `['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']`
+         * @param callback Callback `(error: string | null) => void`
+         */
         this.commands.subscribe = (socket, pattern, callback) => {
-            // Subscribe to state changes by pattern. The events will come as 'stateChange' events to the socket.
-            // @param {string} pattern - pattern like 'system.adapter.*' or array of states like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
-            // @param {function} callback - `function (error)`
-            return __classPrivateFieldGet(this, _SocketCommands_instances, "m", _SocketCommands_subscribeStates).call(this, socket, pattern, callback);
+            __classPrivateFieldGet(this, _SocketCommands_instances, "m", _SocketCommands_subscribeStates).call(this, socket, pattern, callback);
         };
+        /**
+         * #DOCUMENTATION states
+         * Subscribe to state changes by pattern. Same as `subscribe`.
+         * The events will come as 'stateChange' events to the socket.
+         *
+         * @param socket Socket instance
+         * @param pattern Pattern like `system.adapter.*` or array of states like `['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']`
+         * @param callback Callback `(error: string | null) => void`
+         */
         this.commands.subscribeStates = (socket, pattern, callback) => {
-            // Subscribe to state changes by pattern. Same as `subscribe`. The events will come as 'stateChange' events to the socket.
-            // @param {string} pattern - pattern like 'system.adapter.*' or array of states like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
-            // @param {function} callback - `function (error)`
-            return __classPrivateFieldGet(this, _SocketCommands_instances, "m", _SocketCommands_subscribeStates).call(this, socket, pattern, callback);
+            __classPrivateFieldGet(this, _SocketCommands_instances, "m", _SocketCommands_subscribeStates).call(this, socket, pattern, callback);
         };
+        /**
+         * #DOCUMENTATION states
+         * Unsubscribe from state changes by pattern.
+         *
+         * @param socket Socket instance
+         * @param pattern Pattern like `system.adapter.*` or array of states like `['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']`
+         * @param callback Callback `(error: string | null) => void`
+         */
         this.commands.unsubscribe = (socket, pattern, callback) => {
-            // Unsubscribe from state changes by pattern.
-            // @param {string} pattern - pattern like 'system.adapter.*' or array of states like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
-            // @param {function} callback - `function (error)`
-            return __classPrivateFieldGet(this, _SocketCommands_instances, "m", _SocketCommands_unsubscribeStates).call(this, socket, pattern, callback);
+            __classPrivateFieldGet(this, _SocketCommands_instances, "m", _SocketCommands_unsubscribeStates).call(this, socket, pattern, callback);
         };
+        /**
+         * #DOCUMENTATION states
+         * Unsubscribe from state changes by pattern. Same as `unsubscribe`.
+         * The events will come as 'stateChange' events to the socket.
+         *
+         * @param socket Socket instance
+         * @param pattern Pattern like `system.adapter.*` or array of states like `['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']`
+         * @param callback Callback `(error: string | null) => void`
+         */
         this.commands.unsubscribeStates = (socket, pattern, callback) => {
-            // Unsubscribe from state changes by pattern. Same as `unsubscribe`.
-            // @param {string} pattern - pattern like 'system.adapter.*' or array of states like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
-            // @param {function} callback - `function (error)`
-            return __classPrivateFieldGet(this, _SocketCommands_instances, "m", _SocketCommands_unsubscribeStates).call(this, socket, pattern, callback);
+            __classPrivateFieldGet(this, _SocketCommands_instances, "m", _SocketCommands_unsubscribeStates).call(this, socket, pattern, callback);
         };
     }
     /** Init commands for objects */
@@ -1814,5 +2000,5 @@ async function _SocketCommands_unlink(adapter, name, options) {
     }
 };
 SocketCommands.ERROR_PERMISSION = 'permissionError';
-SocketCommands.COMMANDS_PERMISSIONS = types_1.COMMANDS_PERMISSIONS;
+SocketCommands.COMMANDS_PERMISSIONS = exports.COMMANDS_PERMISSIONS;
 //# sourceMappingURL=socketCommands.js.map

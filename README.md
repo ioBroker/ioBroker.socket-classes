@@ -66,7 +66,7 @@ io.close();
 ## GUI subscribes
 GUI client can send to desired instance the `subscribe` message
 ```js
-    socket.emit('clientSubscribe', 'cameras.0', 'startCamera', {width: 640, height: 480}, result => console.log('Started: ' + result));
+    socket.emit('clientSubscribe', 'cameras.0', 'startCamera', { width: 640, height: 480 }, result => console.log('Started: ' + result));
 ```
 
 The instance 'cameras.0' will receive message `clientSubscribe` with information who want to receive messages.
@@ -83,8 +83,7 @@ adapter.on('message', obj => {
             this.subscribes = this.subscribes || [];
             this.subscribes.push({sid: obj.message.sid, from: obj.from, type: obj.message.type, camera});
         }
-    } else
-    if (obj?.command === 'clientUnsubscribe' || obj?.command === 'clientSubscribeError') {
+    } else if (obj?.command === 'clientUnsubscribe' || obj?.command === 'clientSubscribeError') {
         if (obj?.message.type && obj.message.type.startsWith('startCamera/')) {
             const [, camera] = obj.message.type.split('/');
             if (this.subscribes) {
@@ -119,340 +118,351 @@ function sendImage(camera, data) {
 ## Web Methods
 <!-- WEB_METHODS_START -->
 ### List of commands
-* [authenticate](#authenticate_w)
-* [error](#error_w)
-* [log](#log_w)
-* [checkFeatureSupported](#checkfeaturesupported_w)
-* [getHistory](#gethistory_w)
-* [httpGet](#httpget_w)
-* [sendTo](#sendto_w)
-* [sendToHost](#sendtohost_w)
-* [authEnabled](#authenabled_w)
-* [logout](#logout_w)
-* [listPermissions](#listpermissions_w)
-* [getUserPermissions](#getuserpermissions_w)
-* [getVersion](#getversion_w)
-* [getAdapterName](#getadaptername_w)
-* [getObject](#getobject_w)
-* [getObjects](#getobjects_w)
-* [subscribeObjects](#subscribeobjects_w)
-* [unsubscribeObjects](#unsubscribeobjects_w)
-* [getObjectView](#getobjectview_w)
-* [setObject](#setobject_w)
-* [delObject](#delobject_w)
-* [clientSubscribe](#clientsubscribe_w)
-* [clientUnsubscribe](#clientunsubscribe_w)
-* [getStates](#getstates_w)
-* [getForeignStates](#getforeignstates_w)
-* [getState](#getstate_w)
-* [setState](#setstate_w)
-* [getBinaryState](#getbinarystate_w)
-* [setBinaryState](#setbinarystate_w)
-* [subscribe](#subscribe_w)
-* [subscribeStates](#subscribestates_w)
-* [unsubscribe](#unsubscribe_w)
-* [unsubscribeStates](#unsubscribestates_w)
-* [readFile](#readfile_w)
-* [readFile64](#readfile64_w)
-* [writeFile64](#writefile64_w)
-* [writeFile](#writefile_w)
-* [unlink](#unlink_w)
-* [deleteFile](#deletefile_w)
-* [deleteFolder](#deletefolder_w)
-* [renameFile](#renamefile_w)
-* [rename](#rename_w)
-* [mkdir](#mkdir_w)
-* [readDir](#readdir_w)
-* [chmodFile](#chmodfile_w)
-* [chownFile](#chownfile_w)
-* [fileExists](#fileexists_w)
-* [subscribeFiles](#subscribefiles_w)
-* [unsubscribeFiles](#unsubscribefiles_w)
-* [getAdapterInstances](#getadapterinstances_w)
-### <a name="authenticate_w"></a>authenticate(user, pass, callback)
-Authenticate user by login and password
-* user *(string)*: user name
-* pass *(string)*: password
-* callback *(function)*: `function (isUserAuthenticated, isAuthenticationUsed)`
+* [`authenticate`](#authenticate_w)
+* [`error`](#error_w)
+* [`log`](#log_w)
+* [`checkFeatureSupported`](#checkfeaturesupported_w)
+* [`getHistory`](#gethistory_w)
+* [`httpGet`](#httpget_w)
+* [`sendTo`](#sendto_w)
+* [`sendToHost`](#sendtohost_w)
+* [`authEnabled`](#authenabled_w)
+* [`logout`](#logout_w)
+* [`listPermissions`](#listpermissions_w)
+* [`getUserPermissions`](#getuserpermissions_w)
+* [`getVersion`](#getversion_w)
+* [`getAdapterName`](#getadaptername_w)
+* [`clientSubscribe`](#clientsubscribe_w)
+* [`clientUnsubscribe`](#clientunsubscribe_w)
+* [`getAdapterInstances`](#getadapterinstances_w)
+* [`getObject`](#getobject_w)
+* [`getObjects`](#getobjects_w)
+* [`subscribeObjects`](#subscribeobjects_w)
+* [`unsubscribeObjects`](#unsubscribeobjects_w)
+* [`getObjectView`](#getobjectview_w)
+* [`setObject`](#setobject_w)
+* [`delObject`](#delobject_w)
+* [`getStates`](#getstates_w)
+* [`getForeignStates`](#getforeignstates_w)
+* [`getState`](#getstate_w)
+* [`setState`](#setstate_w)
+* [`getBinaryState`](#getbinarystate_w)
+* [`setBinaryState`](#setbinarystate_w)
+* [`subscribe`](#subscribe_w)
+* [`subscribeStates`](#subscribestates_w)
+* [`unsubscribe`](#unsubscribe_w)
+* [`unsubscribeStates`](#unsubscribestates_w)
+* [`readFile`](#readfile_w)
+* [`readFile64`](#readfile64_w)
+* [`writeFile64`](#writefile64_w)
+* [`writeFile`](#writefile_w)
+* [`unlink`](#unlink_w)
+* [`deleteFile`](#deletefile_w)
+* [`deleteFolder`](#deletefolder_w)
+* [`renameFile`](#renamefile_w)
+* [`rename`](#rename_w)
+* [`mkdir`](#mkdir_w)
+* [`readDir`](#readdir_w)
+* [`chmodFile`](#chmodfile_w)
+* [`chownFile`](#chownfile_w)
+* [`fileExists`](#fileexists_w)
+* [`subscribeFiles`](#subscribefiles_w)
+* [`unsubscribeFiles`](#unsubscribefiles_w)
+### Commands
+#### <a name="authenticate_w"></a>`authenticate(callback)`
+Wait till the user is authenticated.
+As the user authenticates himself, the callback will be called
+* `callback` *(isUserAuthenticated: boolean, isAuthenticationUsed: boolean) => void) => void*: Callback `(isUserAuthenticated: boolean, isAuthenticationUsed: boolean) => void`
 
-### <a name="error_w"></a>error(error)
+#### <a name="error_w"></a>`error(error)`
 Write error into ioBroker log
-* error *(string)*: error text
+* `error` *Error | string*: Error object or error text
 
-### <a name="log_w"></a>log(text, level)
+#### <a name="log_w"></a>`log(text, level)`
 Write log entry into ioBroker log
-* text *(string)*: log text
-* level *(string)*: one of `['silly', 'debug', 'info', 'warn', 'error']`. Default is 'debug'.
+* `text` *string*: log text
+* `level` *ioBroker.LogLevel*: one of `['silly', 'debug', 'info', 'warn', 'error']`. Default is 'debug'.
 
-### <a name="checkfeaturesupported_w"></a>checkFeatureSupported(feature, callback)
-Checks, if the same feature is supported by the current js-controller
-* feature *(string)*: feature name like `CONTROLLER_LICENSE_MANAGER`
-* callback *(function)*: `function (error, isSupported)`
+#### <a name="checkfeaturesupported_w"></a>`checkFeatureSupported(feature, callback)`
+Check if the same feature is supported by the current js-controller
+* `feature` *SupportedFeature*: feature name like `CONTROLLER_LICENSE_MANAGER`
+* `callback` *(error: string | Error | null | undefined, isSupported?: boolean) => void) => void*: callback `(error: string | Error | null | undefined, isSupported: boolean) => void`
 
-### <a name="gethistory_w"></a>getHistory(id, options, callback)
+#### <a name="gethistory_w"></a>`getHistory(id, options, callback)`
 Get history data from specific instance
-* id *(string)*: object ID
-* options *(object)*: See object description here: https://github.com/ioBroker/ioBroker.history/blob/master/docs/en/README.md#access-values-from-javascript-adapter
-* callback *(function)*: `function (error, result)`
+* `id` *string*: object ID
+* `options` *ioBroker.GetHistoryOptions*: History options
+* `callback` *(error: string | Error | null | undefined, result: ioBroker.GetHistoryResult) => void) => void*: callback `(error: string | Error | null | undefined, result: ioBroker.GetHistoryResult) => void`
 
-### <a name="httpget_w"></a>httpGet(url, callback)
-Read content of HTTP(S) page server-side (without CORS and stuff)
-* url *(string)*: Page URL
-* callback *(function)*: `function (error, {status, statusText}, body)`
+#### <a name="httpget_w"></a>`httpGet(url, callback)`
+Read content of HTTP(s) page server-side (without CORS and stuff)
+* `url` *string*: Page URL
+* `callback` *(error: Error | null | undefined | string, result?: {status: number; statusText: string}, data?: string) => void*: callback `(error: Error | null, result?: { status: number; statusText: string }, data?: string) => void`
 
-### <a name="sendto_w"></a>sendTo(adapterInstance, command, message, callback)
+#### <a name="sendto_w"></a>`sendTo(adapterInstance, command, message, callback)`
 Send the message to specific instance
-* adapterInstance *(string)*: instance name, e.g. `history.0`
-* command *(string)*: command name
-* message *(object)*: the message is instance dependent
-* callback *(function)*: `function (result)`
+* `adapterInstance` *string*: instance name, e.g. `history.0`
+* `command` *string*: command name
+* `message` *any*: the message is instance-dependent
+* `callback` *(result: any) => void) => void*: callback `(result: any) => void`
 
-### <a name="sendtohost_w"></a>sendToHost(host, command, message, callback)
+#### <a name="sendtohost_w"></a>`sendToHost(host, command, message, callback)`
 Send a message to the specific host.
 Host can answer to the following commands: `cmdExec, getRepository, getInstalled, getInstalledAdapter, getVersion, getDiagData, getLocationOnDisk, getDevList, getLogs, getHostInfo, delLogs, readDirAsZip, writeDirAsZip, readObjectsAsZip, writeObjectsAsZip, checkLogging, updateMultihost`.
-* host *(string)*: instance name, e.g. `history.0`
-* command *(string)*: command name
-* message *(object)*: the message is command-specific
-* callback *(function)*: `function (result)`
+* `host` *string*: Host name. With or without 'system.host.' prefix
+* `command` * 'shell' | 'cmdExec' | 'getRepository' | 'getInstalled' | 'getInstalledAdapter' | 'getVersion' | 'getDiagData' | 'getLocationOnDisk' | 'getDevList' | 'getLogs' | 'getLogFile' | 'getLogFiles' | 'getHostInfo' | 'getHostInfoShort' | 'delLogs' | 'readDirAsZip' | 'writeDirAsZip' | 'readObjectsAsZip' | 'writeObjectsAsZip' | 'checkLogging' | 'updateMultihost' | 'upgradeController' | 'upgradeAdapterWithWebserver' | 'getInterfaces' | 'upload' | 'rebuildAdapter' | 'readBaseSettings' | 'writeBaseSettings' | 'addNotification' | 'clearNotifications' | 'getNotifications' | 'updateLicenses' | 'upgradeOsPackages' | 'restartController' | 'sendToSentry'*: Host command
+* `message` *any*: the message is command-specific
+* `callback` *(result: {error?: string; result?: any}) => void) => void*: callback `(result: { error?: string; result?: any }) => void`
 
-### <a name="authenabled_w"></a>authEnabled(callback)
+#### <a name="authenabled_w"></a>`authEnabled(callback)`
 Ask server is authentication enabled, and if the user authenticated
-* callback *(function)*: `function (isAuthenticationUsed, userName)`
+* `callback` *(isUserAuthenticated: boolean | Error | string, isAuthenticationUsed: boolean) => void) => void*: callback `(isUserAuthenticated: boolean | Error | string, isAuthenticationUsed: boolean) => void`
 
-### <a name="logout_w"></a>logout(callback)
+#### <a name="logout_w"></a>`logout(callback)`
 Logout user
-* callback *(function)*: function (error)
+* `callback` *ioBroker.ErrorCallback*: callback `(error?: Error) => void`
 
-### <a name="listpermissions_w"></a>listPermissions(callback)
+#### <a name="listpermissions_w"></a>`listPermissions(callback)`
 List commands and permissions
-* callback *(function)*: `function (permissions)`
+* `callback` *(permissions: Record< string, {type: 'object' | 'state' | 'users' | 'other' | 'file' | ''; operation: SocketOperation} >) => void*: callback `(permissions: Record<string, { type: 'object' | 'state' | 'users' | 'other' | 'file' | ''; operation: SocketOperation }>) => void`
 
-### <a name="getuserpermissions_w"></a>getUserPermissions(callback)
+#### <a name="getuserpermissions_w"></a>`getUserPermissions(callback)`
 Get user permissions
-* callback *(function)*: `function (error, permissions)`
+* `callback` *(error: string | null | undefined, userPermissions?: SocketACL | null) => void) => void*: callback `(error: string | null | undefined, userPermissions?: SocketACL | null) => void`
 
-### <a name="getversion_w"></a>getVersion(callback)
+#### <a name="getversion_w"></a>`getVersion(callback)`
 Get the adapter version. Not the socket-classes version!
-* callback *(function)*: `function (error, adapterVersion, adapterName)`
+* `callback` *(error: string | Error | null | undefined, version: string | undefined, adapterName: string) => void*: callback `(error: string | Error | null | undefined, version: string | undefined, adapterName: string) => void`
 
-### <a name="getadaptername_w"></a>getAdapterName(callback)
-Get adapter name. Not the socket-classes version!
-* callback *(function)*: `function (error, adapterVersion)`
+#### <a name="getadaptername_w"></a>`getAdapterName(callback)`
+Get adapter name: "iobroker.ws", "iobroker.socketio", "iobroker.web", "iobroker.admin"
+* `callback` *(error: string | Error | null | undefined, adapterName: string) => void) => void*: callback `(error: string | Error | null | undefined, version: string | undefined, adapterName: string) => void`
 
-### <a name="getobject_w"></a>getObject(id, callback)
-Get one object
-* id *(string)*: object ID.
-* callback *(function)*: `function (error, obj)`
+#### <a name="clientsubscribe_w"></a>`clientSubscribe(targetInstance, messageType, data, callback)`
+Client subscribes to specific instance's messages.
+Client informs specific instance about subscription on its messages.
+After subscription, the socket will receive "im" messages from desired instance
+The target instance MUST acknowledge the subscription and return result
+* `targetInstance` *string*: Instance name, e.g., 'cameras.0'
+* `messageType` *string*: Message type, e.g., 'startRecording/cam1'
+* `data` *any*: Optional data object, e.g., {width: 640, height: 480}
+* `callback` *(error: string | null | Error | undefined, result?: {accepted: boolean; heartbeat?: number; error?: string;}) => void) => void*: Callback `(error: string | null, result?:{ accepted: boolean; heartbeat?: number; error?: string; }) => void`
 
-### <a name="getobjects_w"></a>getObjects(list, callback)
-Get all objects that are relevant for web: all states and enums with rooms
-* id *(string)*: object ID.
-* list *(string[])*: optional list of IDs.
-* callback *(function)*: `function (error, obj)`
+#### <a name="clientunsubscribe_w"></a>`clientUnsubscribe(targetInstance, messageType, callback)`
+Client unsubscribes from specific instance's messages.
+The target instance MUST NOT acknowledge the un-subscription
+* `targetInstance` *string*: Instance name, e.g., 'cameras.0'
+* `messageType` *string*: Message type, e.g., 'startRecording/cam1'
+* `callback` *(error: string | null | Error | undefined) => void) => void*: Callback `(error: string | null) => void`
 
-### <a name="subscribeobjects_w"></a>subscribeObjects(pattern, callback)
-Subscribe to object changes by pattern. The events will come as 'objectChange' events to the socket.
-* pattern *(string)*: pattern like 'system.adapter.*' or array of IDs like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
-* callback *(function)*: `function (error)`
-
-### <a name="unsubscribeobjects_w"></a>unsubscribeObjects(pattern, callback)
-Unsubscribe from object changes by pattern.
-* pattern *(string)*: pattern like 'system.adapter.*' or array of IDs like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
-* callback *(function)*: `function (error)`
-
-### <a name="getobjectview_w"></a>getObjectView(design, search, params, callback)
-Make a query to the object database.
-* design *(string)*: 'system' or other designs like `custom`, but it must exist object `_design/custom`. Too 99,9% use `system`.
-* search *(string)*: object type, like `state`, `instance`, `adapter`, `host`, ...
-* params *(string)*: parameters for the query in form `{startkey: 'system.adapter.', endkey?: 'system.adapter.\u9999', depth?: number}`
-* callback *(function)*: `function (error)`
-
-### <a name="setobject_w"></a>setObject(id, obj, callback)
-Set object.
-* id *(string)*: object ID
-* obj *(object)*: object itself
-* callback *(function)*: `function (error)`
-
-### <a name="delobject_w"></a>delObject(id, options, callback)
-Delete object. Only deletion of flot objects is allowed
-* id *(string)*: Object ID like, 'flot.0.myChart'
-* options *(string)*: ignored
-* callback *(function)*: `function (error)`
-
-### <a name="clientsubscribe_w"></a>clientSubscribe(targetInstance, messageType, data, callback)
-Client informs specific instance about subscription on its messages. After subscription the socket will receive "im" messages from desired instance
-* targetInstance *(string)*: instance name, e.g. "cameras.0"
-* messageType *(string)*: message type, e.g. "startRecording/cam1"
-* data *(object)*: optional data object, e.g. {width: 640, height: 480}
-* callback *(function)*: `function (error, result)`, target instance MUST acknowledge the subscription and return some object as result
-
-### <a name="clientunsubscribe_w"></a>clientUnsubscribe(targetInstance, messageType, callback)
-Client unsubscribes from specific instance's messages
-* targetInstance *(string)*: instance name, e.g. "cameras.0"
-* messageType *(string)*: message type, e.g. "startRecording/cam1"
-* callback *(function)*: `function (error, wasSubscribed)`, target instance MUST NOT acknowledge the un-subscription
-
-### <a name="getstates_w"></a>getStates(pattern, callback)
-Read states by pattern
-* pattern *(string)*: optional pattern, like `system.adapter.*` or array of state IDs
-* callback *(function)*: `function (error, states)`, where `states` is an object like `{'system.adapter.history.0': {_id: 'system.adapter.history.0', common: {name: 'history', ...}, native: {...}, 'system.adapter.history.1': {...}}}`
-
-### <a name="getforeignstates_w"></a>getForeignStates(pattern, callback)
-Read all states (which might not belong to this adapter) which match the given pattern
-* pattern *(string)*: pattern like `system.adapter.*` or array of state IDs
-* callback *(function)*: `function (error)`
-
-### <a name="getstate_w"></a>getState(id, callback)
-Read one state.
-* id *(string)*: State ID like, 'system.adapter.admin.0.memRss'
-* callback *(function)*: `function (error, state)`, where `state` is an object like `{val: 123, ts: 1663915537418, ack: true, from: 'system.adapter.admin.0', q: 0, lc: 1663915537418, c: 'javascript.0'}`
-
-### <a name="setstate_w"></a>setState(id, state, callback)
-Write one state.
-* id *(string)*: State ID like, 'system.adapter.admin.0.memRss'
-* state *(any)*: value or object like `{val: 123, ack: true}`
-* callback *(function)*: `function (error, state)`, where `state` is an object like `{val: 123, ts: 1663915537418, ack: true, from: 'system.adapter.admin.0', q: 0, lc: 1663915537418, c: 'javascript.0'}`
-
-### <a name="getbinarystate_w"></a>getBinaryState(id, callback)
-Read one binary state.
-* id *(string)*: State ID like, 'javascript.0.binary'
-* callback *(function)*: `function (error, base64)`
-
-### <a name="setbinarystate_w"></a>setBinaryState(id, base64, callback)
-Write one binary state.
-* id *(string)*: State ID like, 'javascript.0.binary'
-* base64 *(string)*: State value as base64 string. Binary states have no acknowledged flag.
-* callback *(function)*: `function (error)`
-
-### <a name="subscribe_w"></a>subscribe(pattern, callback)
-Subscribe to state changes by pattern. The events will come as 'stateChange' events to the socket.
-* pattern *(string)*: pattern like 'system.adapter.*' or array of states like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
-* callback *(function)*: `function (error)`
-
-### <a name="subscribestates_w"></a>subscribeStates(pattern, callback)
-Subscribe to state changes by pattern. Same as `subscribe`. The events will come as 'stateChange' events to the socket.
-* pattern *(string)*: pattern like 'system.adapter.*' or array of states like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
-* callback *(function)*: `function (error)`
-
-### <a name="unsubscribe_w"></a>unsubscribe(pattern, callback)
-Unsubscribe from state changes by pattern.
-* pattern *(string)*: pattern like 'system.adapter.*' or array of states like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
-* callback *(function)*: `function (error)`
-
-### <a name="unsubscribestates_w"></a>unsubscribeStates(pattern, callback)
-Unsubscribe from state changes by pattern. Same as `unsubscribe`.
-* pattern *(string)*: pattern like 'system.adapter.*' or array of states like ['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']
-* callback *(function)*: `function (error)`
-
-### <a name="readfile_w"></a>readFile(_adapter, fileName, callback)
-Read file from ioBroker DB
-* _adapter *(string)*: instance name, e.g. `vis.0`
-* fileName *(string)*: file name, e.g. `main/vis-views.json`
-* callback *(function)*: `function (error, data, mimeType)`
-
-### <a name="readfile64_w"></a>readFile64(_adapter, fileName, callback)
-Read file from ioBroker DB as base64 string
-* _adapter *(string)*: instance name, e.g. `vis.0`
-* fileName *(string)*: file name, e.g. `main/vis-views.json`
-* callback *(function)*: `function (error, base64, mimeType)`
-
-### <a name="writefile64_w"></a>writeFile64(_adapter, fileName, data64, options, callback)
-Write file into ioBroker DB as base64 string
-* _adapter *(string)*: instance name, e.g. `vis.0`
-* fileName *(string)*: file name, e.g. `main/vis-views.json`
-* data64 *(string)*: file content as base64 string
-* options *(object)*: optional `{mode: 0x0644}`
-* callback *(function)*: `function (error)`
-
-### <a name="writefile_w"></a>writeFile(_adapter, fileName, data, options, callback)
-Write file into ioBroker DB as text **DEPRECATED**
-* _adapter *(string)*: instance name, e.g. `vis.0`
-* fileName *(string)*: file name, e.g. `main/vis-views.json`
-* data64 *(string)*: file content as base64 string
-* options *(object)*: optional `{mode: 0x644}`
-* callback *(function)*: `function (error)`
-
-### <a name="unlink_w"></a>unlink(_adapter, name, callback)
-Delete file in ioBroker DB
-* _adapter *(string)*: instance name, e.g. `vis.0`
-* name *(string)*: file name, e.g. `main/vis-views.json`
-* callback *(function)*: `function (error)`
-
-### <a name="deletefile_w"></a>deleteFile(_adapter, name, callback)
-Delete file in ioBroker DB (same as unlink, but only for files)
-* _adapter *(string)*: instance name, e.g. `vis.0`
-* name *(string)*: file name, e.g. `main/vis-views.json`
-* callback *(function)*: `function (error)`
-
-### <a name="deletefolder_w"></a>deleteFolder(_adapter, name, callback)
-Delete file in ioBroker DB (same as unlink, but only for folders)
-* _adapter *(string)*: instance name, e.g. `vis.0`
-* name *(string)*: folder name, e.g. `main`
-* callback *(function)*: `function (error)`
-
-### <a name="renamefile_w"></a>renameFile(_adapter, oldName, newName, callback)
-Rename file in ioBroker DB
-* _adapter *(string)*: instance name, e.g. `vis.0`
-* oldName *(string)*: current file name, e.g. `main/vis-views.json`
-* newName *(string)*: new file name, e.g. `main/vis-views-new.json`
-* callback *(function)*: `function (error)`
-
-### <a name="rename_w"></a>rename(_adapter, oldName, newName, callback)
-Rename file or folder in ioBroker DB
-* _adapter *(string)*: instance name, e.g. `vis.0`
-* oldName *(string)*: current file name, e.g. `main/vis-views.json`
-* newName *(string)*: new file name, e.g. `main/vis-views-new.json`
-* callback *(function)*: `function (error)`
-
-### <a name="mkdir_w"></a>mkdir(_adapter, dirName, callback)
-Create folder in ioBroker DB
-* _adapter *(string)*: instance name, e.g. `vis.0`
-* dirName *(string)*: desired folder name, e.g. `main`
-* callback *(function)*: `function (error)`
-
-### <a name="readdir_w"></a>readDir(_adapter, dirName, options, callback)
-Read content of folder in ioBroker DB
-* _adapter *(string)*: instance name, e.g. `vis.0`
-* dirName *(string)*: folder name, e.g. `main`
-* options *(object)*: optional `{filter: '*'}` or `{filter: '*.json'}`
-* callback *(function)*: `function (error, files)` where `files` is an array of objects, like `{file: 'vis-views.json', isDir: false, stats: {size: 123}, modifiedAt: 1661336290090, acl: {owner: 'system.user.admin', ownerGroup: 'system.group.administrator', permissions: 1632, read: true, write: true}`
-
-### <a name="chmodfile_w"></a>chmodFile(_adapter, fileName, options, callback)
-Change file mode in ioBroker DB
-* _adapter *(string)*: instance name, e.g. `vis.0`
-* fileName *(string)*: file name, e.g. `main/vis-views.json`
-* options *(object)*: `{mode: 0x644}` or 0x644. The first digit is user, second group, third others. Bit 1 is `execute`, bit 2 is `write`, bit 3 is `read`
-* callback *(function)*: `function (error)`
-
-### <a name="chownfile_w"></a>chownFile(_adapter, fileName, options, callback)
-Change file owner in ioBroker DB
-* _adapter *(string)*: instance name, e.g. `vis.0`
-* fileName *(string)*: file name, e.g. `main/vis-views.json`
-* options *(object)*: `{owner: 'system.user.user', ownerGroup: ''system.group.administrator'}` or 'system.user.user'. If ownerGroup is not defined, it will be taken from owner.
-* callback *(function)*: `function (error)`
-
-### <a name="fileexists_w"></a>fileExists(_adapter, fileName, callback)
-Check if the file or folder exists in ioBroker DB
-* _adapter *(string)*: instance name, e.g. `vis.0`
-* fileName *(string)*: file name, e.g. `main/vis-views.json`
-* callback *(function)*: `function (error, isExist)`
-
-### <a name="subscribefiles_w"></a>subscribeFiles(id, pattern, callback)
-Subscribe to file changes in ioBroker DB
-* id *(string)*: instance name, e.g. `vis.0` or any object ID of type `meta`. `id` could have wildcards `*` too.
-* pattern *(string)*: file name pattern, e.g. `main/*.json`
-* callback *(function)*: `function (error)`
-
-### <a name="unsubscribefiles_w"></a>unsubscribeFiles(id, pattern, callback)
-Unsubscribe from file changes in ioBroker DB
-* id *(string)*: instance name, e.g. `vis.0` or any object ID of type `meta`. `id` could have wildcards `*` too.
-* pattern *(string)*: file name pattern, e.g. `main/*.json`
-* callback *(function)*: `function (error)`
-
-### <a name="getadapterinstances_w"></a>getAdapterInstances(adapterName, callback)
+#### <a name="getadapterinstances_w"></a>`getAdapterInstances(adapterName, callback)`
 Read all instances of the given adapter, or all instances of all adapters if adapterName is not defined
-* adapterName *(string)*: optional adapter name, e.g. `history`.
-* callback *(function)*: `function (error, instanceList)`, where instanceList is an array of instance objects, e.g. `{_id: 'system.adapter.history.0', common: {name: 'history', ...}, native: {...}}`
+* `adapterName` *string | undefined*: adapter name, e.g. `history`. To get all instances of all adapters just place here "".
+* `callback` *(error: null | undefined | Error | string, instanceList?: ioBroker.InstanceObject[]) => void) => void*: callback `(error: null | undefined | Error | string, instanceList?: ioBroker.InstanceObject[]) => void`
+
+### Objects
+#### <a name="getobject_w"></a>`getObject(id, callback)`
+Get one object.
+* `id` *string*: Object ID
+* `callback` *(error: Error | undefined | string | null, obj?: ioBroker.Object) => void) => void*: Callback `(error: string | null, obj?: ioBroker.Object) => void`
+
+#### <a name="getobjects_w"></a>`getObjects(list, callback)`
+Get all objects that are relevant for web: all states and enums with rooms.
+This is non-admin version of "all objects" and will be overloaded in admin
+* `list` *string[] | null*: Optional list of IDs
+* `callback` *(error: Error | undefined | string | null, objs?: Record<string, ioBroker.Object>) => void) => void*: Callback `(error: string | null, objs?: Record<string, ioBroker.Object>) => void`
+
+#### <a name="subscribeobjects_w"></a>`subscribeObjects(pattern, callback)`
+Subscribe to object changes by pattern. The events will come as 'objectChange' events to the socket.
+* `pattern` *string | string[]*: Pattern like `system.adapter.*` or array of IDs like `['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']`
+* `callback` *(error: Error | undefined | string | null) => void) => void*: Callback `(error: string | null) => void`
+
+#### <a name="unsubscribeobjects_w"></a>`unsubscribeObjects(pattern, callback)`
+Unsubscribe from object changes by pattern.
+* `pattern` *string | string[]*: Pattern like `system.adapter.*` or array of IDs like `['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']`
+* `callback` *(error: string | null | Error | undefined) => void) => void*: Callback `(error: string | null) => void`
+
+#### <a name="getobjectview_w"></a>`getObjectView(design, search, params, callback)`
+Get a view of objects. Make a query to the object database.
+* `design` *string*: Design name, e.g., 'system' or other designs like `custom`, but it must exist object `_design/custom`. To 99,9% use `system`.
+* `search` *string*: Search name, object type, like `state`, `instance`, `adapter`, `host`, ...
+* `params` *{startkey?: string; endkey?: string; depth?: number}*: Parameters for the query, e.g., `{startkey: 'system.adapter.', endkey: 'system.adapter.\u9999', depth?: number}`
+* `callback` *(error: string | null | Error | undefined, result?: {rows: {id: string; value: ioBroker.Object & {virtual: boolean; hasChildren: number;};}[];}) => void*: Callback `(error: string | null, result?: { rows: Array<GetObjectViewItem>) => void`
+
+#### <a name="setobject_w"></a>`setObject(id, obj, callback)`
+Set an object.
+* `id` *string*: Object ID
+* `obj` *ioBroker.Object*: Object to set
+* `callback` *(error: string | null | Error | undefined) => void) => void*: Callback `(error: string | null) => void`
+
+#### <a name="delobject_w"></a>`delObject(id, _options, callback)`
+Delete an object. Only deletion of flot and fullcalendar objects is allowed
+* `id` *string*: Object ID, like 'flot.0.myChart'
+* `_options` *any*: Options for deletion. Ignored
+* `callback` *(error: string | null | Error | undefined) => void) => void*: Callback `(error: string | null) => void`
+
+### States
+#### <a name="getstates_w"></a>`getStates(pattern, callback)`
+Get states by pattern of current adapter
+* `pattern` *string | string[] | undefined*: optional pattern, like `system.adapter.*` or array of state IDs. If the pattern is omitted, you will get ALL states of current adapter
+* `callback` *(error: null | undefined | Error | string, states?: Record<string, ioBroker.State>) => void) => void*: callback `(error: null | undefined | Error | string, states?: Record<string, ioBroker.State>) => void`
+
+#### <a name="getforeignstates_w"></a>`getForeignStates(pattern, callback)`
+Same as getStates
+* `pattern` *string | string[]*: pattern like `system.adapter.*` or array of state IDs
+* `callback` *(error: null | undefined | Error | string, states?: Record<string, ioBroker.State>) => void) => void*: callback `(error: null | undefined | Error | string, states?: Record<string, ioBroker.State>) => void`
+
+#### <a name="getstate_w"></a>`getState(id, callback)`
+Get a state by ID
+* `id` *string*: State ID, e.g. `system.adapter.admin.0.memRss`
+* `callback` *(error: null | undefined | Error | string, state?: ioBroker.State) => void) => void*: Callback `(error: null | undefined | Error | string, state?: ioBroker.State) => void`
+
+#### <a name="setstate_w"></a>`setState(id, state, callback)`
+Set a state by ID
+* `id` *string*: State ID, e.g. `system.adapter.admin.0.memRss`
+* `state` *ioBroker.SettableState*: State value or object, e.g. `{val: 123, ack: true}`
+* `callback` *(error: null | undefined | Error | string, state?: ioBroker.State) => void) => void*: Callback `(error: null | undefined | Error | string, state?: ioBroker.State) => void`
+
+#### <a name="getbinarystate_w"></a>`getBinaryState(id, callback)`
+Get a binary state by ID
+* `id` *string*: State ID, e.g. `javascript.0.binary`
+* `callback` *(error: null | undefined | Error | string, base64?: string) => void) => void*: Callback `(error: null | undefined | Error | string, base64?: string) => void`
+
+#### <a name="setbinarystate_w"></a>`setBinaryState(id, _base64, callback)`
+Set a binary state by ID
+* `id` *string*: State ID, e.g. `javascript.0.binary`
+* `_base64` *string*: State value as base64 string. Binary states have no acknowledged flag.
+* `callback` *(error: null | undefined | Error | string) => void) => void*: Callback `(error: null | undefined | Error | string) => void`
+
+#### <a name="subscribe_w"></a>`subscribe(pattern, callback)`
+Subscribe to state changes by pattern.
+The events will come as 'stateChange' events to the socket.
+* `pattern` *string | string[]*: Pattern like `system.adapter.*` or array of states like `['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']`
+* `callback` *(error: string | null) => void) => void*: Callback `(error: string | null) => void`
+
+#### <a name="subscribestates_w"></a>`subscribeStates(pattern, callback)`
+Subscribe to state changes by pattern. Same as `subscribe`.
+The events will come as 'stateChange' events to the socket.
+* `pattern` *string | string[]*: Pattern like `system.adapter.*` or array of states like `['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']`
+* `callback` *(error: string | null) => void) => void*: Callback `(error: string | null) => void`
+
+#### <a name="unsubscribe_w"></a>`unsubscribe(pattern, callback)`
+Unsubscribe from state changes by pattern.
+* `pattern` *string | string[]*: Pattern like `system.adapter.*` or array of states like `['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']`
+* `callback` *(error: string | null) => void) => void*: Callback `(error: string | null) => void`
+
+#### <a name="unsubscribestates_w"></a>`unsubscribeStates(pattern, callback)`
+Unsubscribe from state changes by pattern. Same as `unsubscribe`.
+The events will come as 'stateChange' events to the socket.
+* `pattern` *string | string[]*: Pattern like `system.adapter.*` or array of states like `['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']`
+* `callback` *(error: string | null) => void) => void*: Callback `(error: string | null) => void`
+
+### Files
+#### <a name="readfile_w"></a>`readFile(adapter, fileName, callback)`
+Read a file from ioBroker DB
+* `adapter` *string*: instance name, e.g. `vis.0`
+* `fileName` *string*: file name, e.g. `main/vis-views.json`
+* `callback` *(error: null | undefined | Error | string, data: Buffer | string, mimeType: string) => void) => void*: Callback `(error: null | undefined | Error | string, data: Buffer | string, mimeType: string) => void`
+
+#### <a name="readfile64_w"></a>`readFile64(adapter, fileName, callback)`
+Read a file from ioBroker DB as base64 string
+* `adapter` *string*: instance name, e.g. `vis.0`
+* `fileName` *string*: file name, e.g. `main/vis-views.json`
+* `callback` *(error: null | undefined | Error | string, base64?: string, mimeType?: string) => void) => void*: Callback `(error: null | undefined | Error | string, base64: string, mimeType: string) => void`
+
+#### <a name="writefile64_w"></a>`writeFile64(adapter, fileName, data64, options, callback?)`
+Write a file into ioBroker DB as base64 string
+* `adapter` *string*: instance name, e.g. `vis.0`
+* `fileName` *string*: file name, e.g. `main/vis-views.json`
+* `data64` *string*: file content as base64 string
+* `options` *{mode?: number} | ((error: null | undefined | Error | string) => void)*: optional `{mode: 0x0644}`
+* callback?: '--'
+
+#### <a name="writefile_w"></a>`writeFile(adapter, fileName, data, options, callback?)`
+Write a file into ioBroker DB as text
+This function is overloaded in admin (because admin accepts only base64)
+* `adapter` *string*: instance name, e.g. `vis.0`
+* `fileName` *string*: file name, e.g. `main/vis-views.json`
+* `data` *string*: file content as text
+* `options` *{mode?: number} | ((error: null | undefined | Error | string) => void)*: optional `{mode: 0x0644}`
+* callback?: '--'
+
+#### <a name="unlink_w"></a>`unlink(adapter, name, callback)`
+Delete file in ioBroker DB
+* `adapter` *string*: instance name, e.g. `vis.0`
+* `name` *string*: file name, e.g. `main/vis-views.json`
+* `callback` *(error: null | undefined | Error | string) => void) => void*: Callback `(error: null | undefined | Error | string) => void`
+
+#### <a name="deletefile_w"></a>`deleteFile(adapter, name, callback)`
+Delete a file in ioBroker DB (same as "unlink", but only for files)
+* `adapter` *string*: instance name, e.g. `vis.0`
+* `name` *string*: file name, e.g. `main/vis-views.json`
+* `callback` *(error: null | undefined | Error | string) => void) => void*: Callback `(error: null | undefined | Error | string) => void`
+
+#### <a name="deletefolder_w"></a>`deleteFolder(adapter, name, callback)`
+Delete folder in ioBroker DB (same as `unlink`, but only for folders)
+* `adapter` *string*: instance name, e.g. `vis.0`
+* `name` *string*: folder name, e.g. `main`
+* `callback` *(error: null | undefined | Error | string) => void) => void*: Callback `(error: null | undefined | Error | string) => void`
+
+#### <a name="renamefile_w"></a>`renameFile(adapter, oldName, newName, callback)`
+Rename a file in ioBroker DB
+* `adapter` *string*: instance name, e.g. `vis.0`
+* `oldName` *string*: current file name, e.g. `main/vis-views.json`
+* `newName` *string*: new file name, e.g. `main/vis-views-new.json`
+* `callback` *(error: null | undefined | Error | string) => void) => void*: Callback `(error: null | undefined | Error | string) => void`
+
+#### <a name="rename_w"></a>`rename(adapter, oldName, newName, callback)`
+Rename file or folder in ioBroker DB
+* `adapter` *string*: instance name, e.g. `vis.0`
+* `oldName` *string*: current file name, e.g. `main/vis-views.json`
+* `newName` *string*: new file name, e.g. `main/vis-views-new.json`
+* `callback` *(error: null | undefined | Error | string) => void) => void*: Callback `(error: null | undefined | Error | string) => void`
+
+#### <a name="mkdir_w"></a>`mkdir(adapter, dirName, callback)`
+Create a folder in ioBroker DB
+* `adapter` *string*: instance name, e.g. `vis.0`
+* `dirName` *string*: desired folder name, e.g. `main`
+* `callback` *(error: null | undefined | Error | string) => void) => void*: Callback `(error: null | undefined | Error | string) => void`
+
+#### <a name="readdir_w"></a>`readDir(adapter, dirName, options, callback?)`
+Read content of folder in ioBroker DB
+* `adapter` *string*: instance name, e.g. `vis.0`
+* `dirName` *string*: folder name, e.g. `main`
+* `options` *object | ((error: null | undefined | Error | string, files: ioBroker.ReadDirResult[]) => void)*: for future use
+* callback?: '--'
+
+#### <a name="chmodfile_w"></a>`chmodFile(adapter, fileName, options, callback?)`
+Change a file mode in ioBroker DB
+* `adapter` *string*: instance name, e.g. `vis.0`
+* `fileName` *string*: file name, e.g. `main/vis-views.json`
+* `options` *{mode?: number}*: options `{mode: 0x644}`
+* callback?: '--'
+
+#### <a name="chownfile_w"></a>`chownFile(adapter, fileName, options, callback?)`
+Change file owner in ioBroker DB
+* `adapter` *string*: instance name, e.g. `vis.0`
+* `fileName` *string*: file name, e.g. `main/vis-views.json`
+* `options` *{owner: `system.user.${string}`; ownerGroup?: `system.group.${string}`}*: options `{owner: 'system.user.user', ownerGroup: 'system.group.administrator'}` or `system.user.user`. If ownerGroup is not defined, it will be taken from owner.
+* callback?: '--'
+
+#### <a name="fileexists_w"></a>`fileExists(adapter, fileName, callback)`
+Check if the file or folder exists in ioBroker DB
+* `adapter` *string*: instance name, e.g. `vis.0`
+* `fileName` *string*: file name, e.g. `main/vis-views.json`
+* `callback` *(error: null | undefined | Error | string, exists?: boolean) => void) => void*: Callback `(error: null | undefined | Error | string, exists?: boolean) => void`
+
+#### <a name="subscribefiles_w"></a>`subscribeFiles(id, pattern, callback)`
+Subscribe to file changes in ioBroker DB
+* `id` *string*: instance name, e.g. `vis.0` or any object ID of type `meta`. `id` could have wildcards `*` too.
+* `pattern` *string | string[]*: file name pattern, e.g. `main/*.json` or array of names
+* `callback` *(error: null | undefined | Error | string) => void) => void*: Callback `(error: null | undefined | Error | string) => void`
+
+#### <a name="unsubscribefiles_w"></a>`unsubscribeFiles(id, pattern, callback)`
+Unsubscribe from file changes in ioBroker DB
+* `id` *string*: instance name, e.g. `vis.0` or any object ID of type `meta`. `id` could have wildcards `*` too.
+* `pattern` *string | string[]*: file name pattern, e.g. `main/*.json` or array of names
+* `callback` *(error: null | undefined | Error | string) => void) => void*: Callback `(error: null | undefined | Error | string) => void`
 
 <!-- WEB_METHODS_END -->
 
@@ -979,6 +989,9 @@ Read all instances of the given adapter, or all instances of all adapters if ada
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (@GermanBluefox) Code migrated to TypeScript
+
 ### 1.6.2 (2024-12-01)
 * (@GermanBluefox) Caught the error if no authentication and logout called
 

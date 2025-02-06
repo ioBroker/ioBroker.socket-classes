@@ -1,50 +1,119 @@
 const { mkdirSync, readFileSync, writeFileSync, copyFileSync, existsSync } = require('node:fs');
 
-const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/gm;
-const ARGUMENT_NAMES = /([^\s,]+)/g;
-function getParamNames(func) {
-    const fnStr = func.toString().replace(STRIP_COMMENTS, '');
-    let result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
-    if (result === null) {
-        result = [];
+function parseFunctionSignature(signature) {
+    let args = [];
+
+    if (signature.includes('\n')) {
+        signature = signature.trim().replace(/^\(/, '').replace(/\)$/, '');
+        const lines = signature.split('\n').filter(a => a.trim());
+        // remember padding
+        const m = lines[0].match(/^(\s*)/);
+        let many = '';
+        for (let i = 0; i < lines.length; i++) {
+            let line = lines[i];
+            // remove standard padding
+            line = line.substring(m[1].length);
+            if (line.startsWith(' ')) {
+                many += line;
+            } else {
+                if (many) {
+                    args.push(many);
+                    many = '';
+                }
+                many += line;
+            }
+        }
+        if (many) {
+            args.push(many);
+        }
+    } else {
+        signature = signature
+            .replace(/^\(/, '')
+            .replace(/\): void$/, '')
+            .replace(/\)$/, '');
+        args = signature.split(',');
     }
-    return result;
+
+    return args
+        .map(param => {
+            const name = param.substring(0, param.indexOf(':')).trim();
+            let type = param
+                .substring(param.indexOf(':') + 1)
+                .trim()
+                .replace(/,$/, '');
+
+            if (!name || name === 'socket' || name === '_socket') {
+                return null;
+            }
+            if (name === 'callback') {
+                if (type.startsWith('(')) {
+                    type += ') => void';
+                }
+            }
+            type = type.trim().replace(/^\|/, '');
+            // replace all double spaces
+            type = type
+                .replace(/\s+/g, ' ')
+                .replace(/\(\s/g, '(')
+                .replace(/\{\s/g, '{')
+                .replace(/\s\)/g, ')')
+                .replace(/\s}/g, '}');
+
+            // read types
+            return { name, type };
+        })
+        .filter(line => line);
 }
 
-function getParamComments(func) {
-    const fnStr = func
-        .toString()
+function extractFunctionDescription(fileContent, command) {
+    const regex = new RegExp(
+        `\\/\\*\\*\\s+\\*\\s*#([a-zA-Z0-9\\s*.%,\\u9999\\\\?'"\`\\/!=>_<@|\\[\\]:;\\(\\)}{-]+?)\\*\\/\\s*this\.commands\.${command}\\s*=\\s*\(([^\\#]+?)\):\\s*void\\s*=>\\s*{`,
+        'g',
+    );
+
+    const match = regex.exec(fileContent);
+    if (!match) {
+        throw new Error(`"${command}" Not found`);
+    }
+    const [_, docComment, paramsDefinitions] = match;
+    const paramsDescriptions = [];
+
+    let group = '';
+
+    const description = docComment
         .split('\n')
-        .map(line => line.trim())
-        .filter(line => line.trim());
-    const comments = [];
-    for (let i = 1; i < fnStr.length; i++) {
-        if (fnStr[i].startsWith('//')) {
-            comments.push(fnStr[i].trim().slice(2).trim());
-        } else {
-            break;
-        }
-    }
+        .map(line => line.trim().replace(/^\*\s?/, ''))
+        .filter(line => {
+            if (line?.includes('DOCUMENTATION')) {
+                group = line.split(' ')[1];
+            } else if (line) {
+                if (line.startsWith('@')) {
+                    // parse '@param socket Socket instance'
+                    const m = line.match(/^@param\s+([_\w]+)\s(.*)$/);
+                    if (m) {
+                        paramsDescriptions.push({ name: m[1], description: m[2] });
+                    }
+                    return null;
+                }
 
-    const desc = [];
-    for (let i = 0; i < comments.length; i++) {
-        if (comments[i].startsWith('@')) {
-            break;
-        }
-        desc.push(comments[i]);
-    }
-    const params = {};
-    for (let i = 0; i < comments.length; i++) {
-        if (comments[i].startsWith('@')) {
-            const parts = comments[i].slice(7).trim().split(' ');
-            params[parts[1]] = {
-                type: parts[0].substring(1, parts[0].length - 1),
-                desc: parts.slice(3).join(' '),
-            };
-        }
-    }
+                return line;
+            }
+        })
+        .filter(t => t !== null)
+        .join('\n');
+    const isDeprecated = description.includes('@deprecated');
 
-    return { desc, params };
+    const types = parseFunctionSignature(paramsDefinitions);
+
+    const params = types.map(t => {
+        return {
+            name: t.name,
+            type: t.type,
+            description: paramsDescriptions.find(it => it.name === t.name)?.description,
+        };
+    });
+
+    return { name: command, description, isDeprecated, params, group };
 }
 
 function replaceReadme(key, text) {
@@ -67,29 +136,39 @@ function replaceReadme(key, text) {
     writeFileSync('README.md', result.join('\n'));
 }
 
-function getCommands(Commands, index) {
+function getCommands(Commands, content, index) {
     const commands = new Commands({ config: { thresholdValue: 1 } });
     const texts = [];
     const links = [];
-    Object.keys(commands.commands).forEach(command => {
-        const func = commands.commands[command];
-        const params = getParamNames(func);
-        params.shift();
-        let text = `### <a name="${command.toLowerCase()}${index}"></a>${command}(${params.join(', ')})\n`;
-        links.push(`* [${command}](#${command.toLowerCase()}${index})`); // #authenticateuser-pass-callback
-        const comments = getParamComments(func);
-        text += comments.desc.join('\n') + '\n';
-        Object.keys(comments.params).forEach(param => {
-            if (comments.params[param].desc) {
-                text += `* ${param} *(${comments.params[param].type || 'any'})*: ${
-                    comments.params[param].desc || '--'
-                }\n`;
-            } else {
-                text += `* ${param}: '--'\n`;
-            }
-        });
 
-        texts.push(text);
+    const groups = {};
+
+    Object.keys(commands.commands).forEach(command => {
+        try {
+            const result = extractFunctionDescription(content, command);
+            groups[result.group] = groups[result.group] || [];
+            groups[result.group].push(result);
+        } catch (e) {
+            console.error(e);
+        }
+    });
+
+    Object.keys(groups).forEach(group => {
+        texts.push(`### ${group[0].toUpperCase() + group.substring(1)}`);
+        groups[group].forEach(command => {
+            let text = `#### <a name="${command.name.toLowerCase()}${index}"></a>\`${command.name}(${command.params.map(it => it.name).join(', ')})\`\n`;
+            links.push(`* [\`${command.name}\`](#${command.name.toLowerCase()}${index})`); // #authenticateuser-pass-callback
+            text += `${command.description}\n`;
+            command.params.forEach(param => {
+                if (param.description) {
+                    text += `* \`${param.name}\` ${param.type ? `*${param.type}*` : ''}: ${param.description}\n`;
+                } else {
+                    text += `* ${param.name}: '--'\n`;
+                }
+            });
+
+            texts.push(text);
+        });
     });
 
     links.unshift('### List of commands');
@@ -112,13 +191,14 @@ if (process.argv.includes('--webList')) {
     }
     copyFileSync(`${__dirname}/src/types.d.ts`, `${__dirname}/dist/types.d.ts`);
 } else {
-    let SocketCommands = require('./dist/lib/socketCommands');
-    let texts = getCommands(SocketCommands, '_w');
+    const content = readFileSync('src/lib/socketCommands.ts').toString('utf-8');
+    const { SocketCommands } = require('./dist/lib/socketCommands');
+    let texts = getCommands(SocketCommands, content, '_w');
 
     replaceReadme('WEB_METHODS', texts.join('\n'));
 
-    SocketCommands = require('./dist/lib/socketCommandsAdmin');
-    texts = getCommands(SocketCommands, '_a');
+    // const { SocketCommandsAdmin } = require('./dist/lib/socketCommandsAdmin');
+    // texts = getCommands(SocketCommandsAdmin, content, '_a');
 
-    replaceReadme('ADMIN_METHODS', texts.join('\n'));
+    // replaceReadme('ADMIN_METHODS', texts.join('\n'));
 }

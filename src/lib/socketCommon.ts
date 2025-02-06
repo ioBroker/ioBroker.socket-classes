@@ -12,6 +12,7 @@ import { SocketCommands, type SocketDataContext } from './socketCommands';
 import type { Store } from './passportSocket';
 import type { PermissionCommands, SocketSubscribeTypes } from '../types';
 import type { AddressInfo } from 'node:net';
+import type { CommandsPermissionsObject } from '@iobroker/types/build/types';
 
 interface WhiteListSettings {
     /** Like "admin" or "user". No "system.user." prefix */
@@ -300,7 +301,7 @@ export class SocketCommon {
                         }
                         void this.adapter.calculatePermissions(
                             user,
-                            SocketCommands.COMMANDS_PERMISSIONS,
+                            SocketCommands.COMMANDS_PERMISSIONS as CommandsPermissionsObject,
                             (acl: SocketACL): void => {
                                 socket._acl = SocketCommon._mergeACLs(
                                     address.address,
@@ -315,7 +316,7 @@ export class SocketCommon {
             } else {
                 void this.adapter.calculatePermissions(
                     this.settings.defaultUser || '',
-                    SocketCommands.COMMANDS_PERMISSIONS,
+                    SocketCommands.COMMANDS_PERMISSIONS as CommandsPermissionsObject,
                     (acl: SocketACL): void => {
                         socket._acl = SocketCommon._mergeACLs(address.address, acl, this.settings.whiteListSettings);
                         this._socketEvents(socket, address.address, cb);

@@ -761,11 +761,21 @@ export class SocketCommandsAdmin extends SocketCommands {
     }
 
     #initCommandsUser(): void {
-        this.commands.addUser = (socket: WebSocketClient, user: string, pass: string, callback?: SocketCallback) => {
-            // Add new user
-            // @param {string} user - user name, like `benjamin`
-            // @param {string} pass - user password
-            // @param {function} callback - `function (error)`
+        /**
+         * #DOCUMENTATION users
+         * Add a new user.
+         *
+         * @param socket - WebSocket client instance
+         * @param user - User name, e.g., `benjamin`
+         * @param pass - User password
+         * @param callback - Callback function `(error: string | null) => void`
+         */
+        this.commands.addUser = (
+            socket: WebSocketClient,
+            user: string,
+            pass: string,
+            callback?: (error: string | null | Error | undefined) => void,
+        ): void => {
             if (this._checkPermissions(socket, 'addUser', callback, user)) {
                 this.#addUser(user, pass, { user: socket._acl?.user || '' }, (error, ...args) =>
                     SocketCommands._fixCallback(callback, error, ...args),
@@ -773,10 +783,19 @@ export class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
-        this.commands.delUser = (socket: WebSocketClient, user: string, callback?: SocketCallback) => {
-            // Delete existing user. Admin cannot be deleted.
-            // @param {string} user - user name, like 'benjamin
-            // @param {function} callback - `function (error)`
+        /**
+         * #DOCUMENTATION users
+         * Delete an existing user. Admin cannot be deleted.
+         *
+         * @param socket - WebSocket client instance
+         * @param user - User name, e.g., `benjamin`
+         * @param callback - Callback function `(error: string | null) => void`
+         */
+        this.commands.delUser = (
+            socket: WebSocketClient,
+            user: string,
+            callback?: (error: string | null | Error | undefined) => void,
+        ): void => {
             if (this._checkPermissions(socket, 'delUser', callback, user)) {
                 this.#delUser(user, { user: socket._acl?.user || '' }, (error, ...args) =>
                     SocketCommands._fixCallback(callback, error, ...args),
@@ -784,29 +803,43 @@ export class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
+        /**
+         * #DOCUMENTATION users
+         * Add a new group.
+         *
+         * @param socket - WebSocket client instance
+         * @param group - Group name, e.g., `users`
+         * @param desc - Optional description
+         * @param acl - Optional access control list object, e.g., `{"object":{"list":true,"read":true,"write":false,"delete":false},"state":{"list":true,"read":true,"write":true,"create":true,"delete":false},"users":{"list":true,"read":true,"write":false,"create":false,"delete":false},"other":{"execute":false,"http":true,"sendto":false},"file":{"list":true,"read":true,"write":false,"create":false,"delete":false}}`
+         * @param callback - Callback function `(error: string | null) => void`
+         */
         this.commands.addGroup = (
             socket: WebSocketClient,
             group: string,
-            desc: null | ioBroker.StringOrTranslated,
+            desc: ioBroker.StringOrTranslated | null,
             acl: Omit<ioBroker.PermissionSet, 'user' | 'groups'> | null,
-            callback?: SocketCallback,
+            callback?: (error: string | null | Error | undefined) => void,
         ): void => {
-            // Add a new group.
-            // @param {string} group - user name, like 'benjamin
-            // @param {string} desc - optional description
-            // @param {object} acl - optional access control list object, like `{"object":{"list":true,"read":true,"write":false,"delete":false},"state":{"list":true,"read":true,"write":true,"create":true,"delete":false},"users":{"list":true,"read":true,"write":false,"create":false,"delete":false},"other":{"execute":false,"http":true,"sendto":false},"file":{"list":true,"read":true,"write":false,"create":false,"delete":false}}`
-            // @param {function} callback - `function (error)`
             if (this._checkPermissions(socket, 'addGroup', callback, group)) {
-                this.#addGroup(group, desc, acl, { user: socket._acl?.user || '' }, (error, ...args) =>
+                this.#addGroup(group, desc, acl, { user: socket._acl?.user || '' }, (error, ...args): void =>
                     SocketCommands._fixCallback(callback, error, ...args),
                 );
             }
         };
 
-        this.commands.delGroup = (socket: WebSocketClient, group: string, callback?: SocketCallback): void => {
-            // Delete the existing group. Administrator group cannot be deleted.
-            // @param {string} group - group name, like 'users`
-            // @param {function} callback - `function (error)`
+        /**
+         * #DOCUMENTATION users
+         * Delete an existing group. Administrator group cannot be deleted.
+         *
+         * @param socket - WebSocket client instance
+         * @param group - Group name, e.g., `users`
+         * @param callback - Callback function `(error: string | null) => void`
+         */
+        this.commands.delGroup = (
+            socket: WebSocketClient,
+            group: string,
+            callback?: (error: string | null | Error | undefined) => void,
+        ): void => {
             if (this._checkPermissions(socket, 'delGroup', callback, group)) {
                 this.#delGroup(group, { user: socket._acl?.user || '' }, (error, ...args) =>
                     SocketCommands._fixCallback(callback, error, ...args),
@@ -814,16 +847,21 @@ export class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
+        /**
+         * #DOCUMENTATION users
+         * Change user password.
+         *
+         * @param socket - WebSocket client instance
+         * @param user - User name, e.g., `benjamin`
+         * @param pass - New password
+         * @param callback - Callback function `(error: string | null) => void`
+         */
         this.commands.changePassword = (
             socket: WebSocketClient,
             user: string,
             pass: string,
-            callback?: SocketCallback,
+            callback?: (error: string | null | Error | undefined) => void,
         ): void => {
-            // Change user password
-            // @param {string} user - user name, like 'benjamin`
-            // @param {string} pass - new password
-            // @param {function} callback - `function (error)`
             if (user === socket._acl?.user || this._checkPermissions(socket, 'changePassword', callback, user)) {
                 try {
                     void this.adapter.setPassword(user, pass, { user: socket._acl?.user }, (error, ...args) =>
@@ -838,17 +876,27 @@ export class SocketCommandsAdmin extends SocketCommands {
     }
 
     #initCommandsAdmin(): void {
-        this.commands.getHostByIp = (socket: WebSocketClient, ip: string, callback: SocketCallback): void => {
-            // Read the host object by IP address
-            // @param {string} ip - ip address. IPv4 or IPv6
-            // @param {function} callback - `function (ip, obj)`. If host is not found, obj is null
+        /**
+         * #DOCUMENTATION admin
+         * Read the host object by IP address.
+         *
+         * @param socket - WebSocket client instance
+         * @param ip - IP address, e.g., `192.168.1.1`. IPv4 or IPv6
+         * @param callback - Callback function `(ip: string, obj: ioBroker.HostObject | null) => void`
+         */
+        this.commands.getHostByIp = (
+            socket: WebSocketClient,
+            ip: string,
+            callback?: (error: string | null | Error | undefined, hostObject?: ioBroker.HostObject | null) => void,
+        ): void => {
             if (typeof callback !== 'function') {
                 return this.adapter.log.warn('[getHostByIp] Invalid callback');
             }
+
             if (this._checkPermissions(socket, 'getHostByIp', callback, ip)) {
                 try {
                     this.adapter.getObjectView('system', 'host', {}, { user: socket._acl?.user }, (error, data) => {
-                        if (data && data.rows && data.rows.length) {
+                        if (data?.rows?.length) {
                             for (let i = 0; i < data.rows.length; i++) {
                                 const obj = data.rows[i].value;
                                 // if we requested specific name
@@ -881,10 +929,19 @@ export class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
-        this.commands.requireLog = (socket: WebSocketClient, isEnabled: boolean, callback?: SocketCallback): void => {
-            // Activate or deactivate logging events. Events will be sent to the socket as `log` event. Adapter must have `common.logTransporter = true`
-            // @param {boolean} isEnabled - is logging enabled
-            // @param {function} callback - `function (error)`
+        /**
+         * #DOCUMENTATION admin
+         * Activate or deactivate logging events. Events will be sent to the socket as `log` event. Adapter must have `common.logTransporter = true`.
+         *
+         * @param socket - WebSocket client instance
+         * @param isEnabled - Is logging enabled
+         * @param callback - Callback function `(error: string | null) => void`
+         */
+        this.commands.requireLog = (
+            socket: WebSocketClient,
+            isEnabled: boolean,
+            callback?: (error: string | null | Error | undefined) => void,
+        ): void => {
             if (this._checkPermissions(socket, 'setObject', callback)) {
                 if (isEnabled) {
                     this.subscribe(socket, 'log', 'dummy');
@@ -898,10 +955,19 @@ export class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
-        this.commands.readLogs = (socket: WebSocketClient, host: string, callback: SocketCallback): void => {
-            // Get logs file from given host
-            // @param {string} host - host id, like 'system.host.raspberrypi'
-            // @param {function} callback - `function (error, files)`, where `files` is array of `{fileName: `log/hostname/transport/file`, size: 123}`
+        /**
+         * #DOCUMENTATION admin
+         * Get the log files from the given host.
+         *
+         * @param socket - WebSocket client instance
+         * @param host - Host ID, e.g., `system.host.raspberrypi`
+         * @param callback - Callback function `(error: string | null, list?: { fileName: string; size: number }[]) => void`
+         */
+        this.commands.readLogs = (
+            socket: WebSocketClient,
+            host: string,
+            callback?: (error: string | null | Error | undefined, list?: { fileName: string; size: number }[]) => void,
+        ): void => {
             if (this._checkPermissions(socket, 'readLogs', callback)) {
                 let timeout: NodeJS.Timeout | null = setTimeout(() => {
                     if (timeout) {
@@ -1500,36 +1566,46 @@ export class SocketCommandsAdmin extends SocketCommands {
     protected _initCommandsFiles(): void {
         super._initCommandsFiles();
 
+        /**
+         * #DOCUMENTATION files
+         * Write the file into ioBroker DB as base64 string.
+         *
+         * @param socket - WebSocket client instance
+         * @param adapter - Instance name, e.g., `vis.0`
+         * @param fileName - File name, e.g., `main/vis-views.json`
+         * @param data64 - File content as base64 string
+         * @param options - Optional settings, e.g., `{mode: 0x0644}`
+         * @param callback - Callback function `(error: string | null) => void`
+         */
         this.commands.writeFile = (
             socket: WebSocketClient,
-            _adapter,
-            fileName,
-            data64,
-            options,
-            callback?: SocketCallback,
+            adapter: string,
+            fileName: string,
+            data64: string,
+            options?: { mode?: number } | ((error: null | undefined | Error | string) => void),
+            callback?: (error: null | undefined | Error | string) => void,
         ): void => {
-            // Write file into ioBroker DB as base64 string
-            // @param {string} _adapter - instance name, e.g. `vis.0`
-            // @param {string} fileName - file name, e.g `main/vis-views.json`
-            // @param {string} data64 - file content as base64 string
-            // @param {object} options - optional `{mode: 0x0644}`
-            // @param {function} callback - `function (error)`
             if (this._checkPermissions(socket, 'writeFile', callback, fileName)) {
+                let _options: { mode?: number; user: string | undefined };
                 if (typeof options === 'function') {
                     callback = options;
-                    options = { user: socket._acl?.user };
+                    _options = { user: socket._acl?.user };
+                } else if (!options || options.mode === undefined) {
+                    _options = { user: socket._acl?.user };
+                } else {
+                    _options = { user: socket._acl?.user, mode: options.mode };
                 }
-                options = options || {};
-                options.user = socket._acl?.user;
 
                 try {
                     const buffer = Buffer.from(data64, 'base64');
-                    this.adapter.writeFile(_adapter, fileName, buffer, { user: socket._acl?.user }, (error, ...args) =>
+                    this.adapter.writeFile(adapter, fileName, buffer, _options, (error, ...args): void =>
                         SocketCommands._fixCallback(callback, error, ...args),
                     );
                 } catch (error) {
                     this.adapter.log.error(`[writeFile] Cannot convert data: ${error.toString()}`);
-                    callback && callback(`Cannot convert data: ${error.toString()}`);
+                    if (callback) {
+                        callback(`Cannot convert data: ${error.toString()}`);
+                    }
                 }
             }
         };
@@ -1538,38 +1614,53 @@ export class SocketCommandsAdmin extends SocketCommands {
     _initCommandsObjects(): void {
         super._initCommandsObjects();
 
-        this.commands.getAllObjects = (socket: WebSocketClient, callback: SocketCallback): void => {
-            // Read absolutely all objects
-            // @param {function} callback - `function (error, objects)`, where `objects` is an object like `{'system.adapter.admin.0': {...}, 'system.adapter.web.0': {...}}`
+        /**
+         * #DOCUMENTATION objects
+         * Read absolutely all objects.
+         *
+         * @param socket - WebSocket client instance
+         * @param callback - Callback function `(error: string | null, objects?: Record<string, ioBroker.Object>) => void`
+         */
+        this.commands.getAllObjects = (
+            socket: WebSocketClient,
+            callback: (error: null | undefined | Error | string, result?: Record<string, ioBroker.Object>) => void,
+        ): void => {
             return this.#getAllObjects(socket, callback);
         };
 
-        // Identical to getAllObjects
+        /**
+         * #DOCUMENTATION objects
+         * Read absolutely all objects. Same as `getAllObjects`.
+         *
+         * @param socket - WebSocket client instance
+         * @param list - optional list of IDs.
+         * @param callback - Callback function `(error: string | null, objects?: Record<string, ioBroker.Object>) => void`
+         */
         this.commands.getObjects = (
             socket: WebSocketClient,
-            list: string[] | SocketCallback | null,
-            callback: SocketCallback,
+            list:
+                | string[]
+                | ((error: null | undefined | Error | string, result?: Record<string, ioBroker.Object>) => void)
+                | null,
+            callback?: (error: null | undefined | Error | string, result?: Record<string, ioBroker.Object>) => void,
         ): void => {
-            // Read absolutely all objects. Same as `getAllObjects`.
-            // @param {string[]} list - optional list of IDs.
-            // @param {function} callback - `function (error, objects)`, where `objects` is an object like `{'system.adapter.admin.0': {...}, 'system.adapter.web.0': {...}}`
             if (typeof list === 'function') {
                 callback = list;
                 list = null;
             }
-            if (list?.length) {
+            if (typeof callback !== 'function') {
+                this.adapter.log.warn('[getObjects] Invalid callback');
+            } else if (list && !list.length) {
+                SocketCommands._fixCallback(callback, null, {});
+            } else if (list?.length) {
                 if (this._checkPermissions(socket, 'getObject', callback)) {
-                    if (typeof callback === 'function') {
-                        try {
-                            this.adapter.getForeignObjects(list, { user: socket._acl?.user }, (error, objs) =>
-                                SocketCommands._fixCallback(callback, error, objs),
-                            );
-                        } catch (error) {
-                            this.adapter.log.error(`[getObjects] ERROR: ${error.toString()}`);
-                            SocketCommands._fixCallback(callback, error);
-                        }
-                    } else {
-                        this.adapter.log.warn('[getObjects] Invalid callback');
+                    try {
+                        this.adapter.getForeignObjects(list, { user: socket._acl?.user }, (error, objs) =>
+                            SocketCommands._fixCallback(callback, error, objs),
+                        );
+                    } catch (error) {
+                        this.adapter.log.error(`[getObjects] ERROR: ${error.toString()}`);
+                        SocketCommands._fixCallback(callback, error);
                     }
                 }
             } else {
@@ -1577,16 +1668,21 @@ export class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
+        /**
+         * #DOCUMENTATION objects
+         * Extend the existing object.
+         *
+         * @param socket - WebSocket client instance
+         * @param id - Object ID
+         * @param obj - New parts of the object, e.g., `{common: {name: 'new name'}}`
+         * @param callback - Callback function `(error: string | null) => void`
+         */
         this.commands.extendObject = (
             socket: WebSocketClient,
             id: string,
             obj: Partial<ioBroker.Object>,
-            callback?: SocketCallback,
+            callback?: (error: string | null | Error | undefined) => void,
         ): void => {
-            // Extend the existing object
-            // @param {string} id - object ID
-            // @param {object} obj - new parts of the object, like `{common: {name: 'new name'}}`
-            // @param {function} callback - `function (error)`
             if (this._checkPermissions(socket, 'extendObject', callback, id)) {
                 try {
                     this.adapter.extendForeignObject(id, obj, { user: socket._acl?.user }, (error, ...args) =>
@@ -1599,7 +1695,24 @@ export class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
-        this.commands.getForeignObjects = (socket: WebSocketClient, pattern, type, callback?: SocketCallback): void => {
+        /**
+         * #DOCUMENTATION objects
+         * Read objects by pattern.
+         *
+         * @param socket - WebSocket client instance
+         * @param pattern - Pattern like `system.adapter.admin.0.*`
+         * @param type - Type of objects to delete, like `state`, `channel`, `device`, `host`, `adapter`. Default - `state`
+         * @param callback - Callback function `(error: string | null, objects?: Record<string, ioBroker.Object>) => void`
+         */
+        this.commands.getForeignObjects = (
+            socket: WebSocketClient,
+            pattern: string,
+            type:
+                | ioBroker.ObjectType
+                | undefined
+                | ((error: string | null | Error | undefined, objects?: Record<string, ioBroker.Object>) => void),
+            callback?: (error: string | null | Error | undefined, objects?: Record<string, ioBroker.Object>) => void,
+        ): void => {
             // Read objects by pattern
             // @param {string} pattern - pattern like `system.adapter.admin.0.*`
             // @param {string} type - type of objects to delete, like `state`, `channel`, `device`, `host`, `adapter`. Default - `state`
@@ -1611,13 +1724,27 @@ export class SocketCommandsAdmin extends SocketCommands {
                 }
 
                 if (typeof callback === 'function') {
-                    try {
-                        this.adapter.getForeignObjects(pattern, type, { user: socket._acl?.user }, (error, ...args) =>
-                            SocketCommands._fixCallback(callback, error, ...args),
-                        );
-                    } catch (error) {
-                        this.adapter.log.error(`[extendObject] ERROR: ${error}`);
-                        SocketCommands._fixCallback(callback, error);
+                    if (type) {
+                        try {
+                            this.adapter.getForeignObjects(
+                                pattern,
+                                type,
+                                { user: socket._acl?.user },
+                                (error, ...args) => SocketCommands._fixCallback(callback, error, ...args),
+                            );
+                        } catch (error) {
+                            this.adapter.log.error(`[extendObject] ERROR: ${error}`);
+                            SocketCommands._fixCallback(callback, error);
+                        }
+                    } else {
+                        try {
+                            this.adapter.getForeignObjects(pattern, { user: socket._acl?.user }, (error, ...args) =>
+                                SocketCommands._fixCallback(callback, error, ...args),
+                            );
+                        } catch (error) {
+                            this.adapter.log.error(`[extendObject] ERROR: ${error}`);
+                            SocketCommands._fixCallback(callback, error);
+                        }
                     }
                 } else {
                     this.adapter.log.warn('[getObjects] Invalid callback');
@@ -1625,28 +1752,37 @@ export class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
+        /**
+         * #DOCUMENTATION objects
+         * Delete an object or objects recursively.
+         * Objects with `dontDelete` cannot be deleted.
+         *
+         * @param socket - WebSocket client instance
+         * @param id - Object ID, like 'adapterName.0.channel'
+         * @param options - Options for deletion.
+         * @param options.recursive - Delete all sub objects in this branch
+         * @param callback - Callback function `(error: string | null) => void`
+         */
         this.commands.delObject = (
             socket: WebSocketClient,
             id: string,
-            options?: ioBroker.DelObjectOptions | SocketCallback | null,
-            callback?: SocketCallback,
+            options?: ioBroker.DelObjectOptions | ((error: string | null | Error | undefined) => void),
+            callback?: (error: string | null | Error | undefined) => void,
         ): void => {
-            // Delete an object or objects recursively. Objects with `dontDelete` cannot be deleted.
-            // @param {string} id - Object ID like, 'adapterName.0.channel'
-            // @param {string} options - `{recursive: true}`
-            // @param {function} callback - `function (error)`
             if (this._checkPermissions(socket, 'delObject', callback, id)) {
+                let _options: { recursive?: boolean; user: string | undefined };
                 if (typeof options === 'function') {
                     callback = options;
-                    options = null;
+                    _options = { user: socket._acl?.user };
+                } else if (options?.recursive) {
+                    _options = { user: socket._acl?.user, recursive: true };
+                } else {
+                    _options = { user: socket._acl?.user };
                 }
-                if (!options || typeof options !== 'object') {
-                    options = {};
-                }
-                options.user = socket._acl?.user;
+
                 try {
                     // options.recursive = true; // the only difference between delObject and delObjects is this line
-                    this.adapter.delForeignObject(id, options, (error, ...args) =>
+                    this.adapter.delForeignObject(id, _options, (error, ...args): void =>
                         SocketCommands._fixCallback(callback, error, ...args),
                     );
                 } catch (error) {
@@ -1656,24 +1792,37 @@ export class SocketCommandsAdmin extends SocketCommands {
             }
         };
 
+        /**
+         * #DOCUMENTATION objects
+         * Delete an object or objects recursively.
+         * Objects with `dontDelete` cannot be deleted.
+         * Same as `delObject` but with `recursive: true`.
+         *
+         * @param socket - WebSocket client instance
+         * @param id - Object ID, like 'adapterName.0.channel'
+         * @param options - Options for deletion.
+         * @param options.recursive - Delete all sub objects in this branch
+         * @param callback - Callback function `(error: string | null) => void`
+         */
         this.commands.delObjects = (
             socket: WebSocketClient,
             id: string,
-            options?: ioBroker.DelObjectOptions | SocketCallback | null,
-            callback?: SocketCallback,
+            options?: ioBroker.DelObjectOptions | ((error: string | null | Error | undefined) => void) | null,
+            callback?: (error: string | null | Error | undefined) => void,
         ): void => {
-            // Delete objects recursively. Objects with `dontDelete` cannot be deleted. Same as `delObject` but with `recursive: true`.
-            // @param {string} id - Object ID like, 'adapterName.0.channel'
-            // @param {string} options - optional
-            // @param {function} callback - `function (error)`
             if (this._checkPermissions(socket, 'delObject', callback, id)) {
-                if (!options || typeof options !== 'object') {
-                    options = {};
+                let _options: { recursive?: boolean; user: string | undefined };
+                if (typeof options === 'function') {
+                    callback = options;
+                    _options = { user: socket._acl?.user, recursive: true };
+                } else if (options?.recursive) {
+                    _options = { user: socket._acl?.user, recursive: true };
+                } else {
+                    _options = { user: socket._acl?.user, recursive: true };
                 }
-                options.user = socket._acl?.user;
-                options.recursive = true; // the only difference between delObject and delObjects is this line
+
                 try {
-                    this.adapter.delForeignObject(id, options, (error, ...args) =>
+                    this.adapter.delForeignObject(id, _options, (error, ...args) =>
                         SocketCommands._fixCallback(callback, error, ...args),
                     );
                 } catch (error) {
