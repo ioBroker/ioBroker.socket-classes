@@ -1,14 +1,14 @@
 describe('Implement tests', () => {
-    const SocketAdmin = require('../index').SocketAdmin;
+    const { SocketCommandsAdmin } = require('../dist/index');
 
     it('Test', done => {
         const settings = {};
         settings.crossDomain = true;
         settings.ttl = 3600;
 
-        const server = new SocketAdmin(settings, { config: {} });
+        const server = new SocketCommandsAdmin({ config: settings });
 
-        server.close();
+        server.destroy();
 
         done();
     });

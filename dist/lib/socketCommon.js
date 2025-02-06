@@ -1,10 +1,4 @@
 "use strict";
-var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (receiver, state, kind, f) {
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
-};
-var _SocketCommon_instances, _SocketCommon_updateConnectedInfo;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SocketCommon = void 0;
 const socketCommands_1 = require("./socketCommands");
@@ -13,15 +7,23 @@ const socketCommands_1 = require("./socketCommands");
 // - socket.io v4
 // - iobroker ws socket
 class SocketCommon {
+    static COMMAND_RE_AUTHENTICATE = 'reauthenticate';
+    server = null;
+    serverMode = false;
+    settings;
+    adapter;
+    infoTimeout = null;
+    store = null; // will be set in __initAuthentication
+    // @ts-expect-error commands actually cannot be null
+    commands;
+    noDisconnect;
+    eventHandlers = {};
+    wsRoutes = {};
+    // Structure for socket.io 4
+    allNamespaces;
+    context;
+    initialized = false;
     constructor(settings, adapter) {
-        _SocketCommon_instances.add(this);
-        this.server = null;
-        this.serverMode = false;
-        this.infoTimeout = null;
-        this.store = null; // will be set in __initAuthentication
-        this.eventHandlers = {};
-        this.wsRoutes = {};
-        this.initialized = false;
         this.settings = settings || {};
         this.adapter = adapter;
         this.noDisconnect = this.__getIsNoDisconnect();
@@ -71,7 +73,7 @@ class SocketCommon {
     }
     start(server, socketClass, authOptions, socketOptions) {
         this.serverMode = !!socketClass;
-        this.commands || (this.commands = new socketCommands_1.SocketCommands(this.adapter, socket => this.__updateSession(socket), this.context));
+        this.commands ||= new socketCommands_1.SocketCommands(this.adapter, socket => this.__updateSession(socket), this.context);
         if (!server) {
             throw new Error('Server cannot be empty');
         }
@@ -157,7 +159,7 @@ class SocketCommon {
                 }
             }
         });
-        __classPrivateFieldGet(this, _SocketCommon_instances, "m", _SocketCommon_updateConnectedInfo).call(this);
+        this.#updateConnectedInfo();
     }
     _initSocket(socket, cb) {
         this.commands.disableEventThreshold();
@@ -331,19 +333,19 @@ class SocketCommon {
         else {
             this.adapter.log.info(`Trying to connect as ${socket._acl?.user} to ${address}`);
         }
-        __classPrivateFieldGet(this, _SocketCommon_instances, "m", _SocketCommon_updateConnectedInfo).call(this);
+        this.#updateConnectedInfo();
         if (!this.commands.getCommandHandler('name')) {
             // socket sends its name => update list of sockets
             this.addCommandHandler('name', (_socket, name, cb) => {
                 this.adapter.log.debug(`Connection from "${name}"`);
                 if (_socket._name === undefined) {
                     _socket._name = name;
-                    __classPrivateFieldGet(this, _SocketCommon_instances, "m", _SocketCommon_updateConnectedInfo).call(this);
+                    this.#updateConnectedInfo();
                 }
                 else if (_socket._name !== name) {
                     this.adapter.log.warn(`socket ${_socket.id} changed socket name from ${_socket._name} to ${name}`);
                     _socket._name = name;
-                    __classPrivateFieldGet(this, _SocketCommon_instances, "m", _SocketCommon_updateConnectedInfo).call(this);
+                    this.#updateConnectedInfo();
                 }
                 if (typeof cb === 'function') {
                     cb();
@@ -354,7 +356,7 @@ class SocketCommon {
         // disconnect
         socket.on('disconnect', (error) => {
             this.commands.unsubscribeSocket(socket);
-            __classPrivateFieldGet(this, _SocketCommon_instances, "m", _SocketCommon_updateConnectedInfo).call(this);
+            this.#updateConnectedInfo();
             // Disable logging if no one browser is connected
             if (this.adapter.requireLog && this.commands && this.commands.isLogEnabled()) {
                 this.adapter.log.debug('Disable logging, because no one socket connected');
@@ -397,6 +399,35 @@ class SocketCommon {
         }
         this.commands.subscribeSocket(socket);
         cb && cb();
+    }
+    #updateConnectedInfo() {
+        // only in server mode
+        if (this.serverMode) {
+            if (this.infoTimeout) {
+                clearTimeout(this.infoTimeout);
+                this.infoTimeout = null;
+            }
+            this.infoTimeout = setTimeout(() => {
+                this.infoTimeout = null;
+                if (this.server) {
+                    const clientsArray = [];
+                    const sockets = this.getSocketsList();
+                    // this could be an object or array: an array is ioBroker, object is socket.io
+                    if (Array.isArray(sockets)) {
+                        for (const socket of sockets) {
+                            clientsArray.push(socket._name || 'noname');
+                        }
+                    }
+                    else {
+                        Object.values(sockets).forEach(socket => {
+                            clientsArray.push(socket._name || 'noname');
+                        });
+                    }
+                    const text = `[${clientsArray.length}]${clientsArray.join(', ')}`;
+                    void this.adapter.setState('info.connected', text, true);
+                }
+            }, 1000);
+        }
     }
     checkPermissions(socket, command, callback, ...args) {
         return this.commands._checkPermissions(socket, command, callback, args);
@@ -462,34 +493,4 @@ class SocketCommon {
     }
 }
 exports.SocketCommon = SocketCommon;
-_SocketCommon_instances = new WeakSet(), _SocketCommon_updateConnectedInfo = function _SocketCommon_updateConnectedInfo() {
-    // only in server mode
-    if (this.serverMode) {
-        if (this.infoTimeout) {
-            clearTimeout(this.infoTimeout);
-            this.infoTimeout = null;
-        }
-        this.infoTimeout = setTimeout(() => {
-            this.infoTimeout = null;
-            if (this.server) {
-                const clientsArray = [];
-                const sockets = this.getSocketsList();
-                // this could be an object or array: an array is ioBroker, object is socket.io
-                if (Array.isArray(sockets)) {
-                    for (const socket of sockets) {
-                        clientsArray.push(socket._name || 'noname');
-                    }
-                }
-                else {
-                    Object.values(sockets).forEach(socket => {
-                        clientsArray.push(socket._name || 'noname');
-                    });
-                }
-                const text = `[${clientsArray.length}]${clientsArray.join(', ')}`;
-                void this.adapter.setState('info.connected', text, true);
-            }
-        }, 1000);
-    }
-};
-SocketCommon.COMMAND_RE_AUTHENTICATE = 'reauthenticate';
 //# sourceMappingURL=socketCommon.js.map

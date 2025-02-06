@@ -1,13 +1,8 @@
 "use strict";
-var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (receiver, state, kind, f) {
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var _SocketCommandsAdmin_instances, _a, _SocketCommandsAdmin_readInstanceConfig, _SocketCommandsAdmin_readLicenses, _SocketCommandsAdmin_updateLicenses, _SocketCommandsAdmin_enableEventThreshold, _SocketCommandsAdmin_addUser, _SocketCommandsAdmin_delUser, _SocketCommandsAdmin_addGroup, _SocketCommandsAdmin_delGroup, _SocketCommandsAdmin_checkObject, _SocketCommandsAdmin_getAllObjects;
+var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SocketCommandsAdmin = void 0;
 const axios_1 = __importDefault(require("axios"));
@@ -17,55 +12,28 @@ const socketCommands_1 = require("./socketCommands");
 const ACL_READ = 4;
 // const ACL_WRITE = 2;
 class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
+    static ALLOW_CACHE = [
+        'getRepository',
+        'getInstalled',
+        'getInstalledAdapter',
+        'getVersion',
+        'getDiagData',
+        'getLocationOnDisk',
+        'getDevList',
+        'getLogs',
+        'getHostInfo',
+    ];
+    states;
+    objects;
+    thresholdInterval = null;
+    cmdSessions = {};
+    eventsThreshold;
+    cache = {};
+    cacheGB = null; // cache garbage collector
+    onThresholdChanged = null;
+    secret = '';
     constructor(adapter, updateSession, context, objects, states) {
         super(adapter, updateSession, context);
-        _SocketCommandsAdmin_instances.add(this);
-        this.thresholdInterval = null;
-        this.cmdSessions = {};
-        this.cache = {};
-        this.cacheGB = null; // cache garbage collector
-        this.onThresholdChanged = null;
-        this.secret = '';
-        this._sendToHost = (host, command, message, callback) => {
-            const hash = `${host}_${command}`;
-            if (!message && _a.ALLOW_CACHE.includes(command) && this.cache[hash]) {
-                if (Date.now() - this.cache[hash].ts < 500) {
-                    if (typeof callback === 'function') {
-                        setImmediate(data => callback(data), JSON.parse(this.cache[hash].res));
-                    }
-                    return;
-                }
-                delete this.cache[hash];
-            }
-            try {
-                this.adapter.sendToHost(host, command, message, res => {
-                    if (!message && _a.ALLOW_CACHE.includes(command)) {
-                        this.cache[hash] = { ts: Date.now(), res: JSON.stringify(res) };
-                        this.cacheGB =
-                            this.cacheGB ||
-                                setInterval(() => {
-                                    const commands = Object.keys(this.cache);
-                                    commands.forEach(cmd => {
-                                        if (Date.now() - this.cache[cmd].ts > 500) {
-                                            delete this.cache[cmd];
-                                        }
-                                    });
-                                    if (!commands.length && this.cacheGB) {
-                                        clearInterval(this.cacheGB);
-                                        this.cacheGB = null;
-                                    }
-                                }, 2000);
-                    }
-                    if (typeof callback === 'function') {
-                        setImmediate(() => callback(res));
-                    }
-                });
-            }
-            catch (error) {
-                this.adapter.log.error(`[sendToHost] ERROR: ${error.toString()}`);
-                typeof callback === 'function' && setImmediate(() => callback({ error }));
-            }
-        };
         this.objects = objects;
         this.states = states;
         this.eventsThreshold = {
@@ -86,7 +54,7 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
                 if (this.eventsThreshold.count > this.eventsThreshold.value) {
                     this.eventsThreshold.accidents++;
                     if (this.eventsThreshold.accidents >= this.eventsThreshold.repeatSeconds) {
-                        __classPrivateFieldGet(this, _SocketCommandsAdmin_instances, "m", _SocketCommandsAdmin_enableEventThreshold).call(this);
+                        this.#enableEventThreshold();
                     }
                 }
                 else {
@@ -139,6 +107,190 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
             return null;
         }
     }
+    async #readInstanceConfig(id, user, isTab, configs) {
+        let obj;
+        try {
+            obj = await this.adapter.getForeignObjectAsync(`system.adapter.${id}`, {
+                user,
+            });
+        }
+        catch {
+            // ignore
+        }
+        if (obj?.common) {
+            const instance = id.split('.').pop();
+            const config = {
+                id,
+                title: obj.common.titleLang || obj.common.title,
+                desc: obj.common.desc,
+                color: obj.common.color,
+                url: '',
+                icon: obj.common.icon,
+                materialize: obj.common.materialize,
+                // @ts-expect-error it is deprecated
+                jsonConfig: obj.common.jsonConfig,
+                version: obj.common.version,
+            };
+            if (obj.common.adminUI?.config === 'materialize') {
+                config.materialize = true;
+            }
+            else if (obj.common.adminUI?.config === 'json') {
+                config.jsonConfig = true;
+            }
+            config.url = `/adapter/${obj.common.name}/${isTab ? 'tab' : 'index'}${!isTab && config.materialize ? '_m' : ''}.html${instance ? `?${instance}` : ''}`;
+            if (isTab) {
+                config.tab = true;
+            }
+            else {
+                config.config = true;
+            }
+            configs.push(config);
+        }
+    }
+    _sendToHost = (host, command, message, callback) => {
+        const hash = `${host}_${command}`;
+        if (!message && _a.ALLOW_CACHE.includes(command) && this.cache[hash]) {
+            if (Date.now() - this.cache[hash].ts < 500) {
+                if (typeof callback === 'function') {
+                    setImmediate(data => callback(data), JSON.parse(this.cache[hash].res));
+                }
+                return;
+            }
+            delete this.cache[hash];
+        }
+        try {
+            this.adapter.sendToHost(host, command, message, res => {
+                if (!message && _a.ALLOW_CACHE.includes(command)) {
+                    this.cache[hash] = { ts: Date.now(), res: JSON.stringify(res) };
+                    this.cacheGB =
+                        this.cacheGB ||
+                            setInterval(() => {
+                                const commands = Object.keys(this.cache);
+                                commands.forEach(cmd => {
+                                    if (Date.now() - this.cache[cmd].ts > 500) {
+                                        delete this.cache[cmd];
+                                    }
+                                });
+                                if (!commands.length && this.cacheGB) {
+                                    clearInterval(this.cacheGB);
+                                    this.cacheGB = null;
+                                }
+                            }, 2000);
+                }
+                if (typeof callback === 'function') {
+                    setImmediate(() => callback(res));
+                }
+            });
+        }
+        catch (error) {
+            this.adapter.log.error(`[sendToHost] ERROR: ${error.toString()}`);
+            typeof callback === 'function' && setImmediate(() => callback({ error }));
+        }
+    };
+    // remove this function when js.controller 4.x are mainstream
+    async #readLicenses(login, password) {
+        const config = {
+            headers: { Authorization: `Basic ${Buffer.from(`${login}:${password}`).toString('base64')}` },
+            timeout: 4000,
+            validateStatus: (status) => status < 400,
+        };
+        try {
+            const response = await axios_1.default.get(`https://iobroker.net:3001/api/v1/licenses`, config);
+            if (response?.data?.length) {
+                const now = Date.now();
+                response.data = response.data.filter((license) => !license.validTill ||
+                    license.validTill === '0000-00-00 00:00:00' ||
+                    new Date(license.validTill).getTime() > now);
+            }
+            return response.data;
+        }
+        catch (error) {
+            if (error.response) {
+                throw new Error((error.response.data && error.response.data.error) || error.response.data || error.response.status);
+            }
+            if (error.request) {
+                throw new Error('no response');
+            }
+            throw error;
+        }
+    }
+    // remove this function when js.controller 4.x is mainstream
+    async #updateLicenses(login, password, options) {
+        // if login and password provided in the message, just try to read without saving it in system.licenses
+        if (login && password) {
+            return this.#readLicenses(login, password);
+        }
+        // get actual object
+        const systemLicenses = await this.adapter.getForeignObjectAsync('system.licenses', options);
+        // If password and login exist
+        if (systemLicenses?.native?.password && systemLicenses.native.login) {
+            // get the secret to decode the password
+            if (!this.secret) {
+                const systemConfig = await this.adapter.getForeignObjectAsync('system.config', options);
+                if (systemConfig?.native?.secret) {
+                    this.secret = systemConfig.native.secret;
+                }
+            }
+            // decode the password
+            let password = '';
+            try {
+                password = this.adapter.decrypt(this.secret, systemLicenses.native.password);
+            }
+            catch {
+                throw new Error('Cannot decode password');
+            }
+            try {
+                const licenses = await this.#readLicenses(systemLicenses.native.login, password);
+                // save licenses to system.licenses and remember the time
+                // merge the information together
+                const oldLicenses = systemLicenses.native.licenses || [];
+                systemLicenses.native.licenses = licenses;
+                oldLicenses.forEach(oldLicense => {
+                    if (oldLicense.usedBy) {
+                        const newLicense = licenses.find(item => item.json === oldLicense.json);
+                        if (newLicense) {
+                            newLicense.usedBy = oldLicense.usedBy;
+                        }
+                    }
+                });
+                systemLicenses.native.readTime = new Date().toISOString();
+                // save only if an object changed
+                await this.adapter.setForeignObjectAsync('system.licenses', systemLicenses, options);
+                return licenses;
+            }
+            catch (error) {
+                // if password is invalid
+                if (error.message.includes('Authentication required') ||
+                    error.message.includes('Cannot decode password')) {
+                    // clear existing licenses if exist
+                    if (systemLicenses?.native?.licenses?.length) {
+                        systemLicenses.native.licenses = [];
+                        systemLicenses.native.readTime = new Date().toISOString();
+                        return this.adapter
+                            .setForeignObjectAsync('system.licenses', systemLicenses, options)
+                            .then(() => {
+                            throw error;
+                        });
+                    }
+                    throw error;
+                }
+                else {
+                    throw error;
+                }
+            }
+        }
+        else {
+            // if password or login are empty => clear existing licenses if exist
+            if (systemLicenses?.native?.licenses?.length) {
+                systemLicenses.native.licenses = [];
+                systemLicenses.native.readTime = new Date().toISOString();
+                return this.adapter.setForeignObjectAsync('system.licenses', systemLicenses, options).then(() => {
+                    throw new Error('No password or login');
+                });
+            }
+            throw new Error('No password or login');
+        }
+    }
     disableEventThreshold() {
         if (this.eventsThreshold.active) {
             this.eventsThreshold.accidents = 0;
@@ -165,6 +317,292 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
             }, 50);
         }
     }
+    #enableEventThreshold() {
+        if (!this.eventsThreshold.active) {
+            this.eventsThreshold.active = true;
+            setTimeout(async () => {
+                this.adapter.log.info(`Unsubscribe from all states, except system's, because over ${this.eventsThreshold.repeatSeconds} seconds the number of events is over ${this.eventsThreshold.value} (in last second ${this.eventsThreshold.count})`);
+                this.eventsThreshold.timeActivated = Date.now();
+                this.onThresholdChanged && this.onThresholdChanged(true);
+                for (const pattern of Object.keys(this.subscribes.stateChange)) {
+                    try {
+                        await this.adapter.unsubscribeForeignStatesAsync(pattern);
+                    }
+                    catch (e) {
+                        this.adapter.log.error(`Cannot unsubscribe "${pattern}": ${e.message}`);
+                    }
+                }
+                try {
+                    await this.adapter.subscribeForeignStatesAsync('system.adapter.*');
+                }
+                catch (e) {
+                    this.adapter.log.error(`Cannot subscribe "system.adapter.*": ${e.message}`);
+                }
+            }, 100);
+        }
+    }
+    #addUser(user, password, options, callback) {
+        if (typeof options === 'function') {
+            callback = options;
+            options = null;
+        }
+        if (!user.match(/^[-.A-Za-züäößÖÄÜа-яА-Я@+$§0-9=?!&# ]+$/)) {
+            return socketCommands_1.SocketCommands._fixCallback(callback, 'Invalid characters in the name. Only following special characters are allowed: -@+$§=?!&# and letters');
+        }
+        try {
+            void this.adapter
+                .getForeignObjectAsync(`system.user.${user}`, options)
+                .then(async (obj) => {
+                if (obj) {
+                    socketCommands_1.SocketCommands._fixCallback(callback, 'User yet exists');
+                }
+                else {
+                    try {
+                        await this.adapter.setForeignObject(`system.user.${user}`, {
+                            type: 'user',
+                            common: {
+                                name: user,
+                                enabled: true,
+                                password: '',
+                            },
+                            native: {},
+                        }, options);
+                        try {
+                            await this.adapter.setPassword(user, password, options || {}, callback);
+                        }
+                        catch (error) {
+                            this.adapter.log.error(`[#addUser] cannot set password: ${error.toString()}`);
+                            socketCommands_1.SocketCommands._fixCallback(callback, error);
+                        }
+                    }
+                    catch (error) {
+                        this.adapter.log.error(`[#addUser] cannot save user: ${error.toString()}`);
+                        socketCommands_1.SocketCommands._fixCallback(callback, error);
+                    }
+                }
+            });
+        }
+        catch (error) {
+            this.adapter.log.error(`[#addUser] cannot read user: ${error.toString()}`);
+            socketCommands_1.SocketCommands._fixCallback(callback, error);
+        }
+    }
+    #delUser(user, options, callback) {
+        try {
+            void this.adapter.getForeignObject(`system.user.${user}`, options, (error, obj) => {
+                if (error || !obj) {
+                    socketCommands_1.SocketCommands._fixCallback(callback, 'User does not exist');
+                }
+                else {
+                    if (obj.common.dontDelete) {
+                        socketCommands_1.SocketCommands._fixCallback(callback, 'Cannot delete user, while is system user');
+                    }
+                    else {
+                        try {
+                            this.adapter.delForeignObject(`system.user.${user}`, options || {}, error => 
+                            // Remove this user from all groups in the web client
+                            socketCommands_1.SocketCommands._fixCallback(callback, error));
+                        }
+                        catch (error) {
+                            this.adapter.log.error(`[#delUser] cannot delete user: ${error.toString()}`);
+                            socketCommands_1.SocketCommands._fixCallback(callback, error);
+                        }
+                    }
+                }
+            });
+        }
+        catch (error) {
+            this.adapter.log.error(`[#delUser] cannot read user: ${error.toString()}`);
+            socketCommands_1.SocketCommands._fixCallback(callback, error);
+        }
+    }
+    #addGroup(group, desc, acl, options, callback) {
+        let name = group;
+        if (name && name.substring(0, 1) !== name.substring(0, 1).toUpperCase()) {
+            name = name.substring(0, 1).toUpperCase() + name.substring(1);
+        }
+        group = group.substring(0, 1).toLowerCase() + group.substring(1);
+        if (!group.match(/^[-.A-Za-züäößÖÄÜа-яА-Я@+$§0-9=?!&#_ ]+$/)) {
+            return socketCommands_1.SocketCommands._fixCallback(callback, 'Invalid characters in the group name. Only following special characters are allowed: -@+$§=?!&# and letters');
+        }
+        try {
+            void this.adapter.getForeignObject(`system.group.${group}`, options, (_error, obj) => {
+                if (obj) {
+                    socketCommands_1.SocketCommands._fixCallback(callback, 'Group yet exists');
+                }
+                else {
+                    obj = {
+                        _id: `system.group.${group}`,
+                        type: 'group',
+                        common: {
+                            name,
+                            desc: desc || undefined,
+                            members: [],
+                            acl: acl || {
+                                object: {
+                                    list: false,
+                                    read: false,
+                                    write: false,
+                                    create: false,
+                                    delete: false,
+                                },
+                                state: {
+                                    list: false,
+                                    read: false,
+                                    write: false,
+                                    create: false,
+                                    delete: false,
+                                },
+                                users: {
+                                    list: false,
+                                    read: false,
+                                    write: false,
+                                    create: false,
+                                    delete: false,
+                                },
+                                other: {
+                                    execute: false,
+                                    http: false,
+                                    sendto: false,
+                                },
+                                file: {
+                                    list: false,
+                                    read: false,
+                                    write: false,
+                                    create: false,
+                                    delete: false,
+                                },
+                            },
+                        },
+                        native: {},
+                    };
+                    try {
+                        void this.adapter.setForeignObject(`system.group.${group}`, obj, options, error => socketCommands_1.SocketCommands._fixCallback(callback, error, obj));
+                    }
+                    catch (error) {
+                        this.adapter.log.error(`[#addGroup] cannot write group: ${error.toString()}`);
+                        socketCommands_1.SocketCommands._fixCallback(callback, error);
+                    }
+                }
+            });
+        }
+        catch (error) {
+            this.adapter.log.error(`[#addGroup] cannot read group: ${error.toString()}`);
+            socketCommands_1.SocketCommands._fixCallback(callback, error);
+        }
+    }
+    #delGroup(group, options, callback) {
+        try {
+            void this.adapter.getForeignObject(`system.group.${group}`, options, (error, obj) => {
+                if (error || !obj) {
+                    socketCommands_1.SocketCommands._fixCallback(callback, 'Group does not exist');
+                }
+                else {
+                    if (obj.common.dontDelete) {
+                        socketCommands_1.SocketCommands._fixCallback(callback, 'Cannot delete group, while is system group');
+                    }
+                    else {
+                        try {
+                            this.adapter.delForeignObject(`system.group.${group}`, options, error => 
+                            // Remove this group from all users in the web client
+                            socketCommands_1.SocketCommands._fixCallback(callback, error));
+                        }
+                        catch (error) {
+                            this.adapter.log.error(`[#delGroup] cannot delete group: ${error.toString()}`);
+                            socketCommands_1.SocketCommands._fixCallback(callback, error);
+                        }
+                    }
+                }
+            });
+        }
+        catch (error) {
+            this.adapter.log.error(`[#delGroup] cannot read group: ${error.toString()}`);
+            socketCommands_1.SocketCommands._fixCallback(callback, error);
+        }
+    }
+    static #checkObject(obj, options, flag) {
+        // read the rights of the object
+        if (!obj?.common || !obj.acl || flag === 'list') {
+            return true;
+        }
+        if (options.user !== 'system.user.admin' && !options.groups.includes('system.group.administrator')) {
+            if (obj.acl.owner !== options.user) {
+                // Check if the user is in the group
+                if (options.groups.includes(obj.acl.ownerGroup)) {
+                    // Check group rights
+                    if (!(obj.acl.object & (flag << 4))) {
+                        return false;
+                    }
+                }
+                else {
+                    // everybody
+                    if (!(obj.acl.object & flag)) {
+                        return false;
+                    }
+                }
+            }
+            else {
+                // Check group rights
+                if (!(obj.acl.object & (flag << 8))) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    #getAllObjects(socket, callback) {
+        if (typeof callback !== 'function') {
+            return this.adapter.log.warn('[#getAllObjects] Invalid callback');
+        }
+        if (this._checkPermissions(socket, 'getObjects', callback)) {
+            if (this.objects) {
+                if (socket._acl &&
+                    socket._acl?.user !== 'system.user.admin' &&
+                    !socket._acl.groups.includes('system.group.administrator')) {
+                    const result = {};
+                    for (const id in this.objects) {
+                        if (Object.prototype.hasOwnProperty.call(this.objects, id) &&
+                            _a.#checkObject(this.objects[id], socket._acl, ACL_READ /* 'read' */)) {
+                            result[id] = this.objects[id];
+                        }
+                    }
+                    callback(null, result);
+                }
+                else {
+                    callback(null, this.objects);
+                }
+            }
+            else {
+                try {
+                    this.adapter.getObjectList({ include_docs: true }, { user: socket._acl?.user }, (_error, res) => {
+                        this.adapter.log.info('received all objects');
+                        const rows = res?.rows || [];
+                        const objects = {};
+                        if (socket._acl &&
+                            socket._acl?.user !== 'system.user.admin' &&
+                            !socket._acl.groups.includes('system.group.administrator')) {
+                            for (let i = 0; i < rows.length; i++) {
+                                if (_a.#checkObject(rows[i].doc, socket._acl, ACL_READ)) {
+                                    objects[rows[i].doc._id] = rows[i].doc;
+                                }
+                            }
+                            callback(null, objects);
+                        }
+                        else {
+                            for (let j = 0; j < rows.length; j++) {
+                                objects[rows[j].doc._id] = rows[j].doc;
+                            }
+                            callback(null, objects);
+                        }
+                    });
+                }
+                catch (error) {
+                    this.adapter.log.error(`[#getAllObjects] ERROR: ${error.toString()}`);
+                    socketCommands_1.SocketCommands._fixCallback(callback, error);
+                }
+            }
+        }
+    }
     _initCommandsUser() {
         /**
          * #DOCUMENTATION users
@@ -177,7 +615,7 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
          */
         this.commands.addUser = (socket, user, pass, callback) => {
             if (this._checkPermissions(socket, 'addUser', callback, user)) {
-                __classPrivateFieldGet(this, _SocketCommandsAdmin_instances, "m", _SocketCommandsAdmin_addUser).call(this, user, pass, { user: socket._acl?.user || '' }, (error, ...args) => socketCommands_1.SocketCommands._fixCallback(callback, error, ...args));
+                this.#addUser(user, pass, { user: socket._acl?.user || '' }, (error, ...args) => socketCommands_1.SocketCommands._fixCallback(callback, error, ...args));
             }
         };
         /**
@@ -190,7 +628,7 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
          */
         this.commands.delUser = (socket, user, callback) => {
             if (this._checkPermissions(socket, 'delUser', callback, user)) {
-                __classPrivateFieldGet(this, _SocketCommandsAdmin_instances, "m", _SocketCommandsAdmin_delUser).call(this, user, { user: socket._acl?.user || '' }, (error, ...args) => socketCommands_1.SocketCommands._fixCallback(callback, error, ...args));
+                this.#delUser(user, { user: socket._acl?.user || '' }, (error, ...args) => socketCommands_1.SocketCommands._fixCallback(callback, error, ...args));
             }
         };
         /**
@@ -205,7 +643,7 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
          */
         this.commands.addGroup = (socket, group, desc, acl, callback) => {
             if (this._checkPermissions(socket, 'addGroup', callback, group)) {
-                __classPrivateFieldGet(this, _SocketCommandsAdmin_instances, "m", _SocketCommandsAdmin_addGroup).call(this, group, desc, acl, { user: socket._acl?.user || '' }, (error, ...args) => socketCommands_1.SocketCommands._fixCallback(callback, error, ...args));
+                this.#addGroup(group, desc, acl, { user: socket._acl?.user || '' }, (error, ...args) => socketCommands_1.SocketCommands._fixCallback(callback, error, ...args));
             }
         };
         /**
@@ -218,7 +656,7 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
          */
         this.commands.delGroup = (socket, group, callback) => {
             if (this._checkPermissions(socket, 'delGroup', callback, group)) {
-                __classPrivateFieldGet(this, _SocketCommandsAdmin_instances, "m", _SocketCommandsAdmin_delGroup).call(this, group, { user: socket._acl?.user || '' }, (error, ...args) => socketCommands_1.SocketCommands._fixCallback(callback, error, ...args));
+                this.#delGroup(group, { user: socket._acl?.user || '' }, (error, ...args) => socketCommands_1.SocketCommands._fixCallback(callback, error, ...args));
             }
         };
         /**
@@ -453,7 +891,7 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
                 this.disableEventThreshold();
             }
             else {
-                __classPrivateFieldGet(this, _SocketCommandsAdmin_instances, "m", _SocketCommandsAdmin_enableEventThreshold).call(this);
+                this.#enableEventThreshold();
             }
         };
         /**
@@ -581,8 +1019,8 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
                 if (this.adapter.config.accessLimit) {
                     const configs = [];
                     const promises = [];
-                    this.adapter.config.accessAllowedConfigs?.forEach(id => promises.push(__classPrivateFieldGet(this, _SocketCommandsAdmin_instances, "m", _SocketCommandsAdmin_readInstanceConfig).call(this, id, user, false, configs)));
-                    this.adapter.config.accessAllowedTabs?.forEach(id => promises.push(__classPrivateFieldGet(this, _SocketCommandsAdmin_instances, "m", _SocketCommandsAdmin_readInstanceConfig).call(this, id, user, true, configs)));
+                    this.adapter.config.accessAllowedConfigs?.forEach(id => promises.push(this.#readInstanceConfig(id, user, false, configs)));
+                    this.adapter.config.accessAllowedTabs?.forEach(id => promises.push(this.#readInstanceConfig(id, user, true, configs)));
                     void Promise.all(promises).then(() => {
                         socketCommands_1.SocketCommands._fixCallback(callback, null, {
                             strict: true,
@@ -604,7 +1042,7 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
                                     continue;
                                 }
                                 if (!obj.common.noConfig) {
-                                    promises.push(__classPrivateFieldGet(this, _SocketCommandsAdmin_instances, "m", _SocketCommandsAdmin_readInstanceConfig).call(this, obj._id.substring('system.adapter.'.length), user, false, configs));
+                                    promises.push(this.#readInstanceConfig(obj._id.substring('system.adapter.'.length), user, false, configs));
                                 }
                             }
                         }
@@ -681,7 +1119,7 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
                 }
                 else {
                     // remove this branch when js-controller 4.x is mainstream
-                    __classPrivateFieldGet(this, _SocketCommandsAdmin_instances, "m", _SocketCommandsAdmin_updateLicenses).call(this, login, password, { user: socket._acl?.user || '' })
+                    this.#updateLicenses(login, password, { user: socket._acl?.user || '' })
                         .then(licenses => socketCommands_1.SocketCommands._fixCallback(callback, null, licenses))
                         .catch(error => socketCommands_1.SocketCommands._fixCallback(callback, error));
                 }
@@ -786,7 +1224,7 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
         this.commands.getCompactSystemConfig = (socket, callback) => {
             if (this._checkPermissions(socket, 'getObject', callback)) {
                 void this.adapter.getForeignObject('system.config', { user: socket._acl?.user }, (error, obj) => {
-                    obj || (obj = {});
+                    obj ||= {};
                     const secret = obj?.native?.secret;
                     // @ts-expect-error to save the memory
                     delete obj.native;
@@ -864,7 +1302,7 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
                         doc?.rows.map(item => {
                             const host = item.value;
                             if (host) {
-                                host.common || (host.common = host.common);
+                                host.common ||= {};
                                 result.push({
                                     _id: host._id,
                                     common: {
@@ -941,7 +1379,7 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
          * @param callback - Callback function `(error: string | null, objects?: Record<string, ioBroker.Object>) => void`
          */
         this.commands.getAllObjects = (socket, callback) => {
-            return __classPrivateFieldGet(this, _SocketCommandsAdmin_instances, "m", _SocketCommandsAdmin_getAllObjects).call(this, socket, callback);
+            return this.#getAllObjects(socket, callback);
         };
         /**
          * #DOCUMENTATION objects
@@ -974,7 +1412,7 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
                 }
             }
             else {
-                __classPrivateFieldGet(this, _SocketCommandsAdmin_instances, "m", _SocketCommandsAdmin_getAllObjects).call(this, socket, callback);
+                this.#getAllObjects(socket, callback);
             }
         };
         /**
@@ -1142,438 +1580,5 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
     }
 }
 exports.SocketCommandsAdmin = SocketCommandsAdmin;
-_a = SocketCommandsAdmin, _SocketCommandsAdmin_instances = new WeakSet(), _SocketCommandsAdmin_readInstanceConfig = async function _SocketCommandsAdmin_readInstanceConfig(id, user, isTab, configs) {
-    let obj;
-    try {
-        obj = await this.adapter.getForeignObjectAsync(`system.adapter.${id}`, {
-            user,
-        });
-    }
-    catch {
-        // ignore
-    }
-    if (obj?.common) {
-        const instance = id.split('.').pop();
-        const config = {
-            id,
-            title: obj.common.titleLang || obj.common.title,
-            desc: obj.common.desc,
-            color: obj.common.color,
-            url: '',
-            icon: obj.common.icon,
-            materialize: obj.common.materialize,
-            // @ts-expect-error it is deprecated
-            jsonConfig: obj.common.jsonConfig,
-            version: obj.common.version,
-        };
-        if (obj.common.adminUI?.config === 'materialize') {
-            config.materialize = true;
-        }
-        else if (obj.common.adminUI?.config === 'json') {
-            config.jsonConfig = true;
-        }
-        config.url = `/adapter/${obj.common.name}/${isTab ? 'tab' : 'index'}${!isTab && config.materialize ? '_m' : ''}.html${instance ? `?${instance}` : ''}`;
-        if (isTab) {
-            config.tab = true;
-        }
-        else {
-            config.config = true;
-        }
-        configs.push(config);
-    }
-}, _SocketCommandsAdmin_readLicenses = 
-// remove this function when js.controller 4.x are mainstream
-async function _SocketCommandsAdmin_readLicenses(login, password) {
-    const config = {
-        headers: { Authorization: `Basic ${Buffer.from(`${login}:${password}`).toString('base64')}` },
-        timeout: 4000,
-        validateStatus: (status) => status < 400,
-    };
-    try {
-        const response = await axios_1.default.get(`https://iobroker.net:3001/api/v1/licenses`, config);
-        if (response?.data?.length) {
-            const now = Date.now();
-            response.data = response.data.filter((license) => !license.validTill ||
-                license.validTill === '0000-00-00 00:00:00' ||
-                new Date(license.validTill).getTime() > now);
-        }
-        return response.data;
-    }
-    catch (error) {
-        if (error.response) {
-            throw new Error((error.response.data && error.response.data.error) || error.response.data || error.response.status);
-        }
-        if (error.request) {
-            throw new Error('no response');
-        }
-        throw error;
-    }
-}, _SocketCommandsAdmin_updateLicenses = 
-// remove this function when js.controller 4.x is mainstream
-async function _SocketCommandsAdmin_updateLicenses(login, password, options) {
-    // if login and password provided in the message, just try to read without saving it in system.licenses
-    if (login && password) {
-        return __classPrivateFieldGet(this, _SocketCommandsAdmin_instances, "m", _SocketCommandsAdmin_readLicenses).call(this, login, password);
-    }
-    // get actual object
-    const systemLicenses = await this.adapter.getForeignObjectAsync('system.licenses', options);
-    // If password and login exist
-    if (systemLicenses?.native?.password && systemLicenses.native.login) {
-        // get the secret to decode the password
-        if (!this.secret) {
-            const systemConfig = await this.adapter.getForeignObjectAsync('system.config', options);
-            if (systemConfig?.native?.secret) {
-                this.secret = systemConfig.native.secret;
-            }
-        }
-        // decode the password
-        let password = '';
-        try {
-            password = this.adapter.decrypt(this.secret, systemLicenses.native.password);
-        }
-        catch {
-            throw new Error('Cannot decode password');
-        }
-        try {
-            const licenses = await __classPrivateFieldGet(this, _SocketCommandsAdmin_instances, "m", _SocketCommandsAdmin_readLicenses).call(this, systemLicenses.native.login, password);
-            // save licenses to system.licenses and remember the time
-            // merge the information together
-            const oldLicenses = systemLicenses.native.licenses || [];
-            systemLicenses.native.licenses = licenses;
-            oldLicenses.forEach(oldLicense => {
-                if (oldLicense.usedBy) {
-                    const newLicense = licenses.find(item => item.json === oldLicense.json);
-                    if (newLicense) {
-                        newLicense.usedBy = oldLicense.usedBy;
-                    }
-                }
-            });
-            systemLicenses.native.readTime = new Date().toISOString();
-            // save only if an object changed
-            await this.adapter.setForeignObjectAsync('system.licenses', systemLicenses, options);
-            return licenses;
-        }
-        catch (error) {
-            // if password is invalid
-            if (error.message.includes('Authentication required') ||
-                error.message.includes('Cannot decode password')) {
-                // clear existing licenses if exist
-                if (systemLicenses?.native?.licenses?.length) {
-                    systemLicenses.native.licenses = [];
-                    systemLicenses.native.readTime = new Date().toISOString();
-                    return this.adapter
-                        .setForeignObjectAsync('system.licenses', systemLicenses, options)
-                        .then(() => {
-                        throw error;
-                    });
-                }
-                throw error;
-            }
-            else {
-                throw error;
-            }
-        }
-    }
-    else {
-        // if password or login are empty => clear existing licenses if exist
-        if (systemLicenses?.native?.licenses?.length) {
-            systemLicenses.native.licenses = [];
-            systemLicenses.native.readTime = new Date().toISOString();
-            return this.adapter.setForeignObjectAsync('system.licenses', systemLicenses, options).then(() => {
-                throw new Error('No password or login');
-            });
-        }
-        throw new Error('No password or login');
-    }
-}, _SocketCommandsAdmin_enableEventThreshold = function _SocketCommandsAdmin_enableEventThreshold() {
-    if (!this.eventsThreshold.active) {
-        this.eventsThreshold.active = true;
-        setTimeout(async () => {
-            this.adapter.log.info(`Unsubscribe from all states, except system's, because over ${this.eventsThreshold.repeatSeconds} seconds the number of events is over ${this.eventsThreshold.value} (in last second ${this.eventsThreshold.count})`);
-            this.eventsThreshold.timeActivated = Date.now();
-            this.onThresholdChanged && this.onThresholdChanged(true);
-            for (const pattern of Object.keys(this.subscribes.stateChange)) {
-                try {
-                    await this.adapter.unsubscribeForeignStatesAsync(pattern);
-                }
-                catch (e) {
-                    this.adapter.log.error(`Cannot unsubscribe "${pattern}": ${e.message}`);
-                }
-            }
-            try {
-                await this.adapter.subscribeForeignStatesAsync('system.adapter.*');
-            }
-            catch (e) {
-                this.adapter.log.error(`Cannot subscribe "system.adapter.*": ${e.message}`);
-            }
-        }, 100);
-    }
-}, _SocketCommandsAdmin_addUser = function _SocketCommandsAdmin_addUser(user, password, options, callback) {
-    if (typeof options === 'function') {
-        callback = options;
-        options = null;
-    }
-    if (!user.match(/^[-.A-Za-züäößÖÄÜа-яА-Я@+$§0-9=?!&# ]+$/)) {
-        return socketCommands_1.SocketCommands._fixCallback(callback, 'Invalid characters in the name. Only following special characters are allowed: -@+$§=?!&# and letters');
-    }
-    try {
-        void this.adapter
-            .getForeignObjectAsync(`system.user.${user}`, options)
-            .then(async (obj) => {
-            if (obj) {
-                socketCommands_1.SocketCommands._fixCallback(callback, 'User yet exists');
-            }
-            else {
-                try {
-                    await this.adapter.setForeignObject(`system.user.${user}`, {
-                        type: 'user',
-                        common: {
-                            name: user,
-                            enabled: true,
-                            password: '',
-                        },
-                        native: {},
-                    }, options);
-                    try {
-                        await this.adapter.setPassword(user, password, options || {}, callback);
-                    }
-                    catch (error) {
-                        this.adapter.log.error(`[#addUser] cannot set password: ${error.toString()}`);
-                        socketCommands_1.SocketCommands._fixCallback(callback, error);
-                    }
-                }
-                catch (error) {
-                    this.adapter.log.error(`[#addUser] cannot save user: ${error.toString()}`);
-                    socketCommands_1.SocketCommands._fixCallback(callback, error);
-                }
-            }
-        });
-    }
-    catch (error) {
-        this.adapter.log.error(`[#addUser] cannot read user: ${error.toString()}`);
-        socketCommands_1.SocketCommands._fixCallback(callback, error);
-    }
-}, _SocketCommandsAdmin_delUser = function _SocketCommandsAdmin_delUser(user, options, callback) {
-    try {
-        void this.adapter.getForeignObject(`system.user.${user}`, options, (error, obj) => {
-            if (error || !obj) {
-                socketCommands_1.SocketCommands._fixCallback(callback, 'User does not exist');
-            }
-            else {
-                if (obj.common.dontDelete) {
-                    socketCommands_1.SocketCommands._fixCallback(callback, 'Cannot delete user, while is system user');
-                }
-                else {
-                    try {
-                        this.adapter.delForeignObject(`system.user.${user}`, options || {}, error => 
-                        // Remove this user from all groups in the web client
-                        socketCommands_1.SocketCommands._fixCallback(callback, error));
-                    }
-                    catch (error) {
-                        this.adapter.log.error(`[#delUser] cannot delete user: ${error.toString()}`);
-                        socketCommands_1.SocketCommands._fixCallback(callback, error);
-                    }
-                }
-            }
-        });
-    }
-    catch (error) {
-        this.adapter.log.error(`[#delUser] cannot read user: ${error.toString()}`);
-        socketCommands_1.SocketCommands._fixCallback(callback, error);
-    }
-}, _SocketCommandsAdmin_addGroup = function _SocketCommandsAdmin_addGroup(group, desc, acl, options, callback) {
-    let name = group;
-    if (name && name.substring(0, 1) !== name.substring(0, 1).toUpperCase()) {
-        name = name.substring(0, 1).toUpperCase() + name.substring(1);
-    }
-    group = group.substring(0, 1).toLowerCase() + group.substring(1);
-    if (!group.match(/^[-.A-Za-züäößÖÄÜа-яА-Я@+$§0-9=?!&#_ ]+$/)) {
-        return socketCommands_1.SocketCommands._fixCallback(callback, 'Invalid characters in the group name. Only following special characters are allowed: -@+$§=?!&# and letters');
-    }
-    try {
-        void this.adapter.getForeignObject(`system.group.${group}`, options, (_error, obj) => {
-            if (obj) {
-                socketCommands_1.SocketCommands._fixCallback(callback, 'Group yet exists');
-            }
-            else {
-                obj = {
-                    _id: `system.group.${group}`,
-                    type: 'group',
-                    common: {
-                        name,
-                        desc: desc || undefined,
-                        members: [],
-                        acl: acl || {
-                            object: {
-                                list: false,
-                                read: false,
-                                write: false,
-                                create: false,
-                                delete: false,
-                            },
-                            state: {
-                                list: false,
-                                read: false,
-                                write: false,
-                                create: false,
-                                delete: false,
-                            },
-                            users: {
-                                list: false,
-                                read: false,
-                                write: false,
-                                create: false,
-                                delete: false,
-                            },
-                            other: {
-                                execute: false,
-                                http: false,
-                                sendto: false,
-                            },
-                            file: {
-                                list: false,
-                                read: false,
-                                write: false,
-                                create: false,
-                                delete: false,
-                            },
-                        },
-                    },
-                    native: {},
-                };
-                try {
-                    void this.adapter.setForeignObject(`system.group.${group}`, obj, options, error => socketCommands_1.SocketCommands._fixCallback(callback, error, obj));
-                }
-                catch (error) {
-                    this.adapter.log.error(`[#addGroup] cannot write group: ${error.toString()}`);
-                    socketCommands_1.SocketCommands._fixCallback(callback, error);
-                }
-            }
-        });
-    }
-    catch (error) {
-        this.adapter.log.error(`[#addGroup] cannot read group: ${error.toString()}`);
-        socketCommands_1.SocketCommands._fixCallback(callback, error);
-    }
-}, _SocketCommandsAdmin_delGroup = function _SocketCommandsAdmin_delGroup(group, options, callback) {
-    try {
-        void this.adapter.getForeignObject(`system.group.${group}`, options, (error, obj) => {
-            if (error || !obj) {
-                socketCommands_1.SocketCommands._fixCallback(callback, 'Group does not exist');
-            }
-            else {
-                if (obj.common.dontDelete) {
-                    socketCommands_1.SocketCommands._fixCallback(callback, 'Cannot delete group, while is system group');
-                }
-                else {
-                    try {
-                        this.adapter.delForeignObject(`system.group.${group}`, options, error => 
-                        // Remove this group from all users in the web client
-                        socketCommands_1.SocketCommands._fixCallback(callback, error));
-                    }
-                    catch (error) {
-                        this.adapter.log.error(`[#delGroup] cannot delete group: ${error.toString()}`);
-                        socketCommands_1.SocketCommands._fixCallback(callback, error);
-                    }
-                }
-            }
-        });
-    }
-    catch (error) {
-        this.adapter.log.error(`[#delGroup] cannot read group: ${error.toString()}`);
-        socketCommands_1.SocketCommands._fixCallback(callback, error);
-    }
-}, _SocketCommandsAdmin_checkObject = function _SocketCommandsAdmin_checkObject(obj, options, flag) {
-    // read the rights of the object
-    if (!obj?.common || !obj.acl || flag === 'list') {
-        return true;
-    }
-    if (options.user !== 'system.user.admin' && !options.groups.includes('system.group.administrator')) {
-        if (obj.acl.owner !== options.user) {
-            // Check if the user is in the group
-            if (options.groups.includes(obj.acl.ownerGroup)) {
-                // Check group rights
-                if (!(obj.acl.object & (flag << 4))) {
-                    return false;
-                }
-            }
-            else {
-                // everybody
-                if (!(obj.acl.object & flag)) {
-                    return false;
-                }
-            }
-        }
-        else {
-            // Check group rights
-            if (!(obj.acl.object & (flag << 8))) {
-                return false;
-            }
-        }
-    }
-    return true;
-}, _SocketCommandsAdmin_getAllObjects = function _SocketCommandsAdmin_getAllObjects(socket, callback) {
-    if (typeof callback !== 'function') {
-        return this.adapter.log.warn('[#getAllObjects] Invalid callback');
-    }
-    if (this._checkPermissions(socket, 'getObjects', callback)) {
-        if (this.objects) {
-            if (socket._acl &&
-                socket._acl?.user !== 'system.user.admin' &&
-                !socket._acl.groups.includes('system.group.administrator')) {
-                const result = {};
-                for (const id in this.objects) {
-                    if (Object.prototype.hasOwnProperty.call(this.objects, id) &&
-                        __classPrivateFieldGet(_a, _a, "m", _SocketCommandsAdmin_checkObject).call(_a, this.objects[id], socket._acl, ACL_READ /* 'read' */)) {
-                        result[id] = this.objects[id];
-                    }
-                }
-                callback(null, result);
-            }
-            else {
-                callback(null, this.objects);
-            }
-        }
-        else {
-            try {
-                this.adapter.getObjectList({ include_docs: true }, { user: socket._acl?.user }, (_error, res) => {
-                    this.adapter.log.info('received all objects');
-                    const rows = res?.rows || [];
-                    const objects = {};
-                    if (socket._acl &&
-                        socket._acl?.user !== 'system.user.admin' &&
-                        !socket._acl.groups.includes('system.group.administrator')) {
-                        for (let i = 0; i < rows.length; i++) {
-                            if (__classPrivateFieldGet(_a, _a, "m", _SocketCommandsAdmin_checkObject).call(_a, rows[i].doc, socket._acl, ACL_READ)) {
-                                objects[rows[i].doc._id] = rows[i].doc;
-                            }
-                        }
-                        callback(null, objects);
-                    }
-                    else {
-                        for (let j = 0; j < rows.length; j++) {
-                            objects[rows[j].doc._id] = rows[j].doc;
-                        }
-                        callback(null, objects);
-                    }
-                });
-            }
-            catch (error) {
-                this.adapter.log.error(`[#getAllObjects] ERROR: ${error.toString()}`);
-                socketCommands_1.SocketCommands._fixCallback(callback, error);
-            }
-        }
-    }
-};
-SocketCommandsAdmin.ALLOW_CACHE = [
-    'getRepository',
-    'getInstalled',
-    'getInstalledAdapter',
-    'getVersion',
-    'getDiagData',
-    'getLocationOnDisk',
-    'getDevList',
-    'getLogs',
-    'getHostInfo',
-];
+_a = SocketCommandsAdmin;
 //# sourceMappingURL=socketCommandsAdmin.js.map

@@ -1,16 +1,4 @@
 "use strict";
-var __classPrivateFieldSet = (this && this.__classPrivateFieldSet) || function (receiver, state, value, kind, f) {
-    if (kind === "m") throw new TypeError("Private method is not writable");
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
-    return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
-};
-var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (receiver, state, kind, f) {
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
-};
-var _SocketCommands_instances, _SocketCommands_logEnabled, _SocketCommands_clientSubscribes, _SocketCommands_updateSession, _SocketCommands_rename, _SocketCommands_unlink, _SocketCommands_subscribeStates, _SocketCommands_unsubscribeStates, _SocketCommands_subscribeFiles, _SocketCommands_httpGet, _SocketCommands_initCommands, _SocketCommands_informAboutDisconnect;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SocketCommands = exports.COMMANDS_PERMISSIONS = void 0;
 const adapter_core_1 = require("@iobroker/adapter-core"); // Get common adapter utils
@@ -69,20 +57,102 @@ const pattern2RegEx = adapter_core_1.commonTools.pattern2RegEx;
 let axiosGet = null;
 let zipFiles = null;
 class SocketCommands {
+    static ERROR_PERMISSION = 'permissionError';
+    static COMMANDS_PERMISSIONS = exports.COMMANDS_PERMISSIONS;
+    adapter;
+    context;
+    commands = {};
+    subscribes = {};
+    #logEnabled = false;
+    #clientSubscribes = {};
+    #updateSession;
+    adapterName;
+    _sendToHost;
+    states = null;
     constructor(adapter, updateSession, context) {
-        _SocketCommands_instances.add(this);
-        this.commands = {};
-        this.subscribes = {};
-        _SocketCommands_logEnabled.set(this, false);
-        _SocketCommands_clientSubscribes.set(this, {});
-        _SocketCommands_updateSession.set(this, void 0);
-        this.states = null;
         this.adapter = adapter;
-        __classPrivateFieldSet(this, _SocketCommands_updateSession, updateSession, "f");
+        this.#updateSession = updateSession;
         this.context = context;
-        __classPrivateFieldSet(this, _SocketCommands_updateSession, __classPrivateFieldGet(this, _SocketCommands_updateSession, "f") || (() => true), "f");
+        this.#updateSession ||= () => true;
         this._sendToHost = null;
-        __classPrivateFieldGet(this, _SocketCommands_instances, "m", _SocketCommands_initCommands).call(this);
+        this.#initCommands();
+    }
+    /**
+     * Rename file or folder
+     *
+     * @param adapter Object ID
+     * @param oldName Old file name
+     * @param newName New file name
+     * @param options options { user?: string; }
+     */
+    async #rename(adapter, oldName, newName, options) {
+        // read if it is a file or folder
+        try {
+            if (oldName.endsWith('/')) {
+                oldName = oldName.substring(0, oldName.length - 1);
+            }
+            if (newName.endsWith('/')) {
+                newName = newName.substring(0, newName.length - 1);
+            }
+            const files = await this.adapter.readDirAsync(adapter, oldName, options);
+            if (files?.length) {
+                for (let f = 0; f < files.length; f++) {
+                    await this.#rename(adapter, `${oldName}/${files[f].file}`, `${newName}/${files[f].file}`);
+                }
+            }
+        }
+        catch (error) {
+            if (error.message !== 'Not exists') {
+                throw error;
+            }
+            // else ignore, because it is a file and not a folder
+        }
+        try {
+            await this.adapter.renameAsync(adapter, oldName, newName, options);
+        }
+        catch (error) {
+            if (error.message !== 'Not exists') {
+                throw error;
+            }
+            // else ignore, because the folder cannot be deleted
+        }
+    }
+    /**
+     * Delete file or folder
+     *
+     * @param adapter Object ID
+     * @param name File name
+     * @param options options { user?: string; }
+     */
+    async #unlink(adapter, name, options) {
+        // read if it is a file or folder
+        try {
+            // remove trailing '/'
+            if (name.endsWith('/')) {
+                name = name.substring(0, name.length - 1);
+            }
+            const files = await this.adapter.readDirAsync(adapter, name, options);
+            if (files && files.length) {
+                for (let f = 0; f < files.length; f++) {
+                    await this.#unlink(adapter, `${name}/${files[f].file}`);
+                }
+            }
+        }
+        catch (error) {
+            // ignore, because it is a file and not a folder
+            if (error.message !== 'Not exists') {
+                throw error;
+            }
+        }
+        try {
+            await this.adapter.unlinkAsync(adapter, name, options);
+        }
+        catch (error) {
+            if (error.message !== 'Not exists') {
+                throw error;
+            }
+            // else ignore, because folder cannot be deleted
+        }
     }
     /**
      * Convert errors into strings and then call cb
@@ -148,7 +218,7 @@ class SocketCommands {
         return true;
     }
     publish(socket, type, id, obj) {
-        if (socket?.subscribe?.[type] && __classPrivateFieldGet(this, _SocketCommands_updateSession, "f").call(this, socket)) {
+        if (socket?.subscribe?.[type] && this.#updateSession(socket)) {
             return !!socket.subscribe[type].find(sub => {
                 if (sub.regex.test(id)) {
                     // replace language
@@ -165,7 +235,7 @@ class SocketCommands {
         return false;
     }
     publishFile(socket, id, fileName, size) {
-        if (socket?.subscribe?.fileChange && __classPrivateFieldGet(this, _SocketCommands_updateSession, "f").call(this, socket)) {
+        if (socket?.subscribe?.fileChange && this.#updateSession(socket)) {
             const key = `${id}####${fileName}`;
             return !!socket.subscribe.fileChange.find(sub => {
                 if (sub.regex.test(key)) {
@@ -177,7 +247,7 @@ class SocketCommands {
         return false;
     }
     publishInstanceMessage(socket, sourceInstance, messageType, data) {
-        if (__classPrivateFieldGet(this, _SocketCommands_clientSubscribes, "f")[socket.id]?.[sourceInstance]?.includes(messageType)) {
+        if (this.#clientSubscribes[socket.id]?.[sourceInstance]?.includes(messageType)) {
             socket.emit('im', messageType, sourceInstance, data);
             return true;
         }
@@ -203,7 +273,7 @@ class SocketCommands {
         }
     }
     isLogEnabled() {
-        return __classPrivateFieldGet(this, _SocketCommands_logEnabled, "f");
+        return this.#logEnabled;
     }
     subscribe(socket, type, pattern, patternFile) {
         if (!pattern) {
@@ -255,8 +325,8 @@ class SocketCommands {
                     .catch(e => this.adapter.log.error(`Cannot subscribe "${pattern}": ${e.message}`));
             }
             else if (type === 'log') {
-                if (!__classPrivateFieldGet(this, _SocketCommands_logEnabled, "f") && this.adapter.requireLog) {
-                    __classPrivateFieldSet(this, _SocketCommands_logEnabled, true, "f");
+                if (!this.#logEnabled && this.adapter.requireLog) {
+                    this.#logEnabled = true;
                     void this.adapter.requireLog(true, options);
                 }
             }
@@ -309,8 +379,8 @@ class SocketCommands {
                                     .catch(e => this.adapter.log.error(`Cannot unsubscribe "${pattern}": ${e.message}`));
                             }
                             else if (type === 'log') {
-                                if (__classPrivateFieldGet(this, _SocketCommands_logEnabled, "f") && this.adapter.requireLog) {
-                                    __classPrivateFieldSet(this, _SocketCommands_logEnabled, false, "f");
+                                if (this.#logEnabled && this.adapter.requireLog) {
+                                    this.#logEnabled = false;
                                     void this.adapter.requireLog(false, options);
                                 }
                             }
@@ -343,8 +413,8 @@ class SocketCommands {
                             .catch(e => this.adapter.log.error(`Cannot unsubscribe "${pattern}": ${e.message}`));
                     }
                     else if (type === 'log') {
-                        if (this.adapter.requireLog && __classPrivateFieldGet(this, _SocketCommands_logEnabled, "f")) {
-                            __classPrivateFieldSet(this, _SocketCommands_logEnabled, false, "f");
+                        if (this.adapter.requireLog && this.#logEnabled) {
+                            this.#logEnabled = false;
                             void this.adapter.requireLog(false, options);
                         }
                     }
@@ -371,8 +441,8 @@ class SocketCommands {
                 }
                 else if (type === 'log') {
                     // console.log((socket._name || socket.id) + ' requireLog false');
-                    if (this.adapter.requireLog && __classPrivateFieldGet(this, _SocketCommands_logEnabled, "f")) {
-                        __classPrivateFieldSet(this, _SocketCommands_logEnabled, false, "f");
+                    if (this.adapter.requireLog && this.#logEnabled) {
+                        this.#logEnabled = false;
                         void this.adapter.requireLog(false, options);
                     }
                 }
@@ -414,8 +484,8 @@ class SocketCommands {
                         .catch(e => this.adapter.log.error(`Cannot subscribe "${pattern}": ${e.message}`));
                 }
                 else if (type === 'log') {
-                    if (this.adapter.requireLog && !__classPrivateFieldGet(this, _SocketCommands_logEnabled, "f")) {
-                        __classPrivateFieldSet(this, _SocketCommands_logEnabled, true, "f");
+                    if (this.adapter.requireLog && !this.#logEnabled) {
+                        this.#logEnabled = true;
                         void this.adapter.requireLog(true, options);
                     }
                 }
@@ -436,7 +506,7 @@ class SocketCommands {
             return;
         }
         // inform all instances about disconnected socket
-        __classPrivateFieldGet(this, _SocketCommands_instances, "m", _SocketCommands_informAboutDisconnect).call(this, socket.id);
+        this.#informAboutDisconnect(socket.id);
         if (!type) {
             // all
             Object.keys(socket.subscribe).forEach(type => this.unsubscribeSocket(socket, type));
@@ -462,8 +532,8 @@ class SocketCommands {
                             .catch(e => this.adapter.log.error(`Cannot unsubscribe "${pattern}": ${e.message}`));
                     }
                     else if (type === 'log') {
-                        if (this.adapter.requireLog && !__classPrivateFieldGet(this, _SocketCommands_logEnabled, "f")) {
-                            __classPrivateFieldSet(this, _SocketCommands_logEnabled, true, "f");
+                        if (this.adapter.requireLog && !this.#logEnabled) {
+                            this.#logEnabled = true;
                             void this.adapter.requireLog(true, options);
                         }
                     }
@@ -476,6 +546,48 @@ class SocketCommands {
                     delete this.subscribes[type][pattern];
                 }
             }
+        }
+    }
+    #subscribeStates(socket, pattern, callback) {
+        if (this._checkPermissions(socket, 'subscribe', callback, pattern)) {
+            if (Array.isArray(pattern)) {
+                for (let p = 0; p < pattern.length; p++) {
+                    this.subscribe(socket, 'stateChange', pattern[p]);
+                }
+            }
+            else {
+                this.subscribe(socket, 'stateChange', pattern);
+            }
+            this.adapter.log.level === 'debug' && this._showSubscribes(socket, 'stateChange');
+            typeof callback === 'function' && setImmediate(callback, null);
+        }
+    }
+    #unsubscribeStates(socket, pattern, callback) {
+        if (this._checkPermissions(socket, 'unsubscribe', callback, pattern)) {
+            if (Array.isArray(pattern)) {
+                for (let p = 0; p < pattern.length; p++) {
+                    this.unsubscribe(socket, 'stateChange', pattern[p]);
+                }
+            }
+            else {
+                this.unsubscribe(socket, 'stateChange', pattern);
+            }
+            this.adapter.log.level === 'debug' && this._showSubscribes(socket, 'stateChange');
+            typeof callback === 'function' && setImmediate(callback, null);
+        }
+    }
+    #subscribeFiles(socket, id, pattern, callback) {
+        if (this._checkPermissions(socket, 'subscribeFiles', callback, pattern)) {
+            if (Array.isArray(pattern)) {
+                for (let p = 0; p < pattern.length; p++) {
+                    this.subscribe(socket, 'fileChange', id, pattern[p]);
+                }
+            }
+            else {
+                this.subscribe(socket, 'fileChange', id, pattern);
+            }
+            this.adapter.log.level === 'debug' && this._showSubscribes(socket, 'fileChange');
+            typeof callback === 'function' && setImmediate(callback, null);
         }
     }
     _unsubscribeFiles(socket, id, pattern, callback) {
@@ -540,6 +652,26 @@ class SocketCommands {
             if (obj.common.adminUI) {
                 this.adapter.log.debug(`Please add to "${obj._id.replace(/\.\d+$/, '')}" common.adminUI=${JSON.stringify(obj.common.adminUI)}`);
             }
+        }
+    }
+    #httpGet(url, callback) {
+        this.adapter.log.debug(`httpGet: ${url}`);
+        if (axiosGet) {
+            try {
+                axiosGet(url, {
+                    responseType: 'arraybuffer',
+                    timeout: 15000,
+                    validateStatus: (status) => status < 400,
+                })
+                    .then((result) => callback(null, { status: result.status, statusText: result.statusText }, result.data))
+                    .catch((error) => callback(error));
+            }
+            catch (error) {
+                callback(error);
+            }
+        }
+        else {
+            callback(new Error('axios is not initialized'));
         }
     }
     // Init common commands that not belong to stats, objects or files
@@ -654,12 +786,12 @@ class SocketCommands {
         this.commands.httpGet = (socket, url, callback) => {
             if (this._checkPermissions(socket, 'httpGet', callback, url)) {
                 if (axiosGet) {
-                    __classPrivateFieldGet(this, _SocketCommands_instances, "m", _SocketCommands_httpGet).call(this, url, callback);
+                    this.#httpGet(url, callback);
                 }
                 else {
                     void import('axios').then(({ default: axios }) => {
                         axiosGet = axiosGet || axios.get;
-                        __classPrivateFieldGet(this, _SocketCommands_instances, "m", _SocketCommands_httpGet).call(this, url, callback);
+                        this.#httpGet(url, callback);
                     });
                 }
             }
@@ -1016,7 +1148,7 @@ class SocketCommands {
         this.commands.unlink = (socket, adapter, name, callback) => {
             if (this._checkPermissions(socket, 'unlink', callback, name)) {
                 try {
-                    __classPrivateFieldGet(this, _SocketCommands_instances, "m", _SocketCommands_unlink).call(this, adapter, name, { user: socket._acl?.user })
+                    this.#unlink(adapter, name, { user: socket._acl?.user })
                         .then(() => SocketCommands._fixCallback(callback, undefined))
                         .catch(error => SocketCommands._fixCallback(callback, error));
                 }
@@ -1058,7 +1190,7 @@ class SocketCommands {
         this.commands.deleteFolder = (socket, adapter, name, callback) => {
             if (this._checkPermissions(socket, 'unlink', callback, name)) {
                 try {
-                    __classPrivateFieldGet(this, _SocketCommands_instances, "m", _SocketCommands_unlink).call(this, adapter, name, { user: socket._acl?.user })
+                    this.#unlink(adapter, name, { user: socket._acl?.user })
                         .then(() => SocketCommands._fixCallback(callback, null))
                         .catch(error => SocketCommands._fixCallback(callback, error));
                 }
@@ -1102,7 +1234,7 @@ class SocketCommands {
         this.commands.rename = (socket, adapter, oldName, newName, callback) => {
             if (this._checkPermissions(socket, 'rename', callback, oldName)) {
                 try {
-                    __classPrivateFieldGet(this, _SocketCommands_instances, "m", _SocketCommands_rename).call(this, adapter, oldName, newName, { user: socket._acl?.user })
+                    this.#rename(adapter, oldName, newName, { user: socket._acl?.user })
                         .then(() => SocketCommands._fixCallback(callback, undefined))
                         .catch(error => SocketCommands._fixCallback(callback, error));
                 }
@@ -1249,7 +1381,7 @@ class SocketCommands {
          * @param callback Callback `(error: null | undefined | Error | string) => void`
          */
         this.commands.subscribeFiles = (socket, id, pattern, callback) => {
-            return __classPrivateFieldGet(this, _SocketCommands_instances, "m", _SocketCommands_subscribeFiles).call(this, socket, id, pattern, callback);
+            return this.#subscribeFiles(socket, id, pattern, callback);
         };
         /**
          * #DOCUMENTATION files
@@ -1454,7 +1586,7 @@ class SocketCommands {
          * @param callback Callback `(error: string | null) => void`
          */
         this.commands.subscribe = (socket, pattern, callback) => {
-            __classPrivateFieldGet(this, _SocketCommands_instances, "m", _SocketCommands_subscribeStates).call(this, socket, pattern, callback);
+            this.#subscribeStates(socket, pattern, callback);
         };
         /**
          * #DOCUMENTATION states
@@ -1466,7 +1598,7 @@ class SocketCommands {
          * @param callback Callback `(error: string | null) => void`
          */
         this.commands.subscribeStates = (socket, pattern, callback) => {
-            __classPrivateFieldGet(this, _SocketCommands_instances, "m", _SocketCommands_subscribeStates).call(this, socket, pattern, callback);
+            this.#subscribeStates(socket, pattern, callback);
         };
         /**
          * #DOCUMENTATION states
@@ -1477,7 +1609,7 @@ class SocketCommands {
          * @param callback Callback `(error: string | null) => void`
          */
         this.commands.unsubscribe = (socket, pattern, callback) => {
-            __classPrivateFieldGet(this, _SocketCommands_instances, "m", _SocketCommands_unsubscribeStates).call(this, socket, pattern, callback);
+            this.#unsubscribeStates(socket, pattern, callback);
         };
         /**
          * #DOCUMENTATION states
@@ -1489,7 +1621,7 @@ class SocketCommands {
          * @param callback Callback `(error: string | null) => void`
          */
         this.commands.unsubscribeStates = (socket, pattern, callback) => {
-            __classPrivateFieldGet(this, _SocketCommands_instances, "m", _SocketCommands_unsubscribeStates).call(this, socket, pattern, callback);
+            this.#unsubscribeStates(socket, pattern, callback);
         };
     }
     /** Init commands for objects */
@@ -1809,10 +1941,10 @@ class SocketCommands {
             }
             const sid = socket.id;
             // GUI subscribes for messages from targetInstance
-            __classPrivateFieldGet(this, _SocketCommands_clientSubscribes, "f")[sid] = __classPrivateFieldGet(this, _SocketCommands_clientSubscribes, "f")[sid] || {};
-            __classPrivateFieldGet(this, _SocketCommands_clientSubscribes, "f")[sid][targetInstance] = __classPrivateFieldGet(this, _SocketCommands_clientSubscribes, "f")[sid][targetInstance] || [];
-            if (!__classPrivateFieldGet(this, _SocketCommands_clientSubscribes, "f")[sid][targetInstance].includes(messageType)) {
-                __classPrivateFieldGet(this, _SocketCommands_clientSubscribes, "f")[sid][targetInstance].push(messageType);
+            this.#clientSubscribes[sid] = this.#clientSubscribes[sid] || {};
+            this.#clientSubscribes[sid][targetInstance] = this.#clientSubscribes[sid][targetInstance] || [];
+            if (!this.#clientSubscribes[sid][targetInstance].includes(messageType)) {
+                this.#clientSubscribes[sid][targetInstance].push(messageType);
             }
             // inform instance about new subscription
             this.adapter.sendTo(targetInstance, 'clientSubscribe', { type: messageType, sid, data }, result => SocketCommands._fixCallback(callback, null, result));
@@ -1834,10 +1966,10 @@ class SocketCommands {
                 targetInstance = `system.adapter.${targetInstance}`;
             }
             // GUI unsubscribes for messages from targetInstance
-            if (__classPrivateFieldGet(this, _SocketCommands_clientSubscribes, "f")[sid] && __classPrivateFieldGet(this, _SocketCommands_clientSubscribes, "f")[sid][targetInstance]) {
-                const pos = __classPrivateFieldGet(this, _SocketCommands_clientSubscribes, "f")[sid][targetInstance].indexOf(messageType);
+            if (this.#clientSubscribes[sid] && this.#clientSubscribes[sid][targetInstance]) {
+                const pos = this.#clientSubscribes[sid][targetInstance].indexOf(messageType);
                 if (pos !== -1) {
-                    __classPrivateFieldGet(this, _SocketCommands_clientSubscribes, "f")[sid][targetInstance].splice(pos, 1);
+                    this.#clientSubscribes[sid][targetInstance].splice(pos, 1);
                     // inform instance about unsubscription
                     this.adapter.sendTo(targetInstance, 'clientUnsubscribe', {
                         type: [messageType],
@@ -1851,9 +1983,29 @@ class SocketCommands {
             SocketCommands._fixCallback(callback, null, false);
         };
     }
+    /** Init all commands: common, objects, states, files */
+    #initCommands() {
+        this._initCommandsCommon();
+        this._initCommandsObjects();
+        this._initCommandsStates();
+        this._initCommandsFiles();
+    }
+    #informAboutDisconnect(socketId) {
+        // say to all instances, that this socket was disconnected
+        if (this.#clientSubscribes[socketId]) {
+            Object.keys(this.#clientSubscribes[socketId]).forEach(targetInstance => {
+                this.adapter.sendTo(targetInstance, 'clientUnsubscribe', {
+                    type: this.#clientSubscribes[socketId][targetInstance],
+                    sid: socketId,
+                    reason: 'disconnect',
+                });
+            });
+            delete this.#clientSubscribes[socketId];
+        }
+    }
     applyCommands(socket) {
         Object.keys(this.commands).forEach(command => socket.on(command, (...args) => {
-            if (__classPrivateFieldGet(this, _SocketCommands_updateSession, "f").call(this, socket)) {
+            if (this.#updateSession(socket)) {
                 this.commands[command](socket, ...args);
             }
         }));
@@ -1866,159 +2018,4 @@ class SocketCommands {
     }
 }
 exports.SocketCommands = SocketCommands;
-_SocketCommands_logEnabled = new WeakMap(), _SocketCommands_clientSubscribes = new WeakMap(), _SocketCommands_updateSession = new WeakMap(), _SocketCommands_instances = new WeakSet(), _SocketCommands_rename = 
-/**
- * Rename file or folder
- *
- * @param adapter Object ID
- * @param oldName Old file name
- * @param newName New file name
- * @param options options { user?: string; }
- */
-async function _SocketCommands_rename(adapter, oldName, newName, options) {
-    // read if it is a file or folder
-    try {
-        if (oldName.endsWith('/')) {
-            oldName = oldName.substring(0, oldName.length - 1);
-        }
-        if (newName.endsWith('/')) {
-            newName = newName.substring(0, newName.length - 1);
-        }
-        const files = await this.adapter.readDirAsync(adapter, oldName, options);
-        if (files?.length) {
-            for (let f = 0; f < files.length; f++) {
-                await __classPrivateFieldGet(this, _SocketCommands_instances, "m", _SocketCommands_rename).call(this, adapter, `${oldName}/${files[f].file}`, `${newName}/${files[f].file}`);
-            }
-        }
-    }
-    catch (error) {
-        if (error.message !== 'Not exists') {
-            throw error;
-        }
-        // else ignore, because it is a file and not a folder
-    }
-    try {
-        await this.adapter.renameAsync(adapter, oldName, newName, options);
-    }
-    catch (error) {
-        if (error.message !== 'Not exists') {
-            throw error;
-        }
-        // else ignore, because the folder cannot be deleted
-    }
-}, _SocketCommands_unlink = 
-/**
- * Delete file or folder
- *
- * @param adapter Object ID
- * @param name File name
- * @param options options { user?: string; }
- */
-async function _SocketCommands_unlink(adapter, name, options) {
-    // read if it is a file or folder
-    try {
-        // remove trailing '/'
-        if (name.endsWith('/')) {
-            name = name.substring(0, name.length - 1);
-        }
-        const files = await this.adapter.readDirAsync(adapter, name, options);
-        if (files && files.length) {
-            for (let f = 0; f < files.length; f++) {
-                await __classPrivateFieldGet(this, _SocketCommands_instances, "m", _SocketCommands_unlink).call(this, adapter, `${name}/${files[f].file}`);
-            }
-        }
-    }
-    catch (error) {
-        // ignore, because it is a file and not a folder
-        if (error.message !== 'Not exists') {
-            throw error;
-        }
-    }
-    try {
-        await this.adapter.unlinkAsync(adapter, name, options);
-    }
-    catch (error) {
-        if (error.message !== 'Not exists') {
-            throw error;
-        }
-        // else ignore, because folder cannot be deleted
-    }
-}, _SocketCommands_subscribeStates = function _SocketCommands_subscribeStates(socket, pattern, callback) {
-    if (this._checkPermissions(socket, 'subscribe', callback, pattern)) {
-        if (Array.isArray(pattern)) {
-            for (let p = 0; p < pattern.length; p++) {
-                this.subscribe(socket, 'stateChange', pattern[p]);
-            }
-        }
-        else {
-            this.subscribe(socket, 'stateChange', pattern);
-        }
-        this.adapter.log.level === 'debug' && this._showSubscribes(socket, 'stateChange');
-        typeof callback === 'function' && setImmediate(callback, null);
-    }
-}, _SocketCommands_unsubscribeStates = function _SocketCommands_unsubscribeStates(socket, pattern, callback) {
-    if (this._checkPermissions(socket, 'unsubscribe', callback, pattern)) {
-        if (Array.isArray(pattern)) {
-            for (let p = 0; p < pattern.length; p++) {
-                this.unsubscribe(socket, 'stateChange', pattern[p]);
-            }
-        }
-        else {
-            this.unsubscribe(socket, 'stateChange', pattern);
-        }
-        this.adapter.log.level === 'debug' && this._showSubscribes(socket, 'stateChange');
-        typeof callback === 'function' && setImmediate(callback, null);
-    }
-}, _SocketCommands_subscribeFiles = function _SocketCommands_subscribeFiles(socket, id, pattern, callback) {
-    if (this._checkPermissions(socket, 'subscribeFiles', callback, pattern)) {
-        if (Array.isArray(pattern)) {
-            for (let p = 0; p < pattern.length; p++) {
-                this.subscribe(socket, 'fileChange', id, pattern[p]);
-            }
-        }
-        else {
-            this.subscribe(socket, 'fileChange', id, pattern);
-        }
-        this.adapter.log.level === 'debug' && this._showSubscribes(socket, 'fileChange');
-        typeof callback === 'function' && setImmediate(callback, null);
-    }
-}, _SocketCommands_httpGet = function _SocketCommands_httpGet(url, callback) {
-    this.adapter.log.debug(`httpGet: ${url}`);
-    if (axiosGet) {
-        try {
-            axiosGet(url, {
-                responseType: 'arraybuffer',
-                timeout: 15000,
-                validateStatus: (status) => status < 400,
-            })
-                .then((result) => callback(null, { status: result.status, statusText: result.statusText }, result.data))
-                .catch((error) => callback(error));
-        }
-        catch (error) {
-            callback(error);
-        }
-    }
-    else {
-        callback(new Error('axios is not initialized'));
-    }
-}, _SocketCommands_initCommands = function _SocketCommands_initCommands() {
-    this._initCommandsCommon();
-    this._initCommandsObjects();
-    this._initCommandsStates();
-    this._initCommandsFiles();
-}, _SocketCommands_informAboutDisconnect = function _SocketCommands_informAboutDisconnect(socketId) {
-    // say to all instances, that this socket was disconnected
-    if (__classPrivateFieldGet(this, _SocketCommands_clientSubscribes, "f")[socketId]) {
-        Object.keys(__classPrivateFieldGet(this, _SocketCommands_clientSubscribes, "f")[socketId]).forEach(targetInstance => {
-            this.adapter.sendTo(targetInstance, 'clientUnsubscribe', {
-                type: __classPrivateFieldGet(this, _SocketCommands_clientSubscribes, "f")[socketId][targetInstance],
-                sid: socketId,
-                reason: 'disconnect',
-            });
-        });
-        delete __classPrivateFieldGet(this, _SocketCommands_clientSubscribes, "f")[socketId];
-    }
-};
-SocketCommands.ERROR_PERMISSION = 'permissionError';
-SocketCommands.COMMANDS_PERMISSIONS = exports.COMMANDS_PERMISSIONS;
 //# sourceMappingURL=socketCommands.js.map
