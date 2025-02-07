@@ -13,7 +13,7 @@ import type { Store } from './passportSocket';
 import type { PermissionCommands, SocketSubscribeTypes } from '../types';
 import type { AddressInfo } from 'node:net';
 import type { SocketCommandsAdmin } from './socketCommandsAdmin';
-interface WhiteListSettings {
+export interface WhiteListSettings {
     /** Like "admin" or "user". No "system.user." prefix */
     user: string;
     object: {
@@ -133,4 +133,3 @@ export declare class SocketCommon {
     publishInstanceMessageAll(sourceInstance: string, messageType: string, sid: string, data: any): void;
     close(): void;
 }
-export {};
