@@ -2278,6 +2278,9 @@ export class SocketCommands {
          * @param design Design name, e.g., 'system' or other designs like `custom`, but it must exist object `_design/custom`. To 99,9% use `system`.
          * @param search Search name, object type, like `state`, `instance`, `adapter`, `host`, ...
          * @param params Parameters for the query, e.g., `{startkey: 'system.adapter.', endkey: 'system.adapter.\u9999', depth?: number}`
+         * @param params.startkey Start key
+         * @param params.endkey End key. If not provided the `startkey + '\u9999'` will be taken
+         * @param params.depth If the depth is provided, only first level of objects will be returned for smaller size
          * @param callback Callback `(error: string | null, result?: { rows: Array<GetObjectViewItem>) => void`
          */
         this.commands.getObjectView = (
