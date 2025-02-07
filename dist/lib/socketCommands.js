@@ -1787,7 +1787,7 @@ class SocketCommands {
          * @param params.startkey Start key
          * @param params.endkey End key. If not provided the `startkey + '\u9999'` will be taken
          * @param params.depth If the depth is provided, only first level of objects will be returned for smaller size
-         * @param callback Callback `(error: string | null, result?: { rows: Array<GetObjectViewItem>) => void`
+         * @param callback Callback `(error: string | null, result?: { rows: Array<GetObjectViewItem> }) => void`
          */
         this.commands.getObjectView = (socket, design, search, params, callback) => {
             if (typeof callback === 'function') {
