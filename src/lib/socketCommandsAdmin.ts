@@ -1925,10 +1925,6 @@ export class SocketCommandsAdmin extends SocketCommands {
                 | ((error: string | null | Error | undefined, objects?: Record<string, ioBroker.Object>) => void),
             callback?: (error: string | null | Error | undefined, objects?: Record<string, ioBroker.Object>) => void,
         ): void => {
-            // Read objects by pattern
-            // @param {string} pattern - pattern like `system.adapter.admin.0.*`
-            // @param {string} type - type of objects to delete, like `state`, `channel`, `device`, `host`, `adapter`. Default - `state`
-            // @param {function} callback - `function (error, objects)`, where `objects` is an object like `{'system.adapter.admin.0': {...}, 'system.adapter.web.0': {...}}`
             if (this._checkPermissions(socket, 'getObjects', callback)) {
                 if (typeof type === 'function') {
                     callback = type;

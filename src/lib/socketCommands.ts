@@ -1165,8 +1165,6 @@ export class SocketCommands {
          * @param callback callback `(error?: Error) => void`
          */
         this.commands.logout = (socket: WebSocketClient, callback: ioBroker.ErrorCallback): void => {
-            // Logout user
-            // @param {function} callback - function (error)
             if (socket.id) {
                 void this.adapter.destroySession(socket.id, callback);
             } else if (callback) {
@@ -1208,8 +1206,6 @@ export class SocketCommands {
             socket: WebSocketClient,
             callback: (error: string | null | undefined, userPermissions?: SocketACL | null) => void,
         ): void => {
-            // Get user permissions
-            // @param {function} callback - `function (error, permissions)`
             if (this._checkPermissions(socket, 'getUserPermissions', callback)) {
                 if (typeof callback === 'function') {
                     callback(null, socket._acl);
@@ -1234,8 +1230,6 @@ export class SocketCommands {
                 adapterName: string,
             ) => void,
         ): void => {
-            // Get the adapter version. Not the socket-classes version!
-            // @param {function} callback - `function (error, adapterVersion, adapterName)`
             if (this._checkPermissions(socket, 'getVersion', callback)) {
                 if (typeof callback === 'function') {
                     callback(null, this.adapter.version, this.adapter.name);
@@ -1256,8 +1250,6 @@ export class SocketCommands {
             socket: WebSocketClient,
             callback: (error: string | Error | null | undefined, adapterName: string) => void,
         ): void => {
-            // Get adapter name. Not the socket-classes version!
-            // @param {function} callback - `function (error, adapterVersion)`
             if (this._checkPermissions(socket, 'getAdapterName', callback)) {
                 if (typeof callback === 'function') {
                     callback(null, this.adapter.name || 'unknown');
@@ -2517,7 +2509,6 @@ export class SocketCommands {
             messageType: string,
             callback: (error: string | null | Error | undefined) => void,
         ): void => {
-            // @param {function} callback - `function (error, wasSubscribed)`, target instance MUST NOT acknowledge the un-subscription
             const sid = socket.id;
             if (!targetInstance.startsWith('system.adapter.')) {
                 targetInstance = `system.adapter.${targetInstance}`;
