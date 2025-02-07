@@ -139,7 +139,7 @@ export class SocketCommands {
           ) => void)
         | null;
 
-    public states: Record<string, ioBroker.State> | null = null;
+    public states: Record<string, ioBroker.State> | undefined;
 
     constructor(
         adapter: ioBroker.Adapter,
@@ -324,7 +324,7 @@ export class SocketCommands {
         socket: WebSocketClient,
         type: SocketSubscribeTypes,
         id: string,
-        obj: ioBroker.Object | ioBroker.State,
+        obj: ioBroker.Object | ioBroker.State | null | undefined,
     ): boolean {
         if (socket?.subscribe?.[type] && this.#updateSession(socket)) {
             return !!socket.subscribe[type].find(sub => {
@@ -392,7 +392,7 @@ export class SocketCommands {
         return this.#logEnabled;
     }
 
-    subscribe(socket: WebSocketClient, type: SocketSubscribeTypes, pattern: string, patternFile?: string): void {
+    subscribe(socket: WebSocketClient | null, type: SocketSubscribeTypes, pattern: string, patternFile?: string): void {
         if (!pattern) {
             this.adapter.log.warn('Empty pattern on subscribe!');
             return;

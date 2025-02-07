@@ -158,7 +158,7 @@ export class SocketCommandsAdmin extends SocketCommands {
         'getHostInfo',
     ];
 
-    public readonly states: Record<string, ioBroker.State>;
+    public readonly states: Record<string, ioBroker.State> | undefined;
 
     private readonly objects: Record<string, ioBroker.Object>;
     private thresholdInterval: NodeJS.Timeout | null = null;
@@ -182,7 +182,7 @@ export class SocketCommandsAdmin extends SocketCommands {
         updateSession: (socket: WebSocketClient) => boolean,
         context: SocketDataContext,
         objects: Record<string, ioBroker.Object>,
-        states: Record<string, ioBroker.State>,
+        states?: Record<string, ioBroker.State>,
     ) {
         super(adapter, updateSession, context);
 
@@ -224,7 +224,12 @@ export class SocketCommandsAdmin extends SocketCommands {
         this.onThresholdChanged = onThresholdChanged;
     }
 
-    async updateRatings(uuid?: string): Promise<Ratings | null> {
+    /**
+     * Read a file with ratings from server
+     * @param uuid Unique ioBroker system identification
+     * @param _isAutoUpdate not implemented
+     */
+    async updateRatings(uuid?: string, _isAutoUpdate?: boolean): Promise<Ratings | null> {
         let _uuid: string;
         if (!uuid) {
             const obj = await this.adapter.getForeignObjectAsync('system.meta.uuid');
@@ -1128,7 +1133,7 @@ export class SocketCommandsAdmin extends SocketCommands {
         ): void => {
             if (this._checkPermissions(socket, 'delState', callback, id)) {
                 // clear cache
-                if (this.states && this.states[id]) {
+                if (this.states?.[id]) {
                     delete this.states[id];
                 }
                 try {

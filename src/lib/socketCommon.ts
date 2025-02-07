@@ -13,6 +13,7 @@ import type { Store } from './passportSocket';
 import type { PermissionCommands, SocketSubscribeTypes } from '../types';
 import type { AddressInfo } from 'node:net';
 import type { CommandsPermissionsObject } from '@iobroker/types/build/types';
+import type { SocketCommandsAdmin } from './socketCommandsAdmin';
 
 interface WhiteListSettings {
     /** Like "admin" or "user". No "system.user." prefix */
@@ -55,7 +56,7 @@ export interface SocketSettings {
     forceWebSockets?: boolean;
 }
 
-interface SocketIoOptions {
+export interface SocketIoOptions {
     transports?: 'websocket'[];
     allowEIO3?: boolean;
     cookie?: {
@@ -74,7 +75,7 @@ interface SocketIoOptions {
     };
 }
 
-type Server = HttpServer | HttpsServer;
+export type Server = HttpServer | HttpsServer;
 
 export type EventNames = 'connect' | 'disconnect' | 'error';
 
@@ -86,21 +87,21 @@ export type EventNames = 'connect' | 'disconnect' | 'error';
 export class SocketCommon {
     static COMMAND_RE_AUTHENTICATE = 'reauthenticate';
 
-    private server: SocketIO | null = null;
+    protected server: SocketIO | null = null;
     private serverMode: boolean = false;
-    private settings: SocketSettings;
-    private readonly adapter: ioBroker.Adapter;
+    protected settings: SocketSettings;
+    protected readonly adapter: ioBroker.Adapter;
     private infoTimeout: NodeJS.Timeout | null = null;
-    private store: Store | null = null; // will be set in __initAuthentication
+    protected store: Store | null = null; // will be set in __initAuthentication
     // @ts-expect-error commands actually cannot be null
-    private commands: SocketCommands;
+    protected commands: SocketCommands | SocketCommandsAdmin;
     private readonly noDisconnect: boolean;
     private readonly eventHandlers: { [eventName: string]: (socket: WebSocketClient, error?: string) => void } = {};
     private readonly wsRoutes: Record<string, (ws: WebSocketClient, cb: (customHandler?: boolean) => void) => void> =
         {};
     // Structure for socket.io 4
     private allNamespaces: any;
-    private readonly context: SocketDataContext;
+    protected readonly context: SocketDataContext;
     private initialized = false;
 
     constructor(settings: SocketSettings, adapter: ioBroker.Adapter) {
@@ -130,7 +131,7 @@ export class SocketCommon {
     }
 
     // Extract username from socket
-    __getUserFromSocket(_socket: WebSocketClient, _callback: (error: string, user?: string) => void): void {
+    __getUserFromSocket(_socket: WebSocketClient, _callback: (error: string | null, user?: string) => void): void {
         throw new Error('"__getUserFromSocket" must be implemented in SocketCommon!');
     }
 
@@ -513,9 +514,14 @@ export class SocketCommon {
             this.#updateConnectedInfo();
 
             // Disable logging if no one browser is connected
-            if (this.adapter.requireLog && this.commands && this.commands.isLogEnabled()) {
+            if (this.adapter.requireLog && this.commands?.isLogEnabled()) {
                 this.adapter.log.debug('Disable logging, because no one socket connected');
                 void this.adapter.requireLog(!!this.server?.engine?.clientsCount);
+            }
+
+            if (socket._sessionTimer) {
+                clearTimeout(socket._sessionTimer);
+                socket._sessionTimer = undefined;
             }
 
             if (this.eventHandlers.disconnect) {
@@ -559,7 +565,9 @@ export class SocketCommon {
 
         this.commands.subscribeSocket(socket);
 
-        cb && cb();
+        if (cb) {
+            cb();
+        }
     }
 
     #updateConnectedInfo(): void {
@@ -671,6 +679,25 @@ export class SocketCommon {
         this._unsubscribeAll();
 
         this.commands.destroy();
+
+        const sockets = this.getSocketsList();
+        if (Array.isArray(sockets)) {
+            // this could be an object or array
+            for (const socket of sockets) {
+                if (socket._sessionTimer) {
+                    clearTimeout(socket._sessionTimer);
+                    socket._sessionTimer = undefined;
+                }
+            }
+        } else if (sockets) {
+            Object.keys(sockets).forEach(i => {
+                const socket = sockets[i];
+                if (socket._sessionTimer) {
+                    clearTimeout(socket._sessionTimer);
+                    socket._sessionTimer = undefined;
+                }
+            });
+        }
 
         // IO server will be closed
         try {
