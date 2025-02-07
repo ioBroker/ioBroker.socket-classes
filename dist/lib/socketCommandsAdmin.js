@@ -70,6 +70,7 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
     }
     /**
      * Read a file with ratings from server
+     *
      * @param uuid Unique ioBroker system identification
      * @param _isAutoUpdate not implemented
      */

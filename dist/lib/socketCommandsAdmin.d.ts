@@ -124,6 +124,7 @@ export declare class SocketCommandsAdmin extends SocketCommands {
     start(onThresholdChanged: ((on: boolean) => void) | null): void;
     /**
      * Read a file with ratings from server
+     *
      * @param uuid Unique ioBroker system identification
      * @param _isAutoUpdate not implemented
      */
