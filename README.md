@@ -139,7 +139,6 @@ function sendImage(camera, data) {
 * [`getObjects`](#getobjects_w)
 * [`subscribeObjects`](#subscribeobjects_w)
 * [`unsubscribeObjects`](#unsubscribeobjects_w)
-* [`getObjectView`](#getobjectview_w)
 * [`setObject`](#setobject_w)
 * [`delObject`](#delobject_w)
 * [`getStates`](#getstates_w)
@@ -281,13 +280,6 @@ Subscribe to object changes by pattern. The events will come as 'objectChange' e
 Unsubscribe from object changes by pattern.
 * `pattern` *string | string[]*: Pattern like `system.adapter.*` or array of IDs like `['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']`
 * `callback` *(error: string | null | Error | undefined) => void) => void*: Callback `(error: string | null) => void`
-
-#### <a name="getobjectview_w"></a>`getObjectView(design, search, params, callback)`
-Get a view of objects. Make a query to the object database.
-* `design` *string*: Design name, e.g., 'system' or other designs like `custom`, but it must exist object `_design/custom`. To 99,9% use `system`.
-* `search` *string*: Search name, object type, like `state`, `instance`, `adapter`, `host`, ...
-* `params` *{startkey?: string; endkey?: string; depth?: number}*: Parameters for the query, e.g., `{startkey: 'system.adapter.', endkey: 'system.adapter.\u9999', depth?: number}`
-* `callback` *(error: string | null | Error | undefined, result?: {rows: {id: string; value: ioBroker.Object & {virtual: boolean; hasChildren: number;};}[];}) => void*: Callback `(error: string | null, result?: { rows: Array<GetObjectViewItem>) => void`
 
 #### <a name="setobject_w"></a>`setObject(id, obj, callback)`
 Set an object.
@@ -526,7 +518,6 @@ Unsubscribe from file changes in ioBroker DB
 * [`getObjects`](#getobjects_a)
 * [`subscribeObjects`](#subscribeobjects_a)
 * [`unsubscribeObjects`](#unsubscribeobjects_a)
-* [`getObjectView`](#getobjectview_a)
 * [`setObject`](#setobject_a)
 * [`delObject`](#delobject_a)
 * [`getAllObjects`](#getallobjects_a)
@@ -850,13 +841,6 @@ Unsubscribe from object changes by pattern.
 * `pattern` *string | string[]*: Pattern like `system.adapter.*` or array of IDs like `['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']`
 * `callback` *(error: string | null | Error | undefined) => void) => void*: Callback `(error: string | null) => void`
 
-#### <a name="getobjectview_a"></a>`getObjectView(design, search, params, callback)`
-Get a view of objects. Make a query to the object database.
-* `design` *string*: Design name, e.g., 'system' or other designs like `custom`, but it must exist object `_design/custom`. To 99,9% use `system`.
-* `search` *string*: Search name, object type, like `state`, `instance`, `adapter`, `host`, ...
-* `params` *{startkey?: string; endkey?: string; depth?: number}*: Parameters for the query, e.g., `{startkey: 'system.adapter.', endkey: 'system.adapter.\u9999', depth?: number}`
-* `callback` *(error: string | null | Error | undefined, result?: {rows: {id: string; value: ioBroker.Object & {virtual: boolean; hasChildren: number;};}[];}) => void*: Callback `(error: string | null, result?: { rows: Array<GetObjectViewItem>) => void`
-
 #### <a name="setobject_a"></a>`setObject(id, obj, callback)`
 Set an object.
 * `id` *string*: Object ID
@@ -1008,7 +992,7 @@ Unsubscribe from file changes in ioBroker DB
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 2.0.0 (2025-02-07)
 * (@GermanBluefox) Code migrated to TypeScript
 
 ### 1.6.2 (2024-12-01)
