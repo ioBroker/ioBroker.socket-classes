@@ -1,37 +1,7 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SocketAdmin = void 0;
 /**
@@ -43,8 +13,8 @@ exports.SocketAdmin = void 0;
  */
 const socketCommon_1 = require("./socketCommon");
 const socketCommandsAdmin_1 = require("./socketCommandsAdmin");
-const passport = __importStar(require("passport"));
-const cookieParser = __importStar(require("cookie-parser"));
+const passport_1 = __importDefault(require("passport"));
+const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const passportSocket_1 = require("./passportSocket");
 class SocketAdmin extends socketCommon_1.SocketCommon {
     adminCommands;
@@ -82,11 +52,8 @@ class SocketAdmin extends socketCommon_1.SocketCommon {
     __initAuthentication(authOptions) {
         this.store = authOptions.store;
         this.server?.use((0, passportSocket_1.authorize)({
-            // @ts-expect-error fix later
-            passport,
-            // @ts-expect-error fix later
-            cookieParser,
-            key: authOptions.userKey, // the name of the cookie where express/connect stores its session_id
+            passport: passport_1.default,
+            cookieParser: cookie_parser_1.default,
             secret: authOptions.secret, // the session_secret to parse the cookie
             store: authOptions.store, // we NEED to use a sessionstore. no memorystore, please
             success: this.#onAuthorizeSuccess, // *optional* callback on success - read more below

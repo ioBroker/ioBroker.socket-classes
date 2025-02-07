@@ -18,7 +18,6 @@ export declare class SocketAdmin extends SocketCommon {
     __getIsNoDisconnect(): boolean;
     __initAuthentication(authOptions: {
         store: Store;
-        userKey: string;
         secret: string;
     }): void;
     __getUserFromSocket(socket: WebSocketClient, callback: (error: string | null, user?: string) => void): void;
@@ -38,5 +37,5 @@ export declare class SocketAdmin extends SocketCommon {
     subscribe(type: SocketSubscribeTypes, pattern: string): void;
     subscribeFile(id: string, patternFile: string): void;
     sendCommand(obj: ioBroker.Message): void;
-    updateRatings(uuid: string, isAutoUpdate?: boolean): Promise<Ratings | null>;
+    updateRatings(uuid?: string, isAutoUpdate?: boolean): Promise<Ratings | null>;
 }

@@ -10,20 +10,27 @@ export interface PassportHttpRequest extends IncomingMessage {
     sessionID: string;
     user: {
         logged_in: boolean;
+        user?: string;
     };
 }
 export interface Store {
-    get: (key: string, cb: (err: Error, session: Record<string, {
-        user: {
-            logged_in: boolean;
+    get: (sessionId: string, cb: (err: Error, session: {
+        cookie: {
+            originalMaxAge: number;
+            expires: string;
+            httpOnly: boolean;
+            path: string;
         };
-    }>) => void) => void;
+        passport: {
+            user: string;
+        };
+    }) => void) => void;
 }
-export declare function authorize(options: {
+export declare function authorize(auth: {
     passport: passport.PassportStatic & {
         _key: string;
     };
-    cookieParser: (secret: string | null, options?: {
+    cookieParser: (secret: string | string[] | undefined, options?: {
         decode?(val: string): string;
     }) => express.RequestHandler;
     checkUser?: (user: string, pass: string, cb: (error: Error | null, result?: {
@@ -31,4 +38,7 @@ export declare function authorize(options: {
     }) => void) => void;
     fail: (data: PassportHttpRequest, message: string, critical: boolean, accept: (err: boolean) => void) => void;
     success: (data: PassportHttpRequest, accept: (err: boolean) => void) => void;
+    secret?: string;
+    store?: Store;
+    userProperty?: string;
 }): (req: IncomingMessage, accept: (err: boolean) => void) => void;

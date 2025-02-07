@@ -7,8 +7,8 @@
  */
 import { type Server, SocketCommon, type SocketIoOptions, type SocketSettings } from './socketCommon';
 import { SocketCommandsAdmin } from './socketCommandsAdmin';
-import * as passport from 'passport';
-import * as cookieParser from 'cookie-parser';
+import passport from 'passport';
+import cookieParser from 'cookie-parser';
 import { authorize, type PassportHttpRequest, type Store } from './passportSocket';
 import type { Socket as WebSocketClient, SocketIO } from '@iobroker/ws-server';
 import type { AddressInfo } from 'node:net';
@@ -63,16 +63,13 @@ export class SocketAdmin extends SocketCommon {
         }
     };
 
-    __initAuthentication(authOptions: { store: Store; userKey: string; secret: string }): void {
+    __initAuthentication(authOptions: { store: Store; secret: string }): void {
         this.store = authOptions.store;
 
         this.server?.use(
             authorize({
-                // @ts-expect-error fix later
-                passport,
-                // @ts-expect-error fix later
+                passport: passport as passport.PassportStatic & { _key: string },
                 cookieParser,
-                key: authOptions.userKey, // the name of the cookie where express/connect stores its session_id
                 secret: authOptions.secret, // the session_secret to parse the cookie
                 store: authOptions.store, // we NEED to use a sessionstore. no memorystore, please
                 success: this.#onAuthorizeSuccess, // *optional* callback on success - read more below
@@ -242,7 +239,7 @@ export class SocketAdmin extends SocketCommon {
         }
     }
 
-    updateRatings(uuid: string, isAutoUpdate?: boolean): Promise<Ratings | null> {
+    updateRatings(uuid?: string, isAutoUpdate?: boolean): Promise<Ratings | null> {
         return this.adminCommands.updateRatings(uuid, isAutoUpdate);
     }
 }

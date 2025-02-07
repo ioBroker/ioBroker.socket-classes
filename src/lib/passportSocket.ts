@@ -20,17 +20,36 @@ export interface PassportHttpRequest extends IncomingMessage {
     query: Record<string, string>;
     cookie: Record<string, string> | undefined;
     sessionID: string;
-    user: { logged_in: boolean };
+    user: { logged_in: boolean; user?: string };
 }
 
 export interface Store {
-    get: (key: string, cb: (err: Error, session: Record<string, { user: { logged_in: boolean } }>) => void) => void;
+    get: (
+        sessionId: string,
+        cb: (
+            err: Error,
+            session: {
+                cookie: {
+                    originalMaxAge: number;
+                    expires: string;
+                    httpOnly: boolean;
+                    path: string;
+                };
+                passport: {
+                    user: string;
+                };
+            },
+        ) => void,
+    ) => void;
 }
 
 function parseCookie(
     auth: {
-        cookieParser: (secret: string | null, options?: { decode?(val: string): string }) => express.RequestHandler;
-        secret: string | null;
+        cookieParser: (
+            secret: string | undefined | string[],
+            options?: { decode?(val: string): string },
+        ) => express.RequestHandler;
+        secret?: string;
     },
     cookieHeader: string,
 ): Record<string, string> | undefined {
@@ -65,9 +84,12 @@ function getQuery(url: string | undefined): Record<string, string> {
     return result;
 }
 
-export function authorize(options: {
+export function authorize(auth: {
     passport: passport.PassportStatic & { _key: string };
-    cookieParser: (secret: string | null, options?: { decode?(val: string): string }) => express.RequestHandler;
+    cookieParser: (
+        secret: string | string[] | undefined,
+        options?: { decode?(val: string): string },
+    ) => express.RequestHandler;
     checkUser?: (
         user: string,
         pass: string,
@@ -75,16 +97,10 @@ export function authorize(options: {
     ) => void;
     fail: (data: PassportHttpRequest, message: string, critical: boolean, accept: (err: boolean) => void) => void;
     success: (data: PassportHttpRequest, accept: (err: boolean) => void) => void;
+    secret?: string;
+    store?: Store;
+    userProperty?: string;
 }): (req: IncomingMessage, accept: (err: boolean) => void) => void {
-    const defaults: { key: string; secret: null | string; store: Store | null; userProperty: 'user' } = {
-        key: 'connect.sid',
-        secret: null,
-        store: null,
-        userProperty: 'user',
-    };
-
-    const auth = Object.assign({}, defaults, options);
-
     if (!auth.passport) {
         throw new Error("passport is required to use require('passport'), please install passport");
     }
@@ -99,8 +115,8 @@ export function authorize(options: {
         const extendedReq = req as PassportHttpRequest;
         extendedReq.query = getQuery(extendedReq.url);
 
-        if (options.checkUser && extendedReq.query.user && extendedReq.query.pass) {
-            return options.checkUser(
+        if (auth.checkUser && extendedReq.query.user && extendedReq.query.pass) {
+            return auth.checkUser(
                 extendedReq.query.user,
                 extendedReq.query.pass,
                 (error: Error | null, result?: { logged_in: boolean }) => {
@@ -111,8 +127,9 @@ export function authorize(options: {
                         return auth.fail(extendedReq, 'User not found', false, accept);
                     }
 
-                    extendedReq[auth.userProperty] = result;
-                    extendedReq[auth.userProperty].logged_in = true;
+                    extendedReq.user = result;
+                    extendedReq.user.user = extendedReq.query.user;
+                    extendedReq.user.logged_in = true;
                     auth.success(extendedReq, accept);
                 },
             );
@@ -120,28 +137,54 @@ export function authorize(options: {
 
         extendedReq.cookie = parseCookie(auth, extendedReq.headers.cookie || '');
         if (extendedReq.cookie) {
-            extendedReq.sessionID = extendedReq.cookie[auth.key] || '';
+            extendedReq.sessionID = extendedReq.cookie['connect.sid'] || '';
         }
-        extendedReq[auth.userProperty] = {
+        extendedReq.user = {
             logged_in: false,
         };
 
         auth.store?.get(
             extendedReq.sessionID,
-            (err: Error, session: Record<string, { user: { logged_in: boolean } }>) => {
+            (
+                err: Error,
+                session: {
+                    cookie: {
+                        originalMaxAge: number;
+                        expires: string;
+                        httpOnly: boolean;
+                        path: string;
+                    };
+                    passport: {
+                        user: string;
+                    };
+                },
+            ): void => {
+                // session looks like:
+                // {
+                //     cookie: {
+                //         originalMaxAge: 5999991,
+                //         expires: '2025-02-07T17:15:06.466Z',
+                //         httpOnly: true,
+                //         path: '/',
+                //     },
+                //     passport: {
+                //         user: 'admin',
+                //     },
+                // };
+
                 if (err) {
                     return auth.fail(extendedReq, `Error in session store:\n${err.message}`, true, accept);
                 }
                 if (!session) {
                     return auth.fail(extendedReq, 'No session found', false, accept);
                 }
-                if (!session[auth.passport._key]) {
+                if (!session.passport) {
                     return auth.fail(extendedReq, 'Passport was not initialized', true, accept);
                 }
 
-                const userKey = session[auth.passport._key].user;
+                const userKey = session.passport.user;
 
-                if (typeof userKey === 'undefined') {
+                if (!userKey) {
                     return auth.fail(
                         extendedReq,
                         'User not authorized through passport. (User Property not found)',
@@ -151,8 +194,8 @@ export function authorize(options: {
                 }
 
                 // extendedReq.user
-                extendedReq[auth.userProperty] = userKey;
-                extendedReq[auth.userProperty].logged_in = true;
+                extendedReq.user = session.passport as { logged_in: boolean; user?: string };
+                extendedReq.user.logged_in = true;
                 auth.success(extendedReq, accept);
             },
         );
