@@ -67,7 +67,7 @@ function parseFunctionSignature(signature) {
 
 function extractFunctionDescription(fileContent, command) {
     const regex = new RegExp(
-        `\\/\\*\\*\\s+\\*\\s*#([a-zA-Z0-9\\s*.%,\\u9999\\\\?'"\`\\/!=>_<@|\\[\\]:;\\(\\)}{-]+?)\\*\\/\\s*this\.commands\.${command}\\s*=\\s*\(([^\\#]+?)\):\\s*void\\s*=>\\s*{`,
+        `\\/\\*\\*\\s+\\*\\s*#([a-zA-Z0-9\\s*+.%,\\u9999\\\\?'"\`\\/!=>_<@|\\[\\]:;\\(\\)}{-]+?)\\*\\/\\s*this\.commands\.${command}\\s*=\\s*\(([^\\#]+?)\):\\s*void\\s*=>\\s*{`,
         'g',
     );
 

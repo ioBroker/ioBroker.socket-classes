@@ -19,6 +19,9 @@ export declare class SocketAdmin extends SocketCommon {
     __initAuthentication(authOptions: {
         store: Store;
         secret: string;
+        checkUser?: (user: string, pass: string, cb: (error: Error | null, result?: {
+            logged_in: boolean;
+        }) => void) => void;
     }): void;
     __getUserFromSocket(socket: WebSocketClient, callback: (error: string | null, user?: string) => void): void;
     __getClientAddress(socket: WebSocketClient): AddressInfo;
@@ -31,7 +34,7 @@ export declare class SocketAdmin extends SocketCommon {
     }, socketOptions?: SocketIoOptions): void;
     onThresholdChanged(enabled: boolean): void;
     stateChange(id: string, state: ioBroker.State | null | undefined): void;
-    fileChange(id: string, fileName: string, size: number): void;
+    fileChange(id: string, fileName: string, size: number | null): void;
     repoUpdated(): void;
     objectChange(id: string, obj: ioBroker.Object | null | undefined): void;
     subscribe(type: SocketSubscribeTypes, pattern: string): void;

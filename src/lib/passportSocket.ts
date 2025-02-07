@@ -85,7 +85,7 @@ function getQuery(url: string | undefined): Record<string, string> {
 }
 
 export function authorize(auth: {
-    passport: passport.PassportStatic & { _key: string };
+    passport: passport.PassportStatic;
     cookieParser: (
         secret: string | string[] | undefined,
         options?: { decode?(val: string): string },

@@ -53,7 +53,7 @@ export declare class SocketCommands {
     static _fixCallback(callback: SocketCallback | null | undefined, error: string | Error | null | undefined, ...args: any[]): void;
     _checkPermissions(socket: WebSocketClient, command: PermissionCommands, callback: ((error: string | null, ...args: any[]) => void) | undefined, ...args: any[]): boolean;
     publish(socket: WebSocketClient, type: SocketSubscribeTypes, id: string, obj: ioBroker.Object | ioBroker.State | null | undefined): boolean;
-    publishFile(socket: WebSocketClient, id: string, fileName: string, size: number): boolean;
+    publishFile(socket: WebSocketClient, id: string, fileName: string, size: number | null): boolean;
     publishInstanceMessage(socket: WebSocketClient, sourceInstance: string, messageType: string, data: any): boolean;
     _showSubscribes(socket: WebSocketClient, type: SocketSubscribeTypes): void;
     isLogEnabled(): boolean;

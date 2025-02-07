@@ -126,7 +126,20 @@ export class SocketCommon {
         throw new Error('"__getIsNoDisconnect" must be implemented in SocketCommon!');
     }
 
-    __initAuthentication(_authOptions: { store: Store; userKey: string; secret: string }): void {
+    __initAuthentication(_authOptions: {
+        store: Store;
+        secret: string;
+        checkUser?: (
+            user: string,
+            pass: string,
+            cb: (
+                error: Error | null,
+                result?: {
+                    logged_in: boolean;
+                },
+            ) => void,
+        ) => void;
+    }): void {
         throw new Error('"__initAuthentication" must be implemented in SocketCommon!');
     }
 
@@ -166,7 +179,20 @@ export class SocketCommon {
     start(
         server: Server,
         socketClass: typeof SocketIO,
-        authOptions: { store: Store; userKey: string; secret: string },
+        authOptions: {
+            store: Store;
+            secret: string;
+            checkUser?: (
+                user: string,
+                pass: string,
+                cb: (
+                    error: Error | null,
+                    result?: {
+                        logged_in: boolean;
+                    },
+                ) => void,
+            ) => void;
+        },
         socketOptions?: SocketIoOptions,
     ): void {
         this.serverMode = !!socketClass;
@@ -614,18 +640,7 @@ export class SocketCommon {
         this.commands.addCommandHandler(command, handler);
     }
 
-    sendLog(obj: {
-        /** Log message */
-        message: string;
-        /** origin */
-        from: string;
-        /** timestamp in ms */
-        ts: number;
-        /** Log message */
-        severity: ioBroker.LogLevel;
-        /** unique ID of the message */
-        _id: number;
-    }): void {
+    sendLog(obj: ioBroker.LogMessage): void {
         // TODO Build in some threshold
         this.server?.sockets?.emit('log', obj);
     }
@@ -634,7 +649,7 @@ export class SocketCommon {
         socket: WebSocketClient,
         type: SocketSubscribeTypes,
         id: string,
-        obj: ioBroker.Object | ioBroker.State,
+        obj: ioBroker.Object | ioBroker.State | null | undefined,
     ): boolean {
         return this.commands.publish(socket, type, id, obj);
     }
@@ -643,7 +658,7 @@ export class SocketCommon {
         return this.commands.publishInstanceMessage(socket, sourceInstance, messageType, data);
     }
 
-    publishFile(socket: WebSocketClient, id: string, fileName: string, size: number): boolean {
+    publishFile(socket: WebSocketClient, id: string, fileName: string, size: number | null): boolean {
         return this.commands.publishFile(socket, id, fileName, size);
     }
 

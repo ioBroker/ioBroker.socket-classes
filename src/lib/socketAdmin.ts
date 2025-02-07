@@ -63,12 +63,25 @@ export class SocketAdmin extends SocketCommon {
         }
     };
 
-    __initAuthentication(authOptions: { store: Store; secret: string }): void {
+    __initAuthentication(authOptions: {
+        store: Store;
+        secret: string;
+        checkUser?: (
+            user: string,
+            pass: string,
+            cb: (
+                error: Error | null,
+                result?: {
+                    logged_in: boolean;
+                },
+            ) => void,
+        ) => void;
+    }): void {
         this.store = authOptions.store;
 
         this.server?.use(
             authorize({
-                passport: passport as passport.PassportStatic & { _key: string },
+                passport,
                 cookieParser,
                 secret: authOptions.secret, // the session_secret to parse the cookie
                 store: authOptions.store, // we NEED to use a sessionstore. no memorystore, please
@@ -181,7 +194,7 @@ export class SocketAdmin extends SocketCommon {
         }
     }
 
-    fileChange(id: string, fileName: string, size: number): void {
+    fileChange(id: string, fileName: string, size: number | null): void {
         const sockets = this.getSocketsList();
         if (sockets) {
             if (Array.isArray(sockets)) {

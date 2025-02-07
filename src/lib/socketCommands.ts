@@ -346,7 +346,7 @@ export class SocketCommands {
         return false;
     }
 
-    publishFile(socket: WebSocketClient, id: string, fileName: string, size: number): boolean {
+    publishFile(socket: WebSocketClient, id: string, fileName: string, size: number | null): boolean {
         if (socket?.subscribe?.fileChange && this.#updateSession(socket)) {
             const key = `${id}####${fileName}`;
             return !!socket.subscribe.fileChange.find(sub => {
@@ -2273,7 +2273,7 @@ export class SocketCommands {
          * @param params.startkey Start key
          * @param params.endkey End key. If not provided the `startkey + '\u9999'` will be taken
          * @param params.depth If the depth is provided, only first level of objects will be returned for smaller size
-         * @param callback Callback `(error: string | null, result?: { rows: Array<GetObjectViewItem>) => void`
+         * @param callback Callback `(error: string | null, result?: { rows: Array<GetObjectViewItem> }) => void`
          */
         this.commands.getObjectView = (
             socket: WebSocketClient,

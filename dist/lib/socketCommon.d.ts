@@ -89,8 +89,10 @@ export declare class SocketCommon {
     __getIsNoDisconnect(): boolean;
     __initAuthentication(_authOptions: {
         store: Store;
-        userKey: string;
         secret: string;
+        checkUser?: (user: string, pass: string, cb: (error: Error | null, result?: {
+            logged_in: boolean;
+        }) => void) => void;
     }): void;
     __getUserFromSocket(_socket: WebSocketClient, _callback: (error: string | null, user?: string) => void): void;
     __getClientAddress(_socket: WebSocketClient): AddressInfo;
@@ -107,8 +109,10 @@ export declare class SocketCommon {
     addWsRoute(path: string, handler: (socket: WebSocketClient, cb: (customHandler?: boolean) => void) => void): void;
     start(server: Server, socketClass: typeof SocketIO, authOptions: {
         store: Store;
-        userKey: string;
         secret: string;
+        checkUser?: (user: string, pass: string, cb: (error: Error | null, result?: {
+            logged_in: boolean;
+        }) => void) => void;
     }, socketOptions?: SocketIoOptions): void;
     _initSocket(socket: WebSocketClient, cb: (customHandler?: boolean) => void): void;
     unsubscribeSocket(socket: WebSocketClient, type: SocketSubscribeTypes): void;
@@ -121,21 +125,10 @@ export declare class SocketCommon {
     _socketEvents(socket: WebSocketClient, address: string, cb: (customHandler?: boolean) => void): void;
     checkPermissions(socket: WebSocketClient, command: PermissionCommands, callback: ((error: string | null, ...args: any[]) => void) | undefined, ...args: any[]): boolean;
     addCommandHandler(command: string, handler: (socket: WebSocketClient, ...args: any[]) => void): void;
-    sendLog(obj: {
-        /** Log message */
-        message: string;
-        /** origin */
-        from: string;
-        /** timestamp in ms */
-        ts: number;
-        /** Log message */
-        severity: ioBroker.LogLevel;
-        /** unique ID of the message */
-        _id: number;
-    }): void;
-    publish(socket: WebSocketClient, type: SocketSubscribeTypes, id: string, obj: ioBroker.Object | ioBroker.State): boolean;
+    sendLog(obj: ioBroker.LogMessage): void;
+    publish(socket: WebSocketClient, type: SocketSubscribeTypes, id: string, obj: ioBroker.Object | ioBroker.State | null | undefined): boolean;
     publishInstanceMessage(socket: WebSocketClient, sourceInstance: string, messageType: string, data: any): boolean;
-    publishFile(socket: WebSocketClient, id: string, fileName: string, size: number): boolean;
+    publishFile(socket: WebSocketClient, id: string, fileName: string, size: number | null): boolean;
     getSocketsList(): WebSocketClient[] | null | Record<string, WebSocketClient>;
     publishInstanceMessageAll(sourceInstance: string, messageType: string, sid: string, data: any): void;
     close(): void;

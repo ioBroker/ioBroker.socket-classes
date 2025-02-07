@@ -27,9 +27,7 @@ export interface Store {
     }) => void) => void;
 }
 export declare function authorize(auth: {
-    passport: passport.PassportStatic & {
-        _key: string;
-    };
+    passport: passport.PassportStatic;
     cookieParser: (secret: string | string[] | undefined, options?: {
         decode?(val: string): string;
     }) => express.RequestHandler;
