@@ -111,7 +111,7 @@ export interface RepoAdapterObject extends ioBroker.AdapterCommon {
 export declare class SocketCommandsAdmin extends SocketCommands {
     #private;
     static ALLOW_CACHE: string[];
-    readonly states: Record<string, ioBroker.State>;
+    readonly states: Record<string, ioBroker.State> | undefined;
     private readonly objects;
     private thresholdInterval;
     private readonly cmdSessions;
@@ -120,9 +120,14 @@ export declare class SocketCommandsAdmin extends SocketCommands {
     private cacheGB;
     private onThresholdChanged;
     private secret;
-    constructor(adapter: ioBroker.Adapter, updateSession: (socket: WebSocketClient) => boolean, context: SocketDataContext, objects: Record<string, ioBroker.Object>, states: Record<string, ioBroker.State>);
+    constructor(adapter: ioBroker.Adapter, updateSession: (socket: WebSocketClient) => boolean, context: SocketDataContext, objects: Record<string, ioBroker.Object>, states?: Record<string, ioBroker.State>);
     start(onThresholdChanged: ((on: boolean) => void) | null): void;
-    updateRatings(uuid?: string): Promise<Ratings | null>;
+    /**
+     * Read a file with ratings from server
+     * @param uuid Unique ioBroker system identification
+     * @param _isAutoUpdate not implemented
+     */
+    updateRatings(uuid?: string, _isAutoUpdate?: boolean): Promise<Ratings | null>;
     protected _sendToHost: (host: string, command: string, message: any, callback: (result: {
         error?: string;
         result?: any;

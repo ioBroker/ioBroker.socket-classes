@@ -358,9 +358,13 @@ class SocketCommon {
             this.commands.unsubscribeSocket(socket);
             this.#updateConnectedInfo();
             // Disable logging if no one browser is connected
-            if (this.adapter.requireLog && this.commands && this.commands.isLogEnabled()) {
+            if (this.adapter.requireLog && this.commands?.isLogEnabled()) {
                 this.adapter.log.debug('Disable logging, because no one socket connected');
                 void this.adapter.requireLog(!!this.server?.engine?.clientsCount);
+            }
+            if (socket._sessionTimer) {
+                clearTimeout(socket._sessionTimer);
+                socket._sessionTimer = undefined;
             }
             if (this.eventHandlers.disconnect) {
                 this.eventHandlers.disconnect(socket, error?.toString());
@@ -398,7 +402,9 @@ class SocketCommon {
             }
         }
         this.commands.subscribeSocket(socket);
-        cb && cb();
+        if (cb) {
+            cb();
+        }
     }
     #updateConnectedInfo() {
         // only in server mode
@@ -478,6 +484,25 @@ class SocketCommon {
     close() {
         this._unsubscribeAll();
         this.commands.destroy();
+        const sockets = this.getSocketsList();
+        if (Array.isArray(sockets)) {
+            // this could be an object or array
+            for (const socket of sockets) {
+                if (socket._sessionTimer) {
+                    clearTimeout(socket._sessionTimer);
+                    socket._sessionTimer = undefined;
+                }
+            }
+        }
+        else if (sockets) {
+            Object.keys(sockets).forEach(i => {
+                const socket = sockets[i];
+                if (socket._sessionTimer) {
+                    clearTimeout(socket._sessionTimer);
+                    socket._sessionTimer = undefined;
+                }
+            });
+        }
         // IO server will be closed
         try {
             this.server?.close?.();

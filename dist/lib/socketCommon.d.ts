@@ -8,9 +8,11 @@
 import type { Server as HttpServer } from 'node:http';
 import type { Server as HttpsServer } from 'node:https';
 import type { SocketIO, Socket as WebSocketClient, SocketACL } from '@iobroker/ws-server';
+import { SocketCommands, type SocketDataContext } from './socketCommands';
 import type { Store } from './passportSocket';
 import type { PermissionCommands, SocketSubscribeTypes } from '../types';
 import type { AddressInfo } from 'node:net';
+import type { SocketCommandsAdmin } from './socketCommandsAdmin';
 interface WhiteListSettings {
     /** Like "admin" or "user". No "system.user." prefix */
     user: string;
@@ -48,7 +50,7 @@ export interface SocketSettings {
     compatibilityV2?: boolean;
     forceWebSockets?: boolean;
 }
-interface SocketIoOptions {
+export interface SocketIoOptions {
     transports?: 'websocket'[];
     allowEIO3?: boolean;
     cookie?: {
@@ -65,23 +67,23 @@ interface SocketIoOptions {
         credentials: boolean;
     };
 }
-type Server = HttpServer | HttpsServer;
+export type Server = HttpServer | HttpsServer;
 export type EventNames = 'connect' | 'disconnect' | 'error';
 export declare class SocketCommon {
     #private;
     static COMMAND_RE_AUTHENTICATE: string;
-    private server;
+    protected server: SocketIO | null;
     private serverMode;
-    private settings;
-    private readonly adapter;
+    protected settings: SocketSettings;
+    protected readonly adapter: ioBroker.Adapter;
     private infoTimeout;
-    private store;
-    private commands;
+    protected store: Store | null;
+    protected commands: SocketCommands | SocketCommandsAdmin;
     private readonly noDisconnect;
     private readonly eventHandlers;
     private readonly wsRoutes;
     private allNamespaces;
-    private readonly context;
+    protected readonly context: SocketDataContext;
     private initialized;
     constructor(settings: SocketSettings, adapter: ioBroker.Adapter);
     __getIsNoDisconnect(): boolean;
@@ -90,7 +92,7 @@ export declare class SocketCommon {
         userKey: string;
         secret: string;
     }): void;
-    __getUserFromSocket(_socket: WebSocketClient, _callback: (error: string, user?: string) => void): void;
+    __getUserFromSocket(_socket: WebSocketClient, _callback: (error: string | null, user?: string) => void): void;
     __getClientAddress(_socket: WebSocketClient): AddressInfo;
     __updateSession(_socket: WebSocketClient): boolean;
     __getSessionID(_socket: WebSocketClient): string | null;

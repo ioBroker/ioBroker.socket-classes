@@ -68,7 +68,12 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
         }, this.eventsThreshold.checkInterval);
         this.onThresholdChanged = onThresholdChanged;
     }
-    async updateRatings(uuid) {
+    /**
+     * Read a file with ratings from server
+     * @param uuid Unique ioBroker system identification
+     * @param _isAutoUpdate not implemented
+     */
+    async updateRatings(uuid, _isAutoUpdate) {
         let _uuid;
         if (!uuid) {
             const obj = await this.adapter.getForeignObjectAsync('system.meta.uuid');
@@ -837,7 +842,7 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
         this.commands.delState = (socket, id, callback) => {
             if (this._checkPermissions(socket, 'delState', callback, id)) {
                 // clear cache
-                if (this.states && this.states[id]) {
+                if (this.states?.[id]) {
                     delete this.states[id];
                 }
                 try {
@@ -1445,10 +1450,6 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
          * @param callback - Callback function `(error: string | null, objects?: Record<string, ioBroker.Object>) => void`
          */
         this.commands.getForeignObjects = (socket, pattern, type, callback) => {
-            // Read objects by pattern
-            // @param {string} pattern - pattern like `system.adapter.admin.0.*`
-            // @param {string} type - type of objects to delete, like `state`, `channel`, `device`, `host`, `adapter`. Default - `state`
-            // @param {function} callback - `function (error, objects)`, where `objects` is an object like `{'system.adapter.admin.0': {...}, 'system.adapter.web.0': {...}}`
             if (this._checkPermissions(socket, 'getObjects', callback)) {
                 if (typeof type === 'function') {
                     callback = type;

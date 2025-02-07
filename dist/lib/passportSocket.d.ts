@@ -1,8 +1,15 @@
-interface AuthRequest {
-    signedCookies?: Record<string, string>;
-    cookies?: Record<string, string>;
+import type { IncomingMessage } from 'node:http';
+import type * as express from 'express';
+import type * as passport from 'passport';
+export interface PassportHttpRequest extends IncomingMessage {
     headers: {
         cookie: string;
+    };
+    query: Record<string, string>;
+    cookie: Record<string, string> | undefined;
+    sessionID: string;
+    user: {
+        logged_in: boolean;
     };
 }
 export interface Store {
@@ -13,25 +20,15 @@ export interface Store {
     }>) => void) => void;
 }
 export declare function authorize(options: {
-    passport: {
+    passport: passport.PassportStatic & {
         _key: string;
     };
-    cookieParser: (secret: string | null) => (req: AuthRequest, options: Record<string, any>, cb: (err: string) => void) => void;
+    cookieParser: (secret: string | null, options?: {
+        decode?(val: string): string;
+    }) => express.RequestHandler;
     checkUser?: (user: string, pass: string, cb: (error: Error | null, result?: {
         logged_in: boolean;
     }) => void) => void;
-    fail: (data: any, message: string, critical: boolean, accept: (err: Error | null) => void) => void;
-    success: (data: any, accept: (err: Error | null) => void) => void;
-}): (data: {
-    headers: {
-        cookie: string;
-    };
-    url: string;
-    query: Record<string, string>;
-    cookie: Record<string, string> | undefined;
-    sessionID: string;
-    user: {
-        logged_in: boolean;
-    };
-}, accept: (err: Error | null) => void) => void;
-export {};
+    fail: (data: PassportHttpRequest, message: string, critical: boolean, accept: (err: boolean) => void) => void;
+    success: (data: PassportHttpRequest, accept: (err: boolean) => void) => void;
+}): (req: IncomingMessage, accept: (err: boolean) => void) => void;

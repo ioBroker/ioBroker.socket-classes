@@ -68,7 +68,7 @@ class SocketCommands {
     #updateSession;
     adapterName;
     _sendToHost;
-    states = null;
+    states;
     constructor(adapter, updateSession, context) {
         this.adapter = adapter;
         this.#updateSession = updateSession;
@@ -908,8 +908,6 @@ class SocketCommands {
          * @param callback callback `(error?: Error) => void`
          */
         this.commands.logout = (socket, callback) => {
-            // Logout user
-            // @param {function} callback - function (error)
             if (socket.id) {
                 void this.adapter.destroySession(socket.id, callback);
             }
@@ -940,8 +938,6 @@ class SocketCommands {
          * @param callback callback `(error: string | null | undefined, userPermissions?: SocketACL | null) => void`
          */
         this.commands.getUserPermissions = (socket, callback) => {
-            // Get user permissions
-            // @param {function} callback - `function (error, permissions)`
             if (this._checkPermissions(socket, 'getUserPermissions', callback)) {
                 if (typeof callback === 'function') {
                     callback(null, socket._acl);
@@ -959,8 +955,6 @@ class SocketCommands {
          * @param callback callback `(error: string | Error | null | undefined, version: string | undefined, adapterName: string) => void`
          */
         this.commands.getVersion = (socket, callback) => {
-            // Get the adapter version. Not the socket-classes version!
-            // @param {function} callback - `function (error, adapterVersion, adapterName)`
             if (this._checkPermissions(socket, 'getVersion', callback)) {
                 if (typeof callback === 'function') {
                     callback(null, this.adapter.version, this.adapter.name);
@@ -978,8 +972,6 @@ class SocketCommands {
          * @param callback callback `(error: string | Error | null | undefined, version: string | undefined, adapterName: string) => void`
          */
         this.commands.getAdapterName = (socket, callback) => {
-            // Get adapter name. Not the socket-classes version!
-            // @param {function} callback - `function (error, adapterVersion)`
             if (this._checkPermissions(socket, 'getAdapterName', callback)) {
                 if (typeof callback === 'function') {
                     callback(null, this.adapter.name || 'unknown');
@@ -1963,7 +1955,6 @@ class SocketCommands {
          * @param callback Callback `(error: string | null) => void`
          */
         this.commands.clientUnsubscribe = (socket, targetInstance, messageType, callback) => {
-            // @param {function} callback - `function (error, wasSubscribed)`, target instance MUST NOT acknowledge the un-subscription
             const sid = socket.id;
             if (!targetInstance.startsWith('system.adapter.')) {
                 targetInstance = `system.adapter.${targetInstance}`;

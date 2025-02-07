@@ -41,7 +41,7 @@ export declare class SocketCommands {
         error?: string;
         result?: any;
     }) => void) => void) | null;
-    states: Record<string, ioBroker.State> | null;
+    states: Record<string, ioBroker.State> | undefined;
     constructor(adapter: ioBroker.Adapter, updateSession: (socket: WebSocketClient) => boolean, context: SocketDataContext);
     /**
      * Convert errors into strings and then call cb
@@ -52,12 +52,12 @@ export declare class SocketCommands {
      */
     static _fixCallback(callback: SocketCallback | null | undefined, error: string | Error | null | undefined, ...args: any[]): void;
     _checkPermissions(socket: WebSocketClient, command: PermissionCommands, callback: ((error: string | null, ...args: any[]) => void) | undefined, ...args: any[]): boolean;
-    publish(socket: WebSocketClient, type: SocketSubscribeTypes, id: string, obj: ioBroker.Object | ioBroker.State): boolean;
+    publish(socket: WebSocketClient, type: SocketSubscribeTypes, id: string, obj: ioBroker.Object | ioBroker.State | null | undefined): boolean;
     publishFile(socket: WebSocketClient, id: string, fileName: string, size: number): boolean;
     publishInstanceMessage(socket: WebSocketClient, sourceInstance: string, messageType: string, data: any): boolean;
     _showSubscribes(socket: WebSocketClient, type: SocketSubscribeTypes): void;
     isLogEnabled(): boolean;
-    subscribe(socket: WebSocketClient, type: SocketSubscribeTypes, pattern: string, patternFile?: string): void;
+    subscribe(socket: WebSocketClient | null, type: SocketSubscribeTypes, pattern: string, patternFile?: string): void;
     unsubscribe(socket: WebSocketClient, type: SocketSubscribeTypes, pattern: string, patternFile?: string): void;
     subscribeSocket(socket: WebSocketClient, type?: SocketSubscribeTypes): void;
     unsubscribeSocket(socket: WebSocketClient, type?: SocketSubscribeTypes): void;

@@ -5,13 +5,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.authorize = authorize;
 function parseCookie(auth, cookieHeader) {
     const cookieParser = auth.cookieParser(auth.secret);
+    // Simulate header
     const req = {
         headers: {
             cookie: cookieHeader,
         },
     };
     let result;
-    cookieParser(req, {}, err => {
+    void cookieParser(req, {}, (err) => {
         if (err) {
             throw new Error(err);
         }
@@ -20,7 +21,7 @@ function parseCookie(auth, cookieHeader) {
     return result;
 }
 function getQuery(url) {
-    const query = url.split('?')[1] || '';
+    const query = (url || '').split('?')[1] || '';
     const parts = query.split('&');
     const result = {};
     for (let p = 0; p < parts.length; p++) {
@@ -43,45 +44,47 @@ function authorize(options) {
     if (!auth.cookieParser) {
         throw new Error("cookieParser is required use require('cookie-parser'), connect.cookieParser or express.cookieParser");
     }
-    return function (data, accept) {
-        data.query = getQuery(data.url);
-        if (options.checkUser && data.query.user && data.query.pass) {
-            return options.checkUser(data.query.user, data.query.pass, (error, result) => {
+    return function (req, accept) {
+        const extendedReq = req;
+        extendedReq.query = getQuery(extendedReq.url);
+        if (options.checkUser && extendedReq.query.user && extendedReq.query.pass) {
+            return options.checkUser(extendedReq.query.user, extendedReq.query.pass, (error, result) => {
                 if (error) {
-                    return auth.fail(data, 'Cannot check user', false, accept);
+                    return auth.fail(extendedReq, 'Cannot check user', false, accept);
                 }
                 if (!result) {
-                    return auth.fail(data, 'User not found', false, accept);
+                    return auth.fail(extendedReq, 'User not found', false, accept);
                 }
-                data[auth.userProperty] = result;
-                data[auth.userProperty].logged_in = true;
-                auth.success(data, accept);
+                extendedReq[auth.userProperty] = result;
+                extendedReq[auth.userProperty].logged_in = true;
+                auth.success(extendedReq, accept);
             });
         }
-        data.cookie = parseCookie(auth, data.headers.cookie || '');
-        if (data.cookie) {
-            data.sessionID = data.cookie[auth.key] || '';
+        extendedReq.cookie = parseCookie(auth, extendedReq.headers.cookie || '');
+        if (extendedReq.cookie) {
+            extendedReq.sessionID = extendedReq.cookie[auth.key] || '';
         }
-        data[auth.userProperty] = {
+        extendedReq[auth.userProperty] = {
             logged_in: false,
         };
-        auth.store?.get(data.sessionID, (err, session) => {
+        auth.store?.get(extendedReq.sessionID, (err, session) => {
             if (err) {
-                return auth.fail(data, `Error in session store:\n${err.message}`, true, accept);
+                return auth.fail(extendedReq, `Error in session store:\n${err.message}`, true, accept);
             }
             if (!session) {
-                return auth.fail(data, 'No session found', false, accept);
+                return auth.fail(extendedReq, 'No session found', false, accept);
             }
             if (!session[auth.passport._key]) {
-                return auth.fail(data, 'Passport was not initialized', true, accept);
+                return auth.fail(extendedReq, 'Passport was not initialized', true, accept);
             }
             const userKey = session[auth.passport._key].user;
             if (typeof userKey === 'undefined') {
-                return auth.fail(data, 'User not authorized through passport. (User Property not found)', false, accept);
+                return auth.fail(extendedReq, 'User not authorized through passport. (User Property not found)', false, accept);
             }
-            data[auth.userProperty] = userKey;
-            data[auth.userProperty].logged_in = true;
-            auth.success(data, accept);
+            // extendedReq.user
+            extendedReq[auth.userProperty] = userKey;
+            extendedReq[auth.userProperty].logged_in = true;
+            auth.success(extendedReq, accept);
         });
     };
 }
