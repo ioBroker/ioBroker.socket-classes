@@ -226,6 +226,7 @@ export class SocketCommandsAdmin extends SocketCommands {
 
     /**
      * Read a file with ratings from server
+     *
      * @param uuid Unique ioBroker system identification
      * @param _isAutoUpdate not implemented
      */

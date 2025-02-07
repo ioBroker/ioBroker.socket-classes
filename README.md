@@ -992,14 +992,14 @@ Unsubscribe from file changes in ioBroker DB
 -->
 
 ## Changelog
-### 2.0.1 (2025-02-07)
+### **WORK IN PROGRESS**
 * (@GermanBluefox) Code migrated to TypeScript
 
 ### 1.6.2 (2024-12-01)
 * (@GermanBluefox) Caught the error if no authentication and logout called
 
 ### 1.6.1 (2024-10-05)
-* (@GermanBluefox) Added support of iobroker.SocketIO with typescript
+* (@GermanBluefox) Added support for iobroker.SocketIO with TypeScript
 
 ### 1.5.6 (2024-06-26)
 * (@GermanBluefox) Corrected call of getObjectView with null parameter
