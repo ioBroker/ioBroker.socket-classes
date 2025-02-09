@@ -25,6 +25,16 @@ export interface Store {
             user: string;
         };
     }) => void) => void;
+    set: (sessionId: string, session: {
+        cookie: {
+            originalMaxAge: number;
+            expires: string;
+            httpOnly: boolean;
+        };
+        passport: {
+            user: string;
+        };
+    }) => void;
 }
 export declare function authorize(auth: {
     passport: passport.PassportStatic;
