@@ -41,6 +41,19 @@ export interface Store {
             },
         ) => void,
     ) => void;
+    set: (
+        sessionId: string,
+        session: {
+            cookie: {
+                originalMaxAge: number;
+                expires: string;
+                httpOnly: boolean;
+            };
+            passport: {
+                user: string;
+            };
+        },
+    ) => void;
 }
 
 function parseCookie(
