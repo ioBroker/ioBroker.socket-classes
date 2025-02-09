@@ -46,14 +46,17 @@ export interface SocketSettings {
     ttl?: number;
     secure?: boolean;
     auth?: boolean;
-    crossDomain?: boolean;
     whiteListSettings?: Record<string, WhiteListSettings>;
     extensions?: (socket: WebSocketClient) => void;
     port?: number;
 
+    // For authentication
+    secret: string;
+
     // socket.io attributes
     compatibilityV2?: boolean;
     forceWebSockets?: boolean;
+    crossDomain?: boolean;
 }
 
 export interface SocketIoOptions {
