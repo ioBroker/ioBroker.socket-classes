@@ -106,7 +106,7 @@ export function authorize(auth: {
     checkUser?: (
         user: string,
         pass: string,
-        cb: (error: Error | null, result?: { logged_in: boolean }) => void,
+        cb: (error: Error | null, result?: { logged_in: boolean; user?: string }) => void,
     ) => void;
     fail: (data: PassportHttpRequest, message: string, critical: boolean, accept: (err: boolean) => void) => void;
     success: (data: PassportHttpRequest, accept: (err: boolean) => void) => void;
@@ -132,7 +132,7 @@ export function authorize(auth: {
             return auth.checkUser(
                 extendedReq.query.user,
                 extendedReq.query.pass,
-                (error: Error | null, result?: { logged_in: boolean }) => {
+                (error: Error | null, result?: { logged_in: boolean; user?: string }) => {
                     if (error) {
                         return auth.fail(extendedReq, 'Cannot check user', false, accept);
                     }
