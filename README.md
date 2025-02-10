@@ -1008,7 +1008,7 @@ Unsubscribe from file changes in ioBroker DB
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 2.0.10 (2025-02-10)
 * (@GermanBluefox) Code migrated to TypeScript
 
 ### 1.6.2 (2024-12-01)
