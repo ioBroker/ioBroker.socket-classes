@@ -43,6 +43,7 @@ export declare function authorize(auth: {
     }) => express.RequestHandler;
     checkUser?: (user: string, pass: string, cb: (error: Error | null, result?: {
         logged_in: boolean;
+        user?: string;
     }) => void) => void;
     fail: (data: PassportHttpRequest, message: string, critical: boolean, accept: (err: boolean) => void) => void;
     success: (data: PassportHttpRequest, accept: (err: boolean) => void) => void;

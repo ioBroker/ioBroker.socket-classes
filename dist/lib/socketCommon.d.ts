@@ -93,6 +93,7 @@ export declare class SocketCommon {
         secret: string;
         checkUser?: (user: string, pass: string, cb: (error: Error | null, result?: {
             logged_in: boolean;
+            user?: string;
         }) => void) => void;
     }): void;
     __getUserFromSocket(_socket: WebSocketClient, _callback: (error: string | null, user?: string) => void): void;
@@ -113,6 +114,7 @@ export declare class SocketCommon {
         secret: string;
         checkUser?: (user: string, pass: string, cb: (error: Error | null, result?: {
             logged_in: boolean;
+            user?: string;
         }) => void) => void;
     }, socketOptions?: SocketIoOptions): void;
     _initSocket(socket: WebSocketClient, cb: (customHandler?: boolean) => void): void;
