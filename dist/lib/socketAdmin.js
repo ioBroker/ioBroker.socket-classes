@@ -89,7 +89,6 @@ class SocketAdmin extends socketCommon_1.SocketCommon {
             address = socket.connection.remoteAddress;
         }
         else {
-            // @ts-expect-error socket.io
             address = socket.ws._socket.remoteAddress;
         }
         // @ts-expect-error socket.io

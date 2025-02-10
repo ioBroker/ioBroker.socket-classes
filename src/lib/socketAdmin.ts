@@ -120,7 +120,6 @@ export class SocketAdmin extends SocketCommon {
         if (socket.connection) {
             address = socket.connection.remoteAddress;
         } else {
-            // @ts-expect-error socket.io
             address = socket.ws._socket.remoteAddress;
         }
 
