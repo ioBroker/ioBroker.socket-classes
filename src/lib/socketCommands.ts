@@ -102,7 +102,7 @@ export type SupportedFeature =
     | 'PARTIAL_OBJECT_TREE';
 
 export interface SocketDataContext {
-    language: ioBroker.Languages;
+    language?: ioBroker.Languages;
     ratings: Ratings | null;
     ratingTimeout: NodeJS.Timeout | null;
 }

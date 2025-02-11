@@ -119,7 +119,7 @@ export class SocketCommon {
 
         this.settings.ttl = parseInt(this.settings.ttl as unknown as string, 10) || 3600;
         this.context = {
-            language: this.settings.language || 'en',
+            language: this.settings.language,
             ratings: null,
             ratingTimeout: null,
         };
