@@ -62,6 +62,26 @@ class SocketAdmin extends socketCommon_1.SocketCommon {
     }
     // Extract username from socket
     __getUserFromSocket(socket, callback) {
+        if (socket.conn.request.headers?.cookie) {
+            const cookies = socket.conn.request.headers.cookie.split(';');
+            const accessSocket = cookies.find(cookie => cookie.split('=')[0] === 'access_token');
+            if (accessSocket) {
+                const token = accessSocket.split('=')[1];
+                void this.adapter.getSession(`a:${token}`, (obj) => {
+                    if (!obj?.user) {
+                        if (socket._acl) {
+                            socket._acl.user = '';
+                        }
+                        socket.emit(socketCommon_1.SocketCommon.COMMAND_RE_AUTHENTICATE);
+                        callback('Cannot detect user');
+                    }
+                    else {
+                        callback(null, obj.user ? `system.user.${obj.user}` : '');
+                    }
+                });
+                return;
+            }
+        }
         if (socket.conn.request.sessionID) {
             socket._secure = true;
             socket._sessionID = socket.conn.request.sessionID;
