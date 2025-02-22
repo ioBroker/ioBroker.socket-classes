@@ -1,5 +1,5 @@
 import passport from 'passport';
-export { type SocketSubscribeTypes } from './types';
+export type { SocketSubscribeTypes, InternalStorageToken } from './types';
 import cookieParser from 'cookie-parser';
 export { SocketCommandsAdmin } from './lib/socketCommandsAdmin';
 export { SocketCommands, type SupportedFeature } from './lib/socketCommands';
