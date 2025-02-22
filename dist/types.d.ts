@@ -1,5 +1,11 @@
 export type SocketOperation = 'read' | 'write' | 'list' | 'delete' | 'create' | 'http' | 'execute' | 'sendto' | '';
 
+export interface InternalStorageToken {
+    token: string;
+    exp: number;
+    user: string;
+}
+
 export type PermissionCommands =
     | 'subscribe'
     | 'unsubscribe'
