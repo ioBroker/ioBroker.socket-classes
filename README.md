@@ -1008,6 +1008,9 @@ Unsubscribe from file changes in ioBroker DB
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (@GermanBluefox) Added support for OAuth2 authentication
+
 ### 2.0.12 (2025-02-11)
 * (@GermanBluefox) Corrected language settings
 

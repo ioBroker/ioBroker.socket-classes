@@ -15,6 +15,12 @@ import type { AddressInfo } from 'node:net';
 import type { SocketSubscribeTypes } from '../types';
 import type { Ratings } from './socketCommands';
 
+interface InternalToken {
+    token: string;
+    exp: number;
+    user: string;
+}
+
 export class SocketAdmin extends SocketCommon {
     private adminCommands: SocketCommandsAdmin;
     constructor(settings: SocketSettings, adapter: ioBroker.Adapter, objects: Record<string, ioBroker.Object>) {
@@ -94,6 +100,26 @@ export class SocketAdmin extends SocketCommon {
 
     // Extract username from socket
     __getUserFromSocket(socket: WebSocketClient, callback: (error: string | null, user?: string) => void): void {
+        if (socket.conn.request.headers?.cookie) {
+            const cookies: string[] = socket.conn.request.headers.cookie.split(';');
+            const accessSocket = cookies.find(cookie => cookie.split('=')[0] === 'access_token');
+            if (accessSocket) {
+                const token = accessSocket.split('=')[1];
+                void this.adapter.getSession(`a:${token}`, (obj: InternalToken | undefined): void => {
+                    if (!obj?.user) {
+                        if (socket._acl) {
+                            socket._acl.user = '';
+                        }
+                        socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
+                        callback('Cannot detect user');
+                    } else {
+                        callback(null, obj.user ? `system.user.${obj.user}` : '');
+                    }
+                });
+                return;
+            }
+        }
+
         if (socket.conn.request.sessionID) {
             socket._secure = true;
             socket._sessionID = socket.conn.request.sessionID;
