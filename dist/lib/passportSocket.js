@@ -57,8 +57,9 @@ function authorize(auth) {
         extendedReq.cookie = parseCookie(auth, extendedReq.headers.cookie || '');
         if (extendedReq.cookie) {
             extendedReq.sessionID = extendedReq.cookie['connect.sid'] || '';
-            if (extendedReq.cookie.access_token) {
-                void auth.store?.get(`a:${extendedReq.cookie.access_token}`, (err, token) => {
+            const accessToken = extendedReq.headers.cookie.split(';').find(c => c.trim().startsWith('access_token='));
+            if (accessToken) {
+                void auth.store?.get(`a:${accessToken.split('=')[1]}`, (err, token) => {
                     const tokenData = token;
                     if (err) {
                         return auth.fail(extendedReq, `Error in session store:\n${err.message}`, true, accept);

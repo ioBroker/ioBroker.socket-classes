@@ -153,8 +153,10 @@ export function authorize(auth: {
         if (extendedReq.cookie) {
             extendedReq.sessionID = extendedReq.cookie['connect.sid'] || '';
 
-            if (extendedReq.cookie.access_token) {
-                void auth.store?.get(`a:${extendedReq.cookie.access_token}`, (err: Error, token: any): void => {
+            const accessToken = extendedReq.headers.cookie.split(';').find(c => c.trim().startsWith('access_token='));
+
+            if (accessToken) {
+                void auth.store?.get(`a:${accessToken.split('=')[1]}`, (err: Error, token: any): void => {
                     const tokenData = token as InternalStorageToken;
 
                     if (err) {
