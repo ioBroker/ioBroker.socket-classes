@@ -4,6 +4,7 @@
 import type { IncomingMessage } from 'node:http';
 import type * as express from 'express';
 import type * as passport from 'passport';
+import { InternalStorageToken } from '../types';
 
 interface AuthRequest {
     signedCookies?: Record<string, string>;
@@ -151,7 +152,25 @@ export function authorize(auth: {
         extendedReq.cookie = parseCookie(auth, extendedReq.headers.cookie || '');
         if (extendedReq.cookie) {
             extendedReq.sessionID = extendedReq.cookie['connect.sid'] || '';
+
+            if (extendedReq.cookie.access_token) {
+                void auth.store?.get(`a:${extendedReq.cookie.access_token}`, (err: Error, token: any): void => {
+                    const tokenData = token as InternalStorageToken;
+
+                    if (err) {
+                        return auth.fail(extendedReq, `Error in session store:\n${err.message}`, true, accept);
+                    }
+                    if (!tokenData?.user) {
+                        return auth.fail(extendedReq, 'No session found', false, accept);
+                    }
+                    // extendedReq.user
+                    extendedReq.user = { logged_in: true, user: tokenData.user };
+                    auth.success(extendedReq, accept);
+                });
+                return;
+            }
         }
+
         extendedReq.user = {
             logged_in: false,
         };

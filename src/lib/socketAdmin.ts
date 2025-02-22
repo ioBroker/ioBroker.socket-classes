@@ -12,14 +12,8 @@ import cookieParser from 'cookie-parser';
 import { authorize, type PassportHttpRequest, type Store } from './passportSocket';
 import type { Socket as WebSocketClient, SocketIO } from '@iobroker/ws-server';
 import type { AddressInfo } from 'node:net';
-import type { SocketSubscribeTypes } from '../types';
+import type { InternalStorageToken, SocketSubscribeTypes } from '../types';
 import type { Ratings } from './socketCommands';
-
-interface InternalToken {
-    token: string;
-    exp: number;
-    user: string;
-}
 
 export class SocketAdmin extends SocketCommon {
     private adminCommands: SocketCommandsAdmin;
@@ -105,7 +99,7 @@ export class SocketAdmin extends SocketCommon {
             const accessSocket = cookies.find(cookie => cookie.split('=')[0] === 'access_token');
             if (accessSocket) {
                 const token = accessSocket.split('=')[1];
-                void this.adapter.getSession(`a:${token}`, (obj: InternalToken | undefined): void => {
+                void this.adapter.getSession(`a:${token}`, (obj: InternalStorageToken | undefined): void => {
                     if (!obj?.user) {
                         if (socket._acl) {
                             socket._acl.user = '';
