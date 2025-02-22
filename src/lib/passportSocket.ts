@@ -4,7 +4,7 @@
 import type { IncomingMessage } from 'node:http';
 import type * as express from 'express';
 import type * as passport from 'passport';
-import { InternalStorageToken } from '../types';
+import type { InternalStorageToken } from '../types';
 
 interface AuthRequest {
     signedCookies?: Record<string, string>;
