@@ -10,7 +10,7 @@ import type { Server as HttpsServer } from 'node:https';
 import type { SocketIO, Socket as WebSocketClient, SocketACL } from '@iobroker/ws-server';
 import { SocketCommands, type SocketDataContext } from './socketCommands';
 import type { Store } from './passportSocket';
-import type {InternalStorageToken, PermissionCommands, SocketSubscribeTypes} from '../types';
+import type { InternalStorageToken, PermissionCommands, SocketSubscribeTypes } from '../types';
 import type { AddressInfo } from 'node:net';
 import type { CommandsPermissionsObject } from '@iobroker/types/build/types';
 import type { SocketCommandsAdmin } from './socketCommandsAdmin';
