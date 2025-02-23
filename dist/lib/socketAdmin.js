@@ -121,6 +121,16 @@ class SocketAdmin extends socketCommon_1.SocketCommon {
             // @ts-expect-error socket.io
             address = socket.conn.request.connection.remoteAddress;
         }
+        if (address) {
+            if (typeof address !== 'object') {
+                return {
+                    address,
+                    family: address.includes(':') ? 'IPv6' : 'IPv4',
+                    port: 0,
+                };
+            }
+            return address;
+        }
         return address;
     }
     // update session ID, but not ofter than 60 seconds

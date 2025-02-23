@@ -379,27 +379,58 @@ class SocketCommon {
         }
         // if server mode
         if (this.serverMode) {
-            const sessionId = this.__getSessionID(socket);
-            if (sessionId) {
-                socket._secure = true;
-                socket._sessionID = sessionId;
-                // Get user for session
-                this.store?.get(socket._sessionID, (err, obj) => {
-                    if (!obj?.passport) {
-                        if (socket._acl) {
-                            socket._acl.user = '';
+            let accessToken;
+            if (socket.conn.request.headers?.cookie) {
+                // If OAuth2 authentication is used
+                accessToken = socket.conn.request.headers.cookie
+                    .split(';')
+                    .find(c => c.trim().startsWith('access_token='));
+                if (accessToken) {
+                    socket._secure = true;
+                    const parts = accessToken.split('=');
+                    this.store?.get(`a:${parts[1]}`, (err, token) => {
+                        const tokenData = token;
+                        if (err || !tokenData?.user) {
+                            if (socket._acl) {
+                                socket._acl.user = '';
+                            }
+                            socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
+                            // ws does not require disconnect
+                            if (!this.noDisconnect) {
+                                socket.close();
+                            }
                         }
-                        socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
-                        // ws does not require disconnect
-                        if (!this.noDisconnect) {
-                            socket.close();
+                        if (socket._authPending) {
+                            socket._authPending(!!socket._acl?.user, true);
+                            delete socket._authPending;
                         }
-                    }
-                    if (socket._authPending) {
-                        socket._authPending(!!socket._acl?.user, true);
-                        delete socket._authPending;
-                    }
-                });
+                    });
+                }
+            }
+            if (!accessToken) {
+                // Legacy Session ID method
+                const sessionId = this.__getSessionID(socket);
+                if (sessionId) {
+                    socket._secure = true;
+                    socket._sessionID = sessionId;
+                    // Get user for session
+                    this.store?.get(socket._sessionID, (err, obj) => {
+                        if (!obj?.passport) {
+                            if (socket._acl) {
+                                socket._acl.user = '';
+                            }
+                            socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
+                            // ws does not require disconnect
+                            if (!this.noDisconnect) {
+                                socket.close();
+                            }
+                        }
+                        if (socket._authPending) {
+                            socket._authPending(!!socket._acl?.user, true);
+                            delete socket._authPending;
+                        }
+                    });
+                }
             }
         }
         this.commands.subscribeSocket(socket);
