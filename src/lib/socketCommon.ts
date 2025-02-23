@@ -10,7 +10,7 @@ import type { Server as HttpsServer } from 'node:https';
 import type { SocketIO, Socket as WebSocketClient, SocketACL } from '@iobroker/ws-server';
 import { SocketCommands, type SocketDataContext } from './socketCommands';
 import type { Store } from './passportSocket';
-import type { PermissionCommands, SocketSubscribeTypes } from '../types';
+import type {InternalStorageToken, PermissionCommands, SocketSubscribeTypes} from '../types';
 import type { AddressInfo } from 'node:net';
 import type { CommandsPermissionsObject } from '@iobroker/types/build/types';
 import type { SocketCommandsAdmin } from './socketCommandsAdmin';
@@ -574,27 +574,59 @@ export class SocketCommon {
 
         // if server mode
         if (this.serverMode) {
-            const sessionId = this.__getSessionID(socket);
-            if (sessionId) {
-                socket._secure = true;
-                socket._sessionID = sessionId;
-                // Get user for session
-                this.store?.get(socket._sessionID, (err, obj) => {
-                    if (!obj?.passport) {
-                        if (socket._acl) {
-                            socket._acl.user = '';
+            let accessToken: string | undefined;
+            if (socket.conn.request.headers?.cookie) {
+                // If OAuth2 authentication is used
+                accessToken = socket.conn.request.headers.cookie
+                    .split(';')
+                    .find(c => c.trim().startsWith('access_token='));
+
+                if (accessToken) {
+                    socket._secure = true;
+                    const parts = accessToken.split('=');
+                    this.store?.get(`a:${parts[1]}`, (err, token: any): void => {
+                        const tokenData = token as InternalStorageToken;
+                        if (err || !tokenData?.user) {
+                            if (socket._acl) {
+                                socket._acl.user = '';
+                            }
+                            socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
+                            // ws does not require disconnect
+                            if (!this.noDisconnect) {
+                                socket.close();
+                            }
                         }
-                        socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
-                        // ws does not require disconnect
-                        if (!this.noDisconnect) {
-                            socket.close();
+                        if (socket._authPending) {
+                            socket._authPending(!!socket._acl?.user, true);
+                            delete socket._authPending;
                         }
-                    }
-                    if (socket._authPending) {
-                        socket._authPending(!!socket._acl?.user, true);
-                        delete socket._authPending;
-                    }
-                });
+                    });
+                }
+            }
+            if (!accessToken) {
+                // Legacy Session ID method
+                const sessionId = this.__getSessionID(socket);
+                if (sessionId) {
+                    socket._secure = true;
+                    socket._sessionID = sessionId;
+                    // Get user for session
+                    this.store?.get(socket._sessionID, (err, obj) => {
+                        if (!obj?.passport) {
+                            if (socket._acl) {
+                                socket._acl.user = '';
+                            }
+                            socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
+                            // ws does not require disconnect
+                            if (!this.noDisconnect) {
+                                socket.close();
+                            }
+                        }
+                        if (socket._authPending) {
+                            socket._authPending(!!socket._acl?.user, true);
+                            delete socket._authPending;
+                        }
+                    });
+                }
             }
         }
 
