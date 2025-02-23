@@ -51,14 +51,16 @@ class SocketAdmin extends socketCommon_1.SocketCommon {
     };
     __initAuthentication(authOptions) {
         this.store = authOptions.store;
-        this.server?.use((0, passportSocket_1.authorize)({
-            passport: passport_1.default,
-            cookieParser: cookie_parser_1.default,
-            secret: authOptions.secret, // the session_secret to parse the cookie
-            store: authOptions.store, // we NEED to use a sessionstore. no memorystore, please
-            success: this.#onAuthorizeSuccess, // *optional* callback on success - read more below
-            fail: this.#onAuthorizeFail, // *optional* callback on fail/error - read more below
-        }));
+        if (!authOptions.oauth2Only) {
+            this.server?.use((0, passportSocket_1.authorize)({
+                passport: passport_1.default,
+                cookieParser: cookie_parser_1.default,
+                secret: authOptions.secret, // the session_secret to parse the cookie
+                store: authOptions.store, // we NEED to use a sessionstore. no memorystore, please
+                success: this.#onAuthorizeSuccess, // *optional* callback on success - read more below
+                fail: this.#onAuthorizeFail, // *optional* callback on fail/error - read more below
+            }));
+        }
     }
     // Extract username from socket
     __getUserFromSocket(socket, callback) {

@@ -700,23 +700,20 @@ class SocketCommands {
          * After the access token is updated, this command must be called to update the session (Only for OAuth2)
          *
          * @param socket Socket instance
+         * @param accessToken New access token
          * @param callback Callback `(error: string | undefined | null, success?: boolean) => void`
          */
-        this.commands.updateTokenExpiration = (socket, callback) => {
+        this.commands.updateTokenExpiration = (socket, accessToken, callback) => {
             // Check if the user is authenticated
-            const accessToken = socket.conn.request.headers?.cookie
-                ?.split(';')
-                .find(c => c.trim().startsWith('access_token='));
             if (accessToken) {
-                const tokenStr = accessToken.split('=')[1];
-                void this.adapter.getSession(`a:${tokenStr}`, (token) => {
+                void this.adapter.getSession(`a:${accessToken}`, (token) => {
                     if (!token?.user) {
                         this.adapter.log.error('No session found');
                         callback('No access token found', false);
                     }
                     else {
                         // Replace access token in cookie
-                        socket.conn.request.headers.cookie = socket.conn.request.headers.cookie.replace(/access_token=[^;]+/, `access_token=${token.token}`);
+                        socket.conn.request.headers.cookie = socket.conn.request.headers.cookie.replace(/access_token=[^;]+/, `access_token=${accessToken}`);
                         socket._sessionExpiresAt = token.exp;
                         callback(null, true);
                     }

@@ -175,8 +175,9 @@ Wait till the user is authenticated.
 As the user authenticates himself, the callback will be called
 * `callback` *(isUserAuthenticated: boolean, isAuthenticationUsed: boolean) => void) => void*: Callback `(isUserAuthenticated: boolean, isAuthenticationUsed: boolean) => void`
 
-#### <a name="updatetokenexpiration_w"></a>`updateTokenExpiration(callback)`
+#### <a name="updatetokenexpiration_w"></a>`updateTokenExpiration(accessToken, callback)`
 After the access token is updated, this command must be called to update the session (Only for OAuth2)
+* `accessToken` *string*: New access token
 * `callback` *(error: string | undefined | null, success?: boolean) => void) => void*: Callback `(error: string | undefined | null, success?: boolean) => void`
 
 #### <a name="error_w"></a>`error(error)`
@@ -561,8 +562,9 @@ Wait till the user is authenticated.
 As the user authenticates himself, the callback will be called
 * `callback` *(isUserAuthenticated: boolean, isAuthenticationUsed: boolean) => void) => void*: Callback `(isUserAuthenticated: boolean, isAuthenticationUsed: boolean) => void`
 
-#### <a name="updatetokenexpiration_a"></a>`updateTokenExpiration(callback)`
+#### <a name="updatetokenexpiration_a"></a>`updateTokenExpiration(accessToken, callback)`
 After the access token is updated, this command must be called to update the session (Only for OAuth2)
+* `accessToken` *string*: New access token
 * `callback` *(error: string | undefined | null, success?: boolean) => void) => void*: Callback `(error: string | undefined | null, success?: boolean) => void`
 
 #### <a name="error_a"></a>`error(error)`
@@ -1018,7 +1020,7 @@ Unsubscribe from file changes in ioBroker DB
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 2.1.5 (2025-02-23)
 * (@GermanBluefox) Added support for OAuth2 authentication
 
 ### 2.0.12 (2025-02-11)
