@@ -136,6 +136,27 @@ class SocketAdmin extends socketCommon_1.SocketCommon {
     // update session ID, but not ofter than 60 seconds
     __updateSession(socket) {
         if (socket._sessionExpiresAt) {
+            // If less than 10 seconds, then recheck the socket
+            if (socket._sessionExpiresAt < Date.now() - 10_000) {
+                const accessToken = socket.conn.request.headers?.cookie
+                    ?.split(';')
+                    .find(c => c.trim().startsWith('access_token='));
+                if (accessToken) {
+                    const tokenStr = accessToken.split('=')[1];
+                    void this.store?.get(`a:${tokenStr}`, (err, token) => {
+                        const tokenData = token;
+                        if (err) {
+                            this.adapter.log.error(`Cannot get token: ${err}`);
+                        }
+                        else if (!tokenData?.user) {
+                            this.adapter.log.error('No session found');
+                        }
+                        else {
+                            socket._sessionExpiresAt = tokenData.exp;
+                        }
+                    });
+                }
+            }
             // Check socket expiration time
             return socket._sessionExpiresAt > Date.now();
         }

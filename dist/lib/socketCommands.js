@@ -697,6 +697,35 @@ class SocketCommands {
         };
         /**
          * #DOCUMENTATION commands
+         * After the access token is updated, this command must be called to update the session (Only for OAuth2)
+         *
+         * @param socket Socket instance
+         * @param callback Callback `(error: string | undefined | null, success?: boolean) => void`
+         */
+        this.commands.updateTokenExpiration = (socket, callback) => {
+            // Check if the user is authenticated
+            const accessToken = socket.conn.request.headers?.cookie
+                ?.split(';')
+                .find(c => c.trim().startsWith('access_token='));
+            if (accessToken) {
+                const tokenStr = accessToken.split('=')[1];
+                void this.adapter.getSession(`a:${tokenStr}`, (token) => {
+                    if (!token?.user) {
+                        this.adapter.log.error('No session found');
+                        callback('No access token found', false);
+                    }
+                    else {
+                        socket._sessionExpiresAt = token.exp;
+                        callback(null, true);
+                    }
+                });
+            }
+            else {
+                callback('No access token found', false);
+            }
+        };
+        /**
+         * #DOCUMENTATION commands
          * Write error into ioBroker log
          *
          * @param _socket Socket instance (not used)

@@ -119,6 +119,7 @@ function sendImage(camera, data) {
 <!-- WEB_METHODS_START -->
 ### List of commands
 * [`authenticate`](#authenticate_w)
+* [`updateTokenExpiration`](#updatetokenexpiration_w)
 * [`error`](#error_w)
 * [`log`](#log_w)
 * [`checkFeatureSupported`](#checkfeaturesupported_w)
@@ -173,6 +174,10 @@ function sendImage(camera, data) {
 Wait till the user is authenticated.
 As the user authenticates himself, the callback will be called
 * `callback` *(isUserAuthenticated: boolean, isAuthenticationUsed: boolean) => void) => void*: Callback `(isUserAuthenticated: boolean, isAuthenticationUsed: boolean) => void`
+
+#### <a name="updatetokenexpiration_w"></a>`updateTokenExpiration(callback)`
+After the access token is updated, this command must be called to update the session (Only for OAuth2)
+* `callback` *(error: string | undefined | null, success?: boolean) => void) => void*: Callback `(error: string | undefined | null, success?: boolean) => void`
 
 #### <a name="error_w"></a>`error(error)`
 Write error into ioBroker log
@@ -470,6 +475,7 @@ Unsubscribe from file changes in ioBroker DB
 <!-- ADMIN_METHODS_START -->
 ### List of commands
 * [`authenticate`](#authenticate_a)
+* [`updateTokenExpiration`](#updatetokenexpiration_a)
 * [`error`](#error_a)
 * [`log`](#log_a)
 * [`checkFeatureSupported`](#checkfeaturesupported_a)
@@ -554,6 +560,10 @@ Unsubscribe from file changes in ioBroker DB
 Wait till the user is authenticated.
 As the user authenticates himself, the callback will be called
 * `callback` *(isUserAuthenticated: boolean, isAuthenticationUsed: boolean) => void) => void*: Callback `(isUserAuthenticated: boolean, isAuthenticationUsed: boolean) => void`
+
+#### <a name="updatetokenexpiration_a"></a>`updateTokenExpiration(callback)`
+After the access token is updated, this command must be called to update the session (Only for OAuth2)
+* `callback` *(error: string | undefined | null, success?: boolean) => void) => void*: Callback `(error: string | undefined | null, success?: boolean) => void`
 
 #### <a name="error_a"></a>`error(error)`
 Write error into ioBroker log
@@ -1008,7 +1018,7 @@ Unsubscribe from file changes in ioBroker DB
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 2.1.2 (2025-02-23)
 * (@GermanBluefox) Added support for OAuth2 authentication
 
 ### 2.0.12 (2025-02-11)
