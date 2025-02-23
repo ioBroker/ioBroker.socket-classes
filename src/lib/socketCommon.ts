@@ -131,7 +131,8 @@ export class SocketCommon {
 
     __initAuthentication(_authOptions: {
         store: Store;
-        secret: string;
+        secret?: string;
+        oauth2Only?: boolean;
         checkUser?: (
             user: string,
             pass: string,
@@ -188,7 +189,8 @@ export class SocketCommon {
         socketClass: typeof SocketIO,
         authOptions: {
             store: Store;
-            secret: string;
+            secret?: string;
+            oauth2Only?: boolean;
             checkUser?: (
                 user: string,
                 pass: string,

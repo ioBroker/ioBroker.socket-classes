@@ -65,7 +65,7 @@ export class SocketAdmin extends SocketCommon {
 
     __initAuthentication(authOptions: {
         store: Store;
-        secret: string;
+        secret?: string;
         oauth2Only?: boolean;
         checkUser?: (
             user: string,
