@@ -2558,8 +2558,13 @@ export class SocketCommands {
     applyCommands(socket: WebSocketClient): void {
         Object.keys(this.commands).forEach(command =>
             socket.on(command, (...args): void => {
+                // Check if the authentication is still valid
                 if (this.#updateSession(socket)) {
                     this.commands[command](socket, ...args);
+                } else {
+                    this.adapter.log.debug(
+                        `Command ${command} from ${socket.id} was not executed due to expired session`,
+                    );
                 }
             }),
         );

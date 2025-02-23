@@ -93,21 +93,24 @@ export class SocketAdmin extends SocketCommon {
     }
 
     // Extract username from socket
-    __getUserFromSocket(socket: WebSocketClient, callback: (error: string | null, user?: string) => void): void {
+    __getUserFromSocket(
+        socket: WebSocketClient,
+        callback: (error: string | null, user?: string, expirationTime?: number) => void,
+    ): void {
         if (socket.conn.request.headers?.cookie) {
             const cookies: string[] = socket.conn.request.headers.cookie.split(';');
-            const accessSocket = cookies.find(cookie => cookie.split('=')[0] === 'access_token');
+            const accessSocket = cookies.find(cookie => cookie.trim().split('=')[0] === 'access_token');
             if (accessSocket) {
                 const token = accessSocket.split('=')[1];
-                void this.adapter.getSession(`a:${token}`, (obj: InternalStorageToken | undefined): void => {
-                    if (!obj?.user) {
+                void this.adapter.getSession(`a:${token}`, (tokenData: InternalStorageToken | undefined): void => {
+                    if (!tokenData?.user) {
                         if (socket._acl) {
                             socket._acl.user = '';
                         }
                         socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
                         callback('Cannot detect user');
                     } else {
-                        callback(null, obj.user ? `system.user.${obj.user}` : '');
+                        callback(null, tokenData.user ? `system.user.${tokenData.user}` : '', tokenData.exp);
                     }
                 });
                 return;
@@ -127,7 +130,11 @@ export class SocketAdmin extends SocketCommon {
                     socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
                     callback('Cannot detect user');
                 } else {
-                    callback(null, obj.passport.user ? `system.user.${obj.passport.user}` : '');
+                    callback(
+                        null,
+                        obj.passport.user ? `system.user.${obj.passport.user}` : '',
+                        obj.cookie.expires ? new Date(obj.cookie.expires).getTime() : 0,
+                    );
                 }
             });
         } else {
@@ -158,6 +165,11 @@ export class SocketAdmin extends SocketCommon {
 
     // update session ID, but not ofter than 60 seconds
     __updateSession(socket: WebSocketClient): boolean {
+        if (socket._sessionExpiresAt) {
+            // Check socket expiration time
+            return socket._sessionExpiresAt > Date.now();
+        }
+
         if (socket._sessionID) {
             const time = Date.now();
             if (socket._lastActivity && time - socket._lastActivity > (this.settings.ttl || 3600) * 1000) {
@@ -168,6 +180,7 @@ export class SocketAdmin extends SocketCommon {
             socket._lastActivity = time;
             socket._sessionTimer ||= setTimeout(() => {
                 socket._sessionTimer = undefined;
+
                 void this.adapter.getSession(socket._sessionID!, obj => {
                     if (obj) {
                         void this.adapter.setSession(socket._sessionID!, this.settings.ttl || 3600, obj);
