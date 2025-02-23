@@ -7,7 +7,8 @@ import {
     type PermissionCommands,
     type SocketSubscribeTypes,
     type SocketOperation,
-    type SocketCallback, type InternalStorageToken,
+    type SocketCallback,
+    type InternalStorageToken,
 } from '../types';
 
 export const COMMANDS_PERMISSIONS: Record<
