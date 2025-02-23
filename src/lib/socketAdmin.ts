@@ -238,7 +238,11 @@ export class SocketAdmin extends SocketCommon {
     start(
         server: Server,
         socketClass: typeof SocketIO,
-        authOptions: { store: Store; userKey: string; secret: string },
+        authOptions: {
+            store: Store;
+            secret?: string;
+            oauth2Only?: boolean;
+        },
         socketOptions?: SocketIoOptions,
     ): void {
         super.start(server, socketClass, authOptions, socketOptions);
