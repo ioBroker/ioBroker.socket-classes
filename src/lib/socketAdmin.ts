@@ -66,6 +66,7 @@ export class SocketAdmin extends SocketCommon {
     __initAuthentication(authOptions: {
         store: Store;
         secret: string;
+        oauth2Only?: boolean;
         checkUser?: (
             user: string,
             pass: string,
@@ -80,16 +81,18 @@ export class SocketAdmin extends SocketCommon {
     }): void {
         this.store = authOptions.store;
 
-        this.server?.use(
-            authorize({
-                passport,
-                cookieParser,
-                secret: authOptions.secret, // the session_secret to parse the cookie
-                store: authOptions.store, // we NEED to use a sessionstore. no memorystore, please
-                success: this.#onAuthorizeSuccess, // *optional* callback on success - read more below
-                fail: this.#onAuthorizeFail, // *optional* callback on fail/error - read more below
-            }),
-        );
+        if (!authOptions.oauth2Only) {
+            this.server?.use(
+                authorize({
+                    passport,
+                    cookieParser,
+                    secret: authOptions.secret, // the session_secret to parse the cookie
+                    store: authOptions.store, // we NEED to use a sessionstore. no memorystore, please
+                    success: this.#onAuthorizeSuccess, // *optional* callback on success - read more below
+                    fail: this.#onAuthorizeFail, // *optional* callback on fail/error - read more below
+                }),
+            );
+        }
     }
 
     // Extract username from socket
