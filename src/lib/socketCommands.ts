@@ -885,6 +885,11 @@ export class SocketCommands {
                         this.adapter.log.error('No session found');
                         callback('No access token found', false);
                     } else {
+                        // Replace access token in cookie
+                        socket.conn.request.headers!.cookie = socket.conn.request.headers!.cookie!.replace(
+                            /access_token=[^;]+/,
+                            `access_token=${token.token}`,
+                        );
                         socket._sessionExpiresAt = token.exp;
                         callback(null, true);
                     }
