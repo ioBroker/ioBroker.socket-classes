@@ -31,8 +31,8 @@ export declare class SocketAdmin extends SocketCommon {
     __getSessionID(socket: WebSocketClient): string | null;
     start(server: Server, socketClass: typeof SocketIO, authOptions: {
         store: Store;
-        userKey: string;
-        secret: string;
+        secret?: string;
+        oauth2Only?: boolean;
     }, socketOptions?: SocketIoOptions): void;
     onThresholdChanged(enabled: boolean): void;
     stateChange(id: string, state: ioBroker.State | null | undefined): void;

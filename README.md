@@ -1020,7 +1020,7 @@ Unsubscribe from file changes in ioBroker DB
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 2.1.7 (2025-02-23)
 * (@GermanBluefox) Added support for OAuth2 authentication
 
 ### 2.0.12 (2025-02-11)
