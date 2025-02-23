@@ -18,7 +18,7 @@ export declare class SocketAdmin extends SocketCommon {
     __getIsNoDisconnect(): boolean;
     __initAuthentication(authOptions: {
         store: Store;
-        secret: string;
+        secret?: string;
         oauth2Only?: boolean;
         checkUser?: (user: string, pass: string, cb: (error: Error | null, result?: {
             logged_in: boolean;

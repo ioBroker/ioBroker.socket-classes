@@ -90,7 +90,8 @@ export declare class SocketCommon {
     __getIsNoDisconnect(): boolean;
     __initAuthentication(_authOptions: {
         store: Store;
-        secret: string;
+        secret?: string;
+        oauth2Only?: boolean;
         checkUser?: (user: string, pass: string, cb: (error: Error | null, result?: {
             logged_in: boolean;
             user?: string;
@@ -111,7 +112,8 @@ export declare class SocketCommon {
     addWsRoute(path: string, handler: (socket: WebSocketClient, cb: (customHandler?: boolean) => void) => void): void;
     start(server: Server, socketClass: typeof SocketIO, authOptions: {
         store: Store;
-        secret: string;
+        secret?: string;
+        oauth2Only?: boolean;
         checkUser?: (user: string, pass: string, cb: (error: Error | null, result?: {
             logged_in: boolean;
             user?: string;
