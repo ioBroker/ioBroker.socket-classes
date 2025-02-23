@@ -166,7 +166,7 @@ class SocketCommon {
         const address = this.__getClientAddress(socket);
         if (!socket._acl) {
             if (this.settings.auth) {
-                this.__getUserFromSocket(socket, (err, user) => {
+                this.__getUserFromSocket(socket, (err, user, expirationTime) => {
                     if (err || !user) {
                         socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
                         this.adapter.log.error(`socket.io [init] ${err || 'No user found in cookies'}`);
@@ -177,6 +177,7 @@ class SocketCommon {
                     }
                     else {
                         socket._secure = true;
+                        socket._sessionExpiresAt = expirationTime;
                         this.adapter.log.debug(`socket.io client ${user} connected`);
                         if (!user.startsWith('system.user.')) {
                             user = `system.user.${user}`;

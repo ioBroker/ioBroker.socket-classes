@@ -96,7 +96,7 @@ export declare class SocketCommon {
             user?: string;
         }) => void) => void;
     }): void;
-    __getUserFromSocket(_socket: WebSocketClient, _callback: (error: string | null, user?: string) => void): void;
+    __getUserFromSocket(_socket: WebSocketClient, _callback: (error: string | null, user?: string, expirationTime?: number) => void): void;
     __getClientAddress(_socket: WebSocketClient): AddressInfo;
     __updateSession(_socket: WebSocketClient): boolean;
     __getSessionID(_socket: WebSocketClient): string | null;
