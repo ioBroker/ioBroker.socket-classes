@@ -17,6 +17,20 @@ import type { Ratings } from './socketCommands';
 
 export class SocketAdmin extends SocketCommon {
     private adminCommands: SocketCommandsAdmin;
+    private checkUser:
+        | ((
+              user: string,
+              pass: string,
+              cb: (
+                  error: Error | null,
+                  result?: {
+                      logged_in: boolean;
+                      user?: string;
+                  },
+              ) => void,
+          ) => void)
+        | undefined;
+
     constructor(settings: SocketSettings, adapter: ioBroker.Adapter, objects: Record<string, ioBroker.Object>) {
         super(settings, adapter);
 
@@ -80,6 +94,7 @@ export class SocketAdmin extends SocketCommon {
         ) => void;
     }): void {
         this.store = authOptions.store;
+        this.checkUser = authOptions.checkUser;
 
         if (!authOptions.oauth2Only) {
             this.server?.use(
@@ -100,24 +115,36 @@ export class SocketAdmin extends SocketCommon {
         socket: WebSocketClient,
         callback: (error: string | null, user?: string, expirationTime?: number) => void,
     ): void {
+        let accessToken: string | undefined;
         if (socket.conn.request.headers?.cookie) {
             const cookies: string[] = socket.conn.request.headers.cookie.split(';');
-            const accessSocket = cookies.find(cookie => cookie.trim().split('=')[0] === 'access_token');
-            if (accessSocket) {
-                const token = accessSocket.split('=')[1];
-                void this.adapter.getSession(`a:${token}`, (tokenData: InternalStorageToken | undefined): void => {
-                    if (!tokenData?.user) {
-                        if (socket._acl) {
-                            socket._acl.user = '';
-                        }
-                        socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
-                        callback('Cannot detect user');
-                    } else {
-                        callback(null, tokenData.user ? `system.user.${tokenData.user}` : '', tokenData.exp);
-                    }
-                });
-                return;
+            accessToken = cookies.find(cookie => cookie.trim().split('=')[0] === 'access_token');
+            if (accessToken) {
+                accessToken = accessToken.split('=')[1];
             }
+        }
+
+        if (!accessToken && socket.conn.request.headers?.authorization?.startsWith('Bearer ')) {
+            accessToken = socket.conn.request.headers.authorization.split(' ')[1];
+        }
+
+        if (!accessToken && socket.conn.request.query?.token) {
+            accessToken = socket.conn.request.query.token as string;
+        }
+
+        if (accessToken) {
+            void this.adapter.getSession(`a:${accessToken}`, (tokenData: InternalStorageToken | undefined): void => {
+                if (!tokenData?.user) {
+                    if (socket._acl) {
+                        socket._acl.user = '';
+                    }
+                    socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
+                    callback('Cannot detect user');
+                } else {
+                    callback(null, tokenData.user ? `system.user.${tokenData.user}` : '', tokenData.exp);
+                }
+            });
+            return;
         }
 
         if (socket.conn.request.sessionID) {
@@ -140,6 +167,38 @@ export class SocketAdmin extends SocketCommon {
                     );
                 }
             });
+        } else if (this.checkUser && socket.conn.request.headers?.authorization?.startsWith('Basic ')) {
+            // Extract username and password
+            const auth = Buffer.from(socket.conn.request.headers.authorization.split(' ')[1], 'base64').toString(
+                'utf-8',
+            );
+            const parts = auth.split(':');
+            const username = parts.shift() || '';
+            const password = parts.join(':');
+            if (password && username) {
+                this.checkUser(username, password, (err, result) => {
+                    if (err) {
+                        callback(err.toString());
+                    } else {
+                        callback(null, result?.user, 0);
+                    }
+                });
+            } else {
+                callback('Cannot detect user');
+            }
+        } else if (this.checkUser && socket.conn.request.query?.user && socket.conn.request.query?.pass) {
+            // Extract username and password
+            this.checkUser(
+                socket.conn.request.query.user as string,
+                socket.conn.request.query.pass as string,
+                (err, result) => {
+                    if (err) {
+                        callback(err.toString());
+                    } else {
+                        callback(null, result?.user, 0);
+                    }
+                },
+            );
         } else {
             callback('Cannot detect user');
         }
