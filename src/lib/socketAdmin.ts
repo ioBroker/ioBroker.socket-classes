@@ -101,6 +101,7 @@ export class SocketAdmin extends SocketCommon {
                 authorize({
                     passport,
                     cookieParser,
+                    checkUser: authOptions.checkUser,
                     secret: authOptions.secret, // the session_secret to parse the cookie
                     store: authOptions.store, // we NEED to use a sessionstore. no memorystore, please
                     success: this.#onAuthorizeSuccess, // *optional* callback on success - read more below
@@ -223,15 +224,12 @@ export class SocketAdmin extends SocketCommon {
             address = socket.conn.request.connection.remoteAddress;
         }
 
-        if (address) {
-            if (typeof address !== 'object') {
-                return {
-                    address,
-                    family: address.includes(':') ? 'IPv6' : 'IPv4',
-                    port: 0,
-                };
-            }
-            return address as unknown as AddressInfo;
+        if (address && typeof address !== 'object') {
+            return {
+                address,
+                family: address.includes(':') ? 'IPv6' : 'IPv4',
+                port: 0,
+            };
         }
 
         return address;
@@ -239,6 +237,7 @@ export class SocketAdmin extends SocketCommon {
 
     // update session ID, but not ofter than 60 seconds
     __updateSession(socket: WebSocketClient): boolean {
+        const now = Date.now();
         if (socket._sessionExpiresAt) {
             // If less than 10 seconds, then recheck the socket
             if (socket._sessionExpiresAt < Date.now() - 10_000) {
@@ -273,17 +272,16 @@ export class SocketAdmin extends SocketCommon {
             }
 
             // Check socket expiration time
-            return socket._sessionExpiresAt > Date.now();
+            return socket._sessionExpiresAt > now;
         }
 
         if (socket._sessionID) {
-            const time = Date.now();
-            if (socket._lastActivity && time - socket._lastActivity > (this.settings.ttl || 3600) * 1000) {
+            if (socket._lastActivity && now - socket._lastActivity > (this.settings.ttl || 3600) * 1000) {
                 this.adapter.log.warn('REAUTHENTICATE!');
                 socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
                 return false;
             }
-            socket._lastActivity = time;
+            socket._lastActivity = now;
             socket._sessionTimer ||= setTimeout(() => {
                 socket._sessionTimer = undefined;
 
