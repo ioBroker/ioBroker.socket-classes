@@ -40,6 +40,7 @@ function authorize(auth) {
     return function (req, accept) {
         const extendedReq = req;
         extendedReq.query = getQuery(extendedReq.url);
+        // Authentication with user, password in query
         if (auth.checkUser && extendedReq.query.user && extendedReq.query.pass) {
             return auth.checkUser(extendedReq.query.user, extendedReq.query.pass, (error, result) => {
                 if (error) {
@@ -58,6 +59,7 @@ function authorize(auth) {
         if (extendedReq.cookie) {
             extendedReq.sessionID = extendedReq.cookie['connect.sid'] || '';
             const accessToken = extendedReq.headers.cookie.split(';').find(c => c.trim().startsWith('access_token='));
+            // Authentication with access token in cookies
             if (accessToken) {
                 void auth.store?.get(`a:${accessToken.split('=')[1]}`, (err, token) => {
                     const tokenData = token;
@@ -72,6 +74,58 @@ function authorize(auth) {
                     auth.success(extendedReq, accept);
                 });
                 return;
+            }
+        }
+        // Authentication with access token in query
+        if (extendedReq.query.token) {
+            void auth.store?.get(`a:${extendedReq.query.token}`, (err, token) => {
+                const tokenData = token;
+                if (err) {
+                    return auth.fail(extendedReq, `Error in session store:\n${err.message}`, true, accept);
+                }
+                if (!tokenData?.user) {
+                    return auth.fail(extendedReq, 'No session found', false, accept);
+                }
+                // extendedReq.user
+                extendedReq.user = { logged_in: true, user: tokenData.user };
+                auth.success(extendedReq, accept);
+            });
+            return;
+        }
+        // Authentication with access token as Bearer token
+        if (extendedReq.headers.authentication?.startsWith('Bearer ')) {
+            void auth.store?.get(`a:${extendedReq.headers.authentication.substring(7)}`, (err, token) => {
+                const tokenData = token;
+                if (err) {
+                    return auth.fail(extendedReq, `Error in session store:\n${err.message}`, true, accept);
+                }
+                if (!tokenData?.user) {
+                    return auth.fail(extendedReq, 'No session found', false, accept);
+                }
+                // extendedReq.user
+                extendedReq.user = { logged_in: true, user: tokenData.user };
+                auth.success(extendedReq, accept);
+            });
+        }
+        // Basic authentication
+        if (auth.checkUser && extendedReq.headers.authentication?.startsWith('Basic ')) {
+            // extract username and password
+            const parts = Buffer.from(extendedReq.headers.authentication.substring(6), 'base64').toString('utf-8').split(':');
+            const username = parts.shift();
+            const password = parts.join(':');
+            if (auth.checkUser && password && username) {
+                return auth.checkUser(username, password, (error, result) => {
+                    if (error) {
+                        return auth.fail(extendedReq, 'Cannot check user', false, accept);
+                    }
+                    if (!result) {
+                        return auth.fail(extendedReq, 'User not found', false, accept);
+                    }
+                    extendedReq.user = result;
+                    extendedReq.user.user = username;
+                    extendedReq.user.logged_in = true;
+                    auth.success(extendedReq, accept);
+                });
             }
         }
         extendedReq.user = {

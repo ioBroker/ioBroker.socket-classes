@@ -183,9 +183,20 @@ export class SocketAdmin extends SocketCommon {
         if (socket._sessionExpiresAt) {
             // If less than 10 seconds, then recheck the socket
             if (socket._sessionExpiresAt < Date.now() - 10_000) {
-                const accessToken = socket.conn.request.headers?.cookie
+                let accessToken = socket.conn.request.headers?.cookie
                     ?.split(';')
                     .find(c => c.trim().startsWith('access_token='));
+
+                if (accessToken) {
+                    accessToken = accessToken.split('=')[1];
+                } else {
+                    // Try to find in a query
+                    accessToken = socket.conn.request.query?.token as string;
+                    if (!accessToken && socket.conn.request.headers?.authorization?.startsWith('Bearer ')) {
+                        // Try to find in Authentication header
+                        accessToken = socket.conn.request.headers.authorization.split(' ')[1];
+                    }
+                }
 
                 if (accessToken) {
                     const tokenStr = accessToken.split('=')[1];

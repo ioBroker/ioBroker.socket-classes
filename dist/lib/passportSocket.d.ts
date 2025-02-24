@@ -4,6 +4,7 @@ import type * as passport from 'passport';
 export interface PassportHttpRequest extends IncomingMessage {
     headers: {
         cookie: string;
+        authentication?: string;
     };
     query: Record<string, string>;
     cookie: Record<string, string> | undefined;

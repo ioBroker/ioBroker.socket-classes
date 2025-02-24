@@ -17,6 +17,7 @@ interface AuthRequest {
 export interface PassportHttpRequest extends IncomingMessage {
     headers: {
         cookie: string;
+        authentication?: string;
     };
     query: Record<string, string>;
     cookie: Record<string, string> | undefined;
@@ -129,6 +130,7 @@ export function authorize(auth: {
         const extendedReq = req as PassportHttpRequest;
         extendedReq.query = getQuery(extendedReq.url);
 
+        // Authentication with user, password in query
         if (auth.checkUser && extendedReq.query.user && extendedReq.query.pass) {
             return auth.checkUser(
                 extendedReq.query.user,
@@ -155,6 +157,7 @@ export function authorize(auth: {
 
             const accessToken = extendedReq.headers.cookie.split(';').find(c => c.trim().startsWith('access_token='));
 
+            // Authentication with access token in cookies
             if (accessToken) {
                 void auth.store?.get(`a:${accessToken.split('=')[1]}`, (err: Error, token: any): void => {
                     const tokenData = token as InternalStorageToken;
@@ -170,6 +173,71 @@ export function authorize(auth: {
                     auth.success(extendedReq, accept);
                 });
                 return;
+            }
+        }
+
+        // Authentication with access token in a query
+        if (extendedReq.query.token) {
+            void auth.store?.get(`a:${extendedReq.query.token}`, (err: Error, token: any): void => {
+                const tokenData = token as InternalStorageToken;
+
+                if (err) {
+                    return auth.fail(extendedReq, `Error in session store:\n${err.message}`, true, accept);
+                }
+                if (!tokenData?.user) {
+                    return auth.fail(extendedReq, 'No session found', false, accept);
+                }
+                // extendedReq.user
+                extendedReq.user = { logged_in: true, user: tokenData.user };
+                auth.success(extendedReq, accept);
+            });
+            return;
+        }
+
+        // Authentication with access token as Bearer token
+        if (extendedReq.headers.authentication?.startsWith('Bearer ')) {
+            void auth.store?.get(
+                `a:${extendedReq.headers.authentication.substring(7)}`,
+                (err: Error, token: any): void => {
+                    const tokenData = token as InternalStorageToken;
+
+                    if (err) {
+                        return auth.fail(extendedReq, `Error in session store:\n${err.message}`, true, accept);
+                    }
+                    if (!tokenData?.user) {
+                        return auth.fail(extendedReq, 'No session found', false, accept);
+                    }
+                    // extendedReq.user
+                    extendedReq.user = { logged_in: true, user: tokenData.user };
+                    auth.success(extendedReq, accept);
+                },
+            );
+        }
+
+        // Basic authentication
+        if (auth.checkUser && extendedReq.headers.authentication?.startsWith('Basic ')) {
+            // extract username and password
+            const parts = Buffer.from(extendedReq.headers.authentication.substring(6), 'base64').toString('utf-8').split(':');
+            const username = parts.shift();
+            const password = parts.join(':');
+            if (auth.checkUser && password && username) {
+                return auth.checkUser(
+                    username,
+                    password,
+                    (error: Error | null, result?: { logged_in: boolean; user?: string }) => {
+                        if (error) {
+                            return auth.fail(extendedReq, 'Cannot check user', false, accept);
+                        }
+                        if (!result) {
+                            return auth.fail(extendedReq, 'User not found', false, accept);
+                        }
+
+                        extendedReq.user = result;
+                        extendedReq.user.user = username;
+                        extendedReq.user.logged_in = true;
+                        auth.success(extendedReq, accept);
+                    },
+                );
             }
         }
 

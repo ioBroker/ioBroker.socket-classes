@@ -713,7 +713,15 @@ class SocketCommands {
                     }
                     else {
                         // Replace access token in cookie
-                        socket.conn.request.headers.cookie = socket.conn.request.headers.cookie.replace(/access_token=[^;]+/, `access_token=${accessToken}`);
+                        if (socket.conn.request.headers?.cookie?.includes('access_token=')) {
+                            socket.conn.request.headers.cookie = socket.conn.request.headers.cookie.replace(/access_token=[^;]+/, `access_token=${accessToken}`);
+                        }
+                        if (socket.conn.request.headers?.authorization?.startsWith('Bearer ')) {
+                            socket.conn.request.headers.authorization = `Bearer ${accessToken}`;
+                        }
+                        if (socket.conn.request.query?.token) {
+                            socket.conn.request.query.token = accessToken;
+                        }
                         socket._sessionExpiresAt = token.exp;
                         callback(null, true);
                     }

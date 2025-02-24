@@ -883,10 +883,18 @@ export class SocketCommands {
                         callback('No access token found', false);
                     } else {
                         // Replace access token in cookie
-                        socket.conn.request.headers!.cookie = socket.conn.request.headers!.cookie!.replace(
-                            /access_token=[^;]+/,
-                            `access_token=${accessToken}`,
-                        );
+                        if (socket.conn.request.headers?.cookie?.includes('access_token=')) {
+                            socket.conn.request.headers.cookie = socket.conn.request.headers.cookie.replace(
+                                /access_token=[^;]+/,
+                                `access_token=${accessToken}`,
+                            );
+                        }
+                        if (socket.conn.request.headers?.authorization?.startsWith('Bearer ')) {
+                            socket.conn.request.headers.authorization = `Bearer ${accessToken}`;
+                        }
+                        if (socket.conn.request.query?.token) {
+                            socket.conn.request.query.token = accessToken;
+                        }
                         socket._sessionExpiresAt = token.exp;
                         callback(null, true);
                     }
@@ -1951,13 +1959,13 @@ export class SocketCommands {
         ): void => {
             if (this._checkPermissions(socket, 'getState', callback, id)) {
                 if (typeof callback === 'function') {
-                    if (this.states && this.states[id]) {
+                    if (this.states?.[id]) {
                         callback(null, this.states[id]);
                     } else {
                         try {
                             void this.adapter
                                 .getForeignStateAsync(id, { user: socket._acl?.user })
-                                .then(state => SocketCommands._fixCallback(callback, null, [state]))
+                                .then(state => SocketCommands._fixCallback(callback, null, state))
                                 .catch(error => {
                                     this.adapter.log.error(`[getState] ERROR: ${error.toString()}`);
                                     SocketCommands._fixCallback(callback, error);
