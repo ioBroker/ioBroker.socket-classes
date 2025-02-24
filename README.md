@@ -1020,7 +1020,7 @@ Unsubscribe from file changes in ioBroker DB
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 2.1.8 (2025-02-24)
 
 * (@GermanBluefox) Added login with token in the query or as bearer token
 

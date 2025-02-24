@@ -110,7 +110,9 @@ function authorize(auth) {
         // Basic authentication
         if (auth.checkUser && extendedReq.headers.authentication?.startsWith('Basic ')) {
             // extract username and password
-            const parts = Buffer.from(extendedReq.headers.authentication.substring(6), 'base64').toString('utf-8').split(':');
+            const parts = Buffer.from(extendedReq.headers.authentication.substring(6), 'base64')
+                .toString('utf-8')
+                .split(':');
             const username = parts.shift();
             const password = parts.join(':');
             if (auth.checkUser && password && username) {
