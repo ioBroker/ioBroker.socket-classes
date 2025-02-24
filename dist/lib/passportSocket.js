@@ -76,7 +76,7 @@ function authorize(auth) {
                 return;
             }
         }
-        // Authentication with access token in query
+        // Authentication with access token in a query
         if (extendedReq.query.token) {
             void auth.store?.get(`a:${extendedReq.query.token}`, (err, token) => {
                 const tokenData = token;

@@ -1522,14 +1522,14 @@ class SocketCommands {
         this.commands.getState = (socket, id, callback) => {
             if (this._checkPermissions(socket, 'getState', callback, id)) {
                 if (typeof callback === 'function') {
-                    if (this.states && this.states[id]) {
+                    if (this.states?.[id]) {
                         callback(null, this.states[id]);
                     }
                     else {
                         try {
                             void this.adapter
                                 .getForeignStateAsync(id, { user: socket._acl?.user })
-                                .then(state => SocketCommands._fixCallback(callback, null, [state]))
+                                .then(state => SocketCommands._fixCallback(callback, null, state))
                                 .catch(error => {
                                 this.adapter.log.error(`[getState] ERROR: ${error.toString()}`);
                                 SocketCommands._fixCallback(callback, error);

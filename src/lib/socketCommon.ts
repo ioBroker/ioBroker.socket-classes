@@ -586,8 +586,8 @@ export class SocketCommon {
                     accessToken = accessToken.split('=')[1];
                 } else if (socket.conn.request.headers.authorization?.startsWith('Bearer ')) {
                     accessToken = socket.conn.request.headers.authorization.split(' ')[1];
-                } else if (socket.conn.request.query.token) {
-                    accessToken = socket.conn.request.query.token;
+                } else if (socket.conn.request.query?.token) {
+                    accessToken = socket.conn.request.query.token as string;
                 }
 
                 if (accessToken) {

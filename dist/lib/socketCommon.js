@@ -386,9 +386,17 @@ class SocketCommon {
                     .split(';')
                     .find(c => c.trim().startsWith('access_token='));
                 if (accessToken) {
+                    accessToken = accessToken.split('=')[1];
+                }
+                else if (socket.conn.request.headers.authorization?.startsWith('Bearer ')) {
+                    accessToken = socket.conn.request.headers.authorization.split(' ')[1];
+                }
+                else if (socket.conn.request.query?.token) {
+                    accessToken = socket.conn.request.query.token;
+                }
+                if (accessToken) {
                     socket._secure = true;
-                    const parts = accessToken.split('=');
-                    this.store?.get(`a:${parts[1]}`, (err, token) => {
+                    this.store?.get(`a:${accessToken}`, (err, token) => {
                         const tokenData = token;
                         if (err || !tokenData?.user) {
                             if (socket._acl) {
