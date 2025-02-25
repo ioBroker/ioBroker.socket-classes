@@ -1,8 +1,16 @@
 export type SocketOperation = 'read' | 'write' | 'list' | 'delete' | 'create' | 'http' | 'execute' | 'sendto' | '';
 
+// We must save both tokens, as by logout we must revoke both
 export interface InternalStorageToken {
-    token: string;
-    exp: number;
+    /** Access token */
+    aToken: string;
+    /** According refresh token */
+    rToken: string;
+    /** Expiration time of the access token */
+    aExp: number;
+    /** Expiration time of the refresh token */
+    rExp: number;
+    /** User ID */
     user: string;
 }
 

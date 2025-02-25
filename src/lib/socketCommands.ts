@@ -895,7 +895,7 @@ export class SocketCommands {
                         if (socket.conn.request.query?.token) {
                             socket.conn.request.query.token = accessToken;
                         }
-                        socket._sessionExpiresAt = token.exp;
+                        socket._sessionExpiresAt = token.aExp;
                         callback(null, true);
                     }
                 });
