@@ -40,7 +40,7 @@ function authorize(auth) {
     return function (req, accept) {
         const extendedReq = req;
         extendedReq.query = getQuery(extendedReq.url);
-        // Authentication with user, password in query
+        // Authentication with user, password in a query
         if (auth.checkUser && extendedReq.query.user && extendedReq.query.pass) {
             return auth.checkUser(extendedReq.query.user, extendedReq.query.pass, (error, result) => {
                 if (error) {

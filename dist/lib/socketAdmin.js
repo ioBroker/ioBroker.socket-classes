@@ -91,7 +91,7 @@ class SocketAdmin extends socketCommon_1.SocketCommon {
                     callback('Cannot detect user');
                 }
                 else {
-                    callback(null, tokenData.user ? `system.user.${tokenData.user}` : '', tokenData.exp);
+                    callback(null, tokenData.user ? `system.user.${tokenData.user}` : '', tokenData.aExp);
                 }
             });
             return;
@@ -206,7 +206,7 @@ class SocketAdmin extends socketCommon_1.SocketCommon {
                             this.adapter.log.error('No session found');
                         }
                         else {
-                            socket._sessionExpiresAt = tokenData.exp;
+                            socket._sessionExpiresAt = tokenData.aExp;
                         }
                     });
                 }
