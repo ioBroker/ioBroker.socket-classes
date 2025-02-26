@@ -201,7 +201,7 @@ export class SocketCommon {
             }
 
             if (accessToken) {
-                socket._secure = true;
+                socket._secure = !!this.settings.auth;
                 void this.adapter.getSession(`a:${accessToken}`, (obj: InternalStorageToken | undefined): void => {
                     if (!obj?.user) {
                         if (socket._acl) {
@@ -214,7 +214,7 @@ export class SocketCommon {
                     }
                 });
             } else if (socket.conn.request.sessionID) {
-                socket._secure = true;
+                socket._secure = !!this.settings.auth;
                 socket._sessionID = socket.conn.request.sessionID;
 
                 // Get user for session
@@ -746,7 +746,7 @@ export class SocketCommon {
         }
 
         // if server mode
-        if (this.serverMode) {
+        if (this.serverMode && this.settings.auth) {
             let accessToken: string | undefined;
             if (socket.conn.request.headers?.cookie) {
                 // If OAuth2 authentication is used
