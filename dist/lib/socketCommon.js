@@ -14,8 +14,7 @@ class SocketCommon {
     adapter;
     infoTimeout = null;
     store = null; // will be set in __initAuthentication
-    // @ts-expect-error commands actually cannot be null
-    commands;
+    commands = null;
     noDisconnect;
     eventHandlers = {};
     wsRoutes = {};
@@ -44,16 +43,184 @@ class SocketCommon {
     __initAuthentication(_authOptions) {
         throw new Error('"__initAuthentication" must be implemented in SocketCommon!');
     }
-    // Extract username from socket
-    __getUserFromSocket(_socket, _callback) {
-        throw new Error('"__getUserFromSocket" must be implemented in SocketCommon!');
+    /** Get user from pure WS socket (used in iobroker.admin and iobroker.ws) */
+    __getUserFromSocket(socket, callback) {
+        let user;
+        let pass;
+        if (socket.conn.request.headers?.authorization?.startsWith('Basic ')) {
+            const auth = Buffer.from(socket.conn.request.headers.authorization.split(' ')[1], 'base64').toString('utf8');
+            const parts = auth.split(':');
+            user = parts.shift();
+            pass = parts.join(':');
+        }
+        else {
+            user = socket.query.user;
+            pass = socket.query.pass;
+        }
+        if (user && typeof user === 'string' && pass && typeof pass === 'string') {
+            void this.adapter.checkPassword(user, pass, res => {
+                if (res) {
+                    this.adapter.log.debug(`Logged in: ${user}`);
+                    if (typeof callback === 'function') {
+                        callback(null, user, 0);
+                    }
+                    else {
+                        this.adapter.log.warn('[_getUserFromSocket] Invalid callback');
+                    }
+                }
+                else {
+                    this.adapter.log.warn(`Invalid password or user name: ${user}, ${pass[0]}***(${pass.length})`);
+                    if (typeof callback === 'function') {
+                        callback('unknown user');
+                    }
+                    else {
+                        this.adapter.log.warn('[_getUserFromSocket] Invalid callback');
+                    }
+                }
+            });
+        }
+        else {
+            let accessToken;
+            if (socket.conn.request.headers?.cookie) {
+                const cookies = socket.conn.request.headers.cookie.split(';');
+                accessToken = cookies.find(cookie => cookie.trim().split('=')[0] === 'access_token');
+                if (accessToken) {
+                    accessToken = accessToken.split('=')[1];
+                }
+            }
+            if (!accessToken && socket.conn.request.query?.token) {
+                accessToken = socket.conn.request.query.token;
+            }
+            else if (!accessToken && socket.conn.request.headers?.authorization?.startsWith('Bearer ')) {
+                accessToken = socket.conn.request.headers.authorization.split(' ')[1];
+            }
+            if (accessToken) {
+                socket._secure = true;
+                void this.adapter.getSession(`a:${accessToken}`, (obj) => {
+                    if (!obj?.user) {
+                        if (socket._acl) {
+                            socket._acl.user = '';
+                        }
+                        socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
+                        callback('Cannot detect user');
+                    }
+                    else {
+                        callback(null, obj.user ? `system.user.${obj.user}` : '', obj.aExp);
+                    }
+                });
+            }
+            else if (socket.conn.request.sessionID) {
+                socket._secure = true;
+                socket._sessionID = socket.conn.request.sessionID;
+                // Get user for session
+                void this.adapter.getSession(socket.conn.request.sessionID, obj => {
+                    if (!obj?.passport) {
+                        if (socket._acl) {
+                            socket._acl.user = '';
+                        }
+                        socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
+                        callback('Cannot detect user');
+                    }
+                    else {
+                        callback(null, obj.passport.user ? `system.user.${obj.passport.user}` : '', obj.cookie.expires ? new Date(obj.cookie.expires).getTime() : 0);
+                    }
+                });
+            }
+            else {
+                callback('Cannot detect user');
+            }
+        }
     }
-    __getClientAddress(_socket) {
-        throw new Error('"__getClientAddress" must be implemented in SocketCommon!');
+    /** Get client address from socket */
+    __getClientAddress(socket) {
+        let address;
+        if (socket.connection) {
+            address = socket.connection.remoteAddress;
+        }
+        else {
+            address = socket.ws._socket.remoteAddress;
+        }
+        // @ts-expect-error socket.io
+        if (!address && socket.handshake) {
+            // @ts-expect-error socket.io
+            address = socket.handshake.address;
+        }
+        // @ts-expect-error socket.io
+        if (!address && socket.conn.request?.connection) {
+            // @ts-expect-error socket.io
+            address = socket.conn.request.connection.remoteAddress;
+        }
+        if (address && typeof address !== 'object') {
+            return {
+                address,
+                family: address.includes(':') ? 'IPv6' : 'IPv4',
+                port: 0,
+            };
+        }
+        return address;
     }
     // update session ID, but not ofter than 60 seconds
-    __updateSession(_socket) {
-        throw new Error('"__updateSession" must be implemented in SocketCommon!');
+    __updateSession(socket) {
+        const now = Date.now();
+        if (socket._sessionExpiresAt) {
+            // If less than 10 seconds, then recheck the socket
+            if (socket._sessionExpiresAt < Date.now() - 10_000) {
+                let accessToken = socket.conn.request.headers?.cookie
+                    ?.split(';')
+                    .find(c => c.trim().startsWith('access_token='));
+                if (accessToken) {
+                    accessToken = accessToken.split('=')[1];
+                }
+                else {
+                    // Try to find in a query
+                    accessToken = socket.conn.request.query?.token;
+                    if (!accessToken && socket.conn.request.headers?.authorization?.startsWith('Bearer ')) {
+                        // Try to find in Authentication header
+                        accessToken = socket.conn.request.headers.authorization.split(' ')[1];
+                    }
+                }
+                if (accessToken) {
+                    const tokenStr = accessToken.split('=')[1];
+                    void this.store?.get(`a:${tokenStr}`, (err, token) => {
+                        const tokenData = token;
+                        if (err) {
+                            this.adapter.log.error(`Cannot get token: ${err}`);
+                        }
+                        else if (!tokenData?.user) {
+                            this.adapter.log.error('No session found');
+                        }
+                        else {
+                            socket._sessionExpiresAt = tokenData.aExp;
+                        }
+                    });
+                }
+            }
+            // Check socket expiration time
+            return socket._sessionExpiresAt > now;
+        }
+        // Legacy authentication method
+        const sessionId = socket._sessionID;
+        if (sessionId) {
+            if (socket._lastActivity && now - socket._lastActivity > (this.settings.ttl || 3600) * 1000) {
+                this.adapter.log.warn('REAUTHENTICATE!');
+                socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
+                return false;
+            }
+            socket._lastActivity = now;
+            socket._sessionTimer ||= setTimeout(() => {
+                socket._sessionTimer = undefined;
+                void this.adapter.getSession(socket._sessionID, obj => {
+                    if (obj) {
+                        void this.adapter.setSession(socket._sessionID, this.settings.ttl || 3600, obj);
+                    }
+                    else {
+                        this.adapter.log.warn('REAUTHENTICATE!');
+                        socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
+                    }
+                });
+            }, 60_000);
+        }
+        return true;
     }
     __getSessionID(_socket) {
         throw new Error('"__getSessionID" must be implemented in SocketCommon!');

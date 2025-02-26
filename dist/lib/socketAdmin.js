@@ -18,7 +18,6 @@ const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const passportSocket_1 = require("./passportSocket");
 class SocketAdmin extends socketCommon_1.SocketCommon {
     adminCommands;
-    checkUser;
     constructor(settings, adapter, objects) {
         super(settings, adapter);
         // user another set of commands for admin
@@ -52,7 +51,6 @@ class SocketAdmin extends socketCommon_1.SocketCommon {
     };
     __initAuthentication(authOptions) {
         this.store = authOptions.store;
-        this.checkUser = authOptions.checkUser;
         if (!authOptions.oauth2Only) {
             this.server?.use((0, passportSocket_1.authorize)({
                 passport: passport_1.default,
@@ -64,177 +62,6 @@ class SocketAdmin extends socketCommon_1.SocketCommon {
                 fail: this.#onAuthorizeFail, // *optional* callback on fail/error - read more below
             }));
         }
-    }
-    // Extract username from socket
-    __getUserFromSocket(socket, callback) {
-        let accessToken;
-        if (socket.conn.request.headers?.cookie) {
-            const cookies = socket.conn.request.headers.cookie.split(';');
-            accessToken = cookies.find(cookie => cookie.trim().split('=')[0] === 'access_token');
-            if (accessToken) {
-                accessToken = accessToken.split('=')[1];
-            }
-        }
-        if (!accessToken && socket.conn.request.headers?.authorization?.startsWith('Bearer ')) {
-            accessToken = socket.conn.request.headers.authorization.split(' ')[1];
-        }
-        if (!accessToken && socket.conn.request.query?.token) {
-            accessToken = socket.conn.request.query.token;
-        }
-        if (accessToken) {
-            void this.adapter.getSession(`a:${accessToken}`, (tokenData) => {
-                if (!tokenData?.user) {
-                    if (socket._acl) {
-                        socket._acl.user = '';
-                    }
-                    socket.emit(socketCommon_1.SocketCommon.COMMAND_RE_AUTHENTICATE);
-                    callback('Cannot detect user');
-                }
-                else {
-                    callback(null, tokenData.user ? `system.user.${tokenData.user}` : '', tokenData.aExp);
-                }
-            });
-            return;
-        }
-        if (socket.conn.request.sessionID) {
-            socket._secure = true;
-            socket._sessionID = socket.conn.request.sessionID;
-            // Get user for session
-            void this.adapter.getSession(socket.conn.request.sessionID, obj => {
-                if (!obj?.passport) {
-                    if (socket._acl) {
-                        socket._acl.user = '';
-                    }
-                    socket.emit(socketCommon_1.SocketCommon.COMMAND_RE_AUTHENTICATE);
-                    callback('Cannot detect user');
-                }
-                else {
-                    callback(null, obj.passport.user ? `system.user.${obj.passport.user}` : '', obj.cookie.expires ? new Date(obj.cookie.expires).getTime() : 0);
-                }
-            });
-        }
-        else if (this.checkUser && socket.conn.request.headers?.authorization?.startsWith('Basic ')) {
-            // Extract username and password
-            const auth = Buffer.from(socket.conn.request.headers.authorization.split(' ')[1], 'base64').toString('utf-8');
-            const parts = auth.split(':');
-            const username = parts.shift() || '';
-            const password = parts.join(':');
-            if (password && username) {
-                this.checkUser(username, password, (err, result) => {
-                    if (err) {
-                        callback(err.toString());
-                    }
-                    else {
-                        callback(null, result?.user, 0);
-                    }
-                });
-            }
-            else {
-                callback('Cannot detect user');
-            }
-        }
-        else if (this.checkUser && socket.conn.request.query?.user && socket.conn.request.query?.pass) {
-            // Extract username and password
-            this.checkUser(socket.conn.request.query.user, socket.conn.request.query.pass, (err, result) => {
-                if (err) {
-                    callback(err.toString());
-                }
-                else {
-                    callback(null, result?.user, 0);
-                }
-            });
-        }
-        else {
-            callback('Cannot detect user');
-        }
-    }
-    __getClientAddress(socket) {
-        let address;
-        if (socket.connection) {
-            address = socket.connection.remoteAddress;
-        }
-        else {
-            address = socket.ws._socket.remoteAddress;
-        }
-        // @ts-expect-error socket.io
-        if (!address && socket.handshake) {
-            // @ts-expect-error socket.io
-            address = socket.handshake.address;
-        }
-        // @ts-expect-error socket.io
-        if (!address && socket.conn.request?.connection) {
-            // @ts-expect-error socket.io
-            address = socket.conn.request.connection.remoteAddress;
-        }
-        if (address && typeof address !== 'object') {
-            return {
-                address,
-                family: address.includes(':') ? 'IPv6' : 'IPv4',
-                port: 0,
-            };
-        }
-        return address;
-    }
-    // update session ID, but not ofter than 60 seconds
-    __updateSession(socket) {
-        const now = Date.now();
-        if (socket._sessionExpiresAt) {
-            // If less than 10 seconds, then recheck the socket
-            if (socket._sessionExpiresAt < Date.now() - 10_000) {
-                let accessToken = socket.conn.request.headers?.cookie
-                    ?.split(';')
-                    .find(c => c.trim().startsWith('access_token='));
-                if (accessToken) {
-                    accessToken = accessToken.split('=')[1];
-                }
-                else {
-                    // Try to find in a query
-                    accessToken = socket.conn.request.query?.token;
-                    if (!accessToken && socket.conn.request.headers?.authorization?.startsWith('Bearer ')) {
-                        // Try to find in Authentication header
-                        accessToken = socket.conn.request.headers.authorization.split(' ')[1];
-                    }
-                }
-                if (accessToken) {
-                    const tokenStr = accessToken.split('=')[1];
-                    void this.store?.get(`a:${tokenStr}`, (err, token) => {
-                        const tokenData = token;
-                        if (err) {
-                            this.adapter.log.error(`Cannot get token: ${err}`);
-                        }
-                        else if (!tokenData?.user) {
-                            this.adapter.log.error('No session found');
-                        }
-                        else {
-                            socket._sessionExpiresAt = tokenData.aExp;
-                        }
-                    });
-                }
-            }
-            // Check socket expiration time
-            return socket._sessionExpiresAt > now;
-        }
-        if (socket._sessionID) {
-            if (socket._lastActivity && now - socket._lastActivity > (this.settings.ttl || 3600) * 1000) {
-                this.adapter.log.warn('REAUTHENTICATE!');
-                socket.emit(socketCommon_1.SocketCommon.COMMAND_RE_AUTHENTICATE);
-                return false;
-            }
-            socket._lastActivity = now;
-            socket._sessionTimer ||= setTimeout(() => {
-                socket._sessionTimer = undefined;
-                void this.adapter.getSession(socket._sessionID, obj => {
-                    if (obj) {
-                        void this.adapter.setSession(socket._sessionID, this.settings.ttl || 3600, obj);
-                    }
-                    else {
-                        this.adapter.log.warn('REAUTHENTICATE!');
-                        socket.emit(socketCommon_1.SocketCommon.COMMAND_RE_AUTHENTICATE);
-                    }
-                });
-            }, 60_000);
-        }
-        return true;
     }
     __getSessionID(socket) {
         return this.settings.auth ? socket.conn.request.sessionID : null;

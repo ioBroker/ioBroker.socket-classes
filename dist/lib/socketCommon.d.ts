@@ -79,7 +79,7 @@ export declare class SocketCommon {
     protected readonly adapter: ioBroker.Adapter;
     private infoTimeout;
     protected store: Store | null;
-    protected commands: SocketCommands | SocketCommandsAdmin;
+    protected commands: SocketCommands | SocketCommandsAdmin | null;
     private readonly noDisconnect;
     private readonly eventHandlers;
     private readonly wsRoutes;
@@ -97,9 +97,11 @@ export declare class SocketCommon {
             user?: string;
         }) => void) => void;
     }): void;
-    __getUserFromSocket(_socket: WebSocketClient, _callback: (error: string | null, user?: string, expirationTime?: number) => void): void;
-    __getClientAddress(_socket: WebSocketClient): AddressInfo;
-    __updateSession(_socket: WebSocketClient): boolean;
+    /** Get user from pure WS socket (used in iobroker.admin and iobroker.ws) */
+    __getUserFromSocket(socket: WebSocketClient, callback: (error: string | null, user?: string, expirationTime?: number) => void): void;
+    /** Get client address from socket */
+    __getClientAddress(socket: WebSocketClient): AddressInfo;
+    __updateSession(socket: WebSocketClient): boolean;
     __getSessionID(_socket: WebSocketClient): string | null;
     /** Install handler on connecting and disconnecting events */
     addEventHandler(eventName: EventNames, handler: (socket: WebSocketClient, error?: string) => void): void;

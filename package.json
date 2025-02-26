@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@iobroker/adapter-core": "^3.2.3",
-    "axios": "^1.7.9",
+    "axios": "^1.8.1",
     "cookie-parser": "^1.4.7",
     "passport": "^0.7.0"
   },

@@ -8,13 +8,11 @@
 import { type Server, SocketCommon, type SocketIoOptions, type SocketSettings } from './socketCommon';
 import { type Store } from './passportSocket';
 import type { Socket as WebSocketClient, SocketIO } from '@iobroker/ws-server';
-import type { AddressInfo } from 'node:net';
 import type { SocketSubscribeTypes } from '../types';
 import type { Ratings } from './socketCommands';
 export declare class SocketAdmin extends SocketCommon {
     #private;
     private adminCommands;
-    private checkUser;
     constructor(settings: SocketSettings, adapter: ioBroker.Adapter, objects: Record<string, ioBroker.Object>);
     __getIsNoDisconnect(): boolean;
     __initAuthentication(authOptions: {
@@ -26,9 +24,6 @@ export declare class SocketAdmin extends SocketCommon {
             user?: string;
         }) => void) => void;
     }): void;
-    __getUserFromSocket(socket: WebSocketClient, callback: (error: string | null, user?: string, expirationTime?: number) => void): void;
-    __getClientAddress(socket: WebSocketClient): AddressInfo;
-    __updateSession(socket: WebSocketClient): boolean;
     __getSessionID(socket: WebSocketClient): string | null;
     start(server: Server, socketClass: typeof SocketIO, authOptions: {
         store: Store;

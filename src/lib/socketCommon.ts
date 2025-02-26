@@ -96,8 +96,7 @@ export class SocketCommon {
     protected readonly adapter: ioBroker.Adapter;
     private infoTimeout: NodeJS.Timeout | null = null;
     protected store: Store | null = null; // will be set in __initAuthentication
-    // @ts-expect-error commands actually cannot be null
-    protected commands: SocketCommands | SocketCommandsAdmin;
+    protected commands: SocketCommands | SocketCommandsAdmin | null = null;
     private readonly noDisconnect: boolean;
     private readonly eventHandlers: { [eventName: string]: (socket: WebSocketClient, error?: string) => void } = {};
     private readonly wsRoutes: Record<string, (ws: WebSocketClient, cb: (customHandler?: boolean) => void) => void> =
@@ -148,21 +147,193 @@ export class SocketCommon {
         throw new Error('"__initAuthentication" must be implemented in SocketCommon!');
     }
 
-    // Extract username from socket
+    /** Get user from pure WS socket (used in iobroker.admin and iobroker.ws) */
     __getUserFromSocket(
-        _socket: WebSocketClient,
-        _callback: (error: string | null, user?: string, expirationTime?: number) => void,
+        socket: WebSocketClient,
+        callback: (error: string | null, user?: string, expirationTime?: number) => void,
     ): void {
-        throw new Error('"__getUserFromSocket" must be implemented in SocketCommon!');
+        let user: string | undefined;
+        let pass: string | undefined;
+
+        if (socket.conn.request.headers?.authorization?.startsWith('Basic ')) {
+            const auth = Buffer.from(socket.conn.request.headers.authorization.split(' ')[1], 'base64').toString(
+                'utf8',
+            );
+            const parts = auth.split(':');
+            user = parts.shift();
+            pass = parts.join(':');
+        } else {
+            user = socket.query.user as string;
+            pass = socket.query.pass as string;
+        }
+
+        if (user && typeof user === 'string' && pass && typeof pass === 'string') {
+            void this.adapter.checkPassword(user, pass, res => {
+                if (res) {
+                    this.adapter.log.debug(`Logged in: ${user}`);
+                    if (typeof callback === 'function') {
+                        callback(null, user, 0);
+                    } else {
+                        this.adapter.log.warn('[_getUserFromSocket] Invalid callback');
+                    }
+                } else {
+                    this.adapter.log.warn(`Invalid password or user name: ${user}, ${pass[0]}***(${pass.length})`);
+                    if (typeof callback === 'function') {
+                        callback('unknown user');
+                    } else {
+                        this.adapter.log.warn('[_getUserFromSocket] Invalid callback');
+                    }
+                }
+            });
+        } else {
+            let accessToken: string | undefined;
+            if (socket.conn.request.headers?.cookie) {
+                const cookies: string[] = socket.conn.request.headers.cookie.split(';');
+                accessToken = cookies.find(cookie => cookie.trim().split('=')[0] === 'access_token');
+                if (accessToken) {
+                    accessToken = accessToken.split('=')[1];
+                }
+            }
+            if (!accessToken && socket.conn.request.query?.token) {
+                accessToken = socket.conn.request.query.token as string;
+            } else if (!accessToken && socket.conn.request.headers?.authorization?.startsWith('Bearer ')) {
+                accessToken = socket.conn.request.headers.authorization.split(' ')[1];
+            }
+
+            if (accessToken) {
+                socket._secure = true;
+                void this.adapter.getSession(`a:${accessToken}`, (obj: InternalStorageToken | undefined): void => {
+                    if (!obj?.user) {
+                        if (socket._acl) {
+                            socket._acl.user = '';
+                        }
+                        socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
+                        callback('Cannot detect user');
+                    } else {
+                        callback(null, obj.user ? `system.user.${obj.user}` : '', obj.aExp);
+                    }
+                });
+            } else if (socket.conn.request.sessionID) {
+                socket._secure = true;
+                socket._sessionID = socket.conn.request.sessionID;
+
+                // Get user for session
+                void this.adapter.getSession(socket.conn.request.sessionID, obj => {
+                    if (!obj?.passport) {
+                        if (socket._acl) {
+                            socket._acl.user = '';
+                        }
+                        socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
+                        callback('Cannot detect user');
+                    } else {
+                        callback(
+                            null,
+                            obj.passport.user ? `system.user.${obj.passport.user}` : '',
+                            obj.cookie.expires ? new Date(obj.cookie.expires).getTime() : 0,
+                        );
+                    }
+                });
+            } else {
+                callback('Cannot detect user');
+            }
+        }
     }
 
-    __getClientAddress(_socket: WebSocketClient): AddressInfo {
-        throw new Error('"__getClientAddress" must be implemented in SocketCommon!');
+    /** Get client address from socket */
+    __getClientAddress(socket: WebSocketClient): AddressInfo {
+        let address;
+        if (socket.connection) {
+            address = socket.connection.remoteAddress;
+        } else {
+            address = socket.ws._socket.remoteAddress;
+        }
+
+        // @ts-expect-error socket.io
+        if (!address && socket.handshake) {
+            // @ts-expect-error socket.io
+            address = socket.handshake.address;
+        }
+        // @ts-expect-error socket.io
+        if (!address && socket.conn.request?.connection) {
+            // @ts-expect-error socket.io
+            address = socket.conn.request.connection.remoteAddress;
+        }
+
+        if (address && typeof address !== 'object') {
+            return {
+                address,
+                family: address.includes(':') ? 'IPv6' : 'IPv4',
+                port: 0,
+            };
+        }
+
+        return address;
     }
 
     // update session ID, but not ofter than 60 seconds
-    __updateSession(_socket: WebSocketClient): boolean {
-        throw new Error('"__updateSession" must be implemented in SocketCommon!');
+    __updateSession(socket: WebSocketClient): boolean {
+        const now = Date.now();
+        if (socket._sessionExpiresAt) {
+            // If less than 10 seconds, then recheck the socket
+            if (socket._sessionExpiresAt < Date.now() - 10_000) {
+                let accessToken = socket.conn.request.headers?.cookie
+                    ?.split(';')
+                    .find(c => c.trim().startsWith('access_token='));
+
+                if (accessToken) {
+                    accessToken = accessToken.split('=')[1];
+                } else {
+                    // Try to find in a query
+                    accessToken = socket.conn.request.query?.token as string;
+                    if (!accessToken && socket.conn.request.headers?.authorization?.startsWith('Bearer ')) {
+                        // Try to find in Authentication header
+                        accessToken = socket.conn.request.headers.authorization.split(' ')[1];
+                    }
+                }
+
+                if (accessToken) {
+                    const tokenStr = accessToken.split('=')[1];
+                    void this.store?.get(`a:${tokenStr}`, (err: Error, token: any): void => {
+                        const tokenData = token as InternalStorageToken;
+                        if (err) {
+                            this.adapter.log.error(`Cannot get token: ${err}`);
+                        } else if (!tokenData?.user) {
+                            this.adapter.log.error('No session found');
+                        } else {
+                            socket._sessionExpiresAt = tokenData.aExp;
+                        }
+                    });
+                }
+            }
+
+            // Check socket expiration time
+            return socket._sessionExpiresAt > now;
+        }
+
+        // Legacy authentication method
+        const sessionId = socket._sessionID;
+
+        if (sessionId) {
+            if (socket._lastActivity && now - socket._lastActivity > (this.settings.ttl || 3600) * 1000) {
+                this.adapter.log.warn('REAUTHENTICATE!');
+                socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
+                return false;
+            }
+            socket._lastActivity = now;
+            socket._sessionTimer ||= setTimeout(() => {
+                socket._sessionTimer = undefined;
+
+                void this.adapter.getSession(socket._sessionID!, obj => {
+                    if (obj) {
+                        void this.adapter.setSession(socket._sessionID!, this.settings.ttl || 3600, obj);
+                    } else {
+                        this.adapter.log.warn('REAUTHENTICATE!');
+                        socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
+                    }
+                });
+            }, 60_000);
+        }
+        return true;
     }
 
     __getSessionID(_socket: WebSocketClient): string | null {
@@ -317,7 +488,7 @@ export class SocketCommon {
     }
 
     _initSocket(socket: WebSocketClient, cb: (customHandler?: boolean) => void): void {
-        this.commands.disableEventThreshold();
+        this.commands!.disableEventThreshold();
         const address = this.__getClientAddress(socket);
 
         if (!socket._acl) {
@@ -367,7 +538,7 @@ export class SocketCommon {
     }
 
     unsubscribeSocket(socket: WebSocketClient, type: SocketSubscribeTypes): void {
-        return this.commands.unsubscribeSocket(socket, type);
+        return this.commands!.unsubscribeSocket(socket, type);
     }
 
     _unsubscribeAll(): void {
@@ -377,11 +548,11 @@ export class SocketCommon {
             // this could be an object or array: an array is ioBroker, object is socket.io
             if (Array.isArray(sockets)) {
                 for (const socket of sockets) {
-                    this.commands.unsubscribeSocket(socket);
+                    this.commands!.unsubscribeSocket(socket);
                 }
             } else {
                 Object.values(sockets as Record<string, WebSocketClient>).forEach(socket => {
-                    this.commands.unsubscribeSocket(socket);
+                    this.commands!.unsubscribeSocket(socket);
                 });
             }
         } else if (this.server?.sockets) {
@@ -389,7 +560,7 @@ export class SocketCommon {
             for (const socket in this.server.sockets) {
                 if (Object.prototype.hasOwnProperty.call(this.server.sockets, socket)) {
                     // @ts-expect-error socket.io has own structure
-                    this.commands.unsubscribeSocket(this.server.sockets[socket]);
+                    this.commands!.unsubscribeSocket(this.server.sockets[socket]);
                 }
             }
         }
@@ -524,7 +695,7 @@ export class SocketCommon {
 
         this.#updateConnectedInfo();
 
-        if (!this.commands.getCommandHandler('name')) {
+        if (!this.commands!.getCommandHandler('name')) {
             // socket sends its name => update list of sockets
             this.addCommandHandler('name', (_socket: WebSocketClient, name: string, cb: () => void): void => {
                 this.adapter.log.debug(`Connection from "${name}"`);
@@ -543,11 +714,11 @@ export class SocketCommon {
             });
         }
 
-        this.commands.applyCommands(socket);
+        this.commands!.applyCommands(socket);
 
         // disconnect
         socket.on('disconnect', (error: unknown): void => {
-            this.commands.unsubscribeSocket(socket);
+            this.commands!.unsubscribeSocket(socket);
             this.#updateConnectedInfo();
 
             // Disable logging if no one browser is connected
@@ -638,7 +809,7 @@ export class SocketCommon {
             }
         }
 
-        this.commands.subscribeSocket(socket);
+        this.commands!.subscribeSocket(socket);
 
         if (cb) {
             cb();
@@ -682,11 +853,11 @@ export class SocketCommon {
         callback: ((error: string | null, ...args: any[]) => void) | undefined,
         ...args: any[]
     ): boolean {
-        return this.commands._checkPermissions(socket, command, callback, args);
+        return this.commands!._checkPermissions(socket, command, callback, args);
     }
 
     addCommandHandler(command: string, handler: (socket: WebSocketClient, ...args: any[]) => void): void {
-        this.commands.addCommandHandler(command, handler);
+        this.commands!.addCommandHandler(command, handler);
     }
 
     sendLog(obj: ioBroker.LogMessage): void {
@@ -700,15 +871,15 @@ export class SocketCommon {
         id: string,
         obj: ioBroker.Object | ioBroker.State | null | undefined,
     ): boolean {
-        return this.commands.publish(socket, type, id, obj);
+        return this.commands!.publish(socket, type, id, obj);
     }
 
     publishInstanceMessage(socket: WebSocketClient, sourceInstance: string, messageType: string, data: any): boolean {
-        return this.commands.publishInstanceMessage(socket, sourceInstance, messageType, data);
+        return this.commands!.publishInstanceMessage(socket, sourceInstance, messageType, data);
     }
 
     publishFile(socket: WebSocketClient, id: string, fileName: string, size: number | null): boolean {
-        return this.commands.publishFile(socket, id, fileName, size);
+        return this.commands!.publishFile(socket, id, fileName, size);
     }
 
     getSocketsList(): WebSocketClient[] | null | Record<string, WebSocketClient> {
@@ -742,7 +913,7 @@ export class SocketCommon {
     close(): void {
         this._unsubscribeAll();
 
-        this.commands.destroy();
+        this.commands!.destroy();
 
         const sockets = this.getSocketsList();
         if (Array.isArray(sockets)) {
