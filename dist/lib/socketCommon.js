@@ -95,7 +95,7 @@ class SocketCommon {
                 accessToken = socket.conn.request.headers.authorization.split(' ')[1];
             }
             if (accessToken) {
-                socket._secure = true;
+                socket._secure = !!this.settings.auth;
                 void this.adapter.getSession(`a:${accessToken}`, (obj) => {
                     if (!obj?.user) {
                         if (socket._acl) {
@@ -110,7 +110,7 @@ class SocketCommon {
                 });
             }
             else if (socket.conn.request.sessionID) {
-                socket._secure = true;
+                socket._secure = !!this.settings.auth;
                 socket._sessionID = socket.conn.request.sessionID;
                 // Get user for session
                 void this.adapter.getSession(socket.conn.request.sessionID, obj => {
@@ -545,7 +545,7 @@ class SocketCommon {
             this.settings.extensions(socket);
         }
         // if server mode
-        if (this.serverMode) {
+        if (this.serverMode && this.settings.auth) {
             let accessToken;
             if (socket.conn.request.headers?.cookie) {
                 // If OAuth2 authentication is used
