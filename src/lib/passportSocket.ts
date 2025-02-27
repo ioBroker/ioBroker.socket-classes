@@ -45,7 +45,19 @@ export interface Store {
     ) => void;
     set: (
         sessionId: string,
-        session: {
+        ttl:
+            | number
+            | {
+                  cookie: {
+                      originalMaxAge: number;
+                      expires: string;
+                      httpOnly: boolean;
+                  };
+                  passport: {
+                      user: string;
+                  };
+              },
+        session?: {
             cookie: {
                 originalMaxAge: number;
                 expires: string;
