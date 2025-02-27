@@ -1228,11 +1228,23 @@ export class SocketCommands {
                 }
             }
             if (accessToken) {
-                void this.adapter.destroySession(`a:${accessToken}`, () => {
-                    if (socket.id) {
-                        void this.adapter.destroySession(socket.id, callback);
-                    } else if (callback) {
-                        callback();
+                void this.adapter.getSession(`a:${accessToken}`, (token: InternalStorageToken): void => {
+                    if (token?.aToken) {
+                        void this.adapter.destroySession(`a:${token.aToken}`, () => {
+                            void this.adapter.destroySession(`a:${token.rToken}`, () => {
+                                if (socket.id) {
+                                    void this.adapter.destroySession(socket.id, callback);
+                                } else if (callback) {
+                                    callback();
+                                }
+                            });
+                        });
+                    } else {
+                        if (socket.id) {
+                            void this.adapter.destroySession(socket.id, callback);
+                        } else if (callback) {
+                            callback();
+                        }
                     }
                 });
             } else if (socket.id) {
