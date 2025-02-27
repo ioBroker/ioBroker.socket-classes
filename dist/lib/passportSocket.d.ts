@@ -26,7 +26,16 @@ export interface Store {
             user: string;
         };
     }) => void) => void;
-    set: (sessionId: string, session: {
+    set: (sessionId: string, ttl: number | {
+        cookie: {
+            originalMaxAge: number;
+            expires: string;
+            httpOnly: boolean;
+        };
+        passport: {
+            user: string;
+        };
+    }, session?: {
         cookie: {
             originalMaxAge: number;
             expires: string;

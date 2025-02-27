@@ -944,7 +944,36 @@ class SocketCommands {
          * @param callback callback `(error?: Error) => void`
          */
         this.commands.logout = (socket, callback) => {
-            if (socket.id) {
+            // try to extract access token
+            let accessToken;
+            if (socket.conn.request.headers?.authorization?.startsWith('Bearer ')) {
+                accessToken = socket.conn.request.headers.authorization.split(' ')[1];
+            }
+            if (!accessToken) {
+                // socket.io has "_query" and not "query" in the request
+                accessToken =
+                    socket.conn.request.query?.token ||
+                        socket.conn.request._query.token;
+            }
+            if (!accessToken) {
+                const part = socket.conn.request.headers?.cookie
+                    ?.split(';')
+                    .find(part => part.trim().startsWith('access_token='));
+                if (part) {
+                    accessToken = part.trim().split('=')[1];
+                }
+            }
+            if (accessToken) {
+                void this.adapter.destroySession(`a:${accessToken}`, () => {
+                    if (socket.id) {
+                        void this.adapter.destroySession(socket.id, callback);
+                    }
+                    else if (callback) {
+                        callback();
+                    }
+                });
+            }
+            else if (socket.id) {
                 void this.adapter.destroySession(socket.id, callback);
             }
             else if (callback) {
