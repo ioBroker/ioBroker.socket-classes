@@ -1231,7 +1231,7 @@ export class SocketCommands {
                 void this.adapter.getSession(`a:${accessToken}`, (token: InternalStorageToken): void => {
                     if (token?.aToken) {
                         void this.adapter.destroySession(`a:${token.aToken}`, () => {
-                            void this.adapter.destroySession(`a:${token.rToken}`, () => {
+                            void this.adapter.destroySession(`r:${token.rToken}`, () => {
                                 if (socket.id) {
                                     void this.adapter.destroySession(socket.id, callback);
                                 } else if (callback) {
