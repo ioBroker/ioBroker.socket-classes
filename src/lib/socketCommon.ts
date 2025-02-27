@@ -829,7 +829,7 @@ export class SocketCommon {
                 if (this.server) {
                     const clientsArray: string[] = [];
                     const sockets = this.getSocketsList();
-                    // this could be an object or array: an array is ioBroker, object is socket.io
+                    // this could be an object or array: an array is ioBroker, an object is socket.io
                     if (Array.isArray(sockets)) {
                         for (const socket of sockets) {
                             clientsArray.push(socket._name || 'noname');
