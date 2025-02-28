@@ -282,7 +282,8 @@ export class SocketCommon {
 
                 if (accessToken) {
                     accessToken = accessToken.split('=')[1];
-                } else {
+                }
+                if (!accessToken) {
                     // Try to find in a query
                     accessToken = socket.conn.request.query?.token as string;
                     if (!accessToken && socket.conn.request.headers?.authorization?.startsWith('Bearer ')) {
@@ -292,8 +293,7 @@ export class SocketCommon {
                 }
 
                 if (accessToken) {
-                    const tokenStr = accessToken.split('=')[1];
-                    void this.store?.get(`a:${tokenStr}`, (err: Error, token: any): void => {
+                    void this.store?.get(`a:${accessToken}`, (err: Error, token: any): void => {
                         const tokenData = token as InternalStorageToken;
                         if (err) {
                             this.adapter.log.error(`Cannot get token: ${err}`);

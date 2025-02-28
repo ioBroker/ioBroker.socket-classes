@@ -1018,7 +1018,7 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
-### 2.1.15 (2025-02-27)
+### **WORK IN PROGRESS**
 
 * (@GermanBluefox) Added logout with bearer token
 
