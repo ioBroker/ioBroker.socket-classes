@@ -171,7 +171,7 @@ class SocketCommon {
                 if (accessToken) {
                     accessToken = accessToken.split('=')[1];
                 }
-                else {
+                if (!accessToken) {
                     // Try to find in a query
                     accessToken = socket.conn.request.query?.token;
                     if (!accessToken && socket.conn.request.headers?.authorization?.startsWith('Bearer ')) {
@@ -180,8 +180,7 @@ class SocketCommon {
                     }
                 }
                 if (accessToken) {
-                    const tokenStr = accessToken.split('=')[1];
-                    void this.store?.get(`a:${tokenStr}`, (err, token) => {
+                    void this.store?.get(`a:${accessToken}`, (err, token) => {
                         const tokenData = token;
                         if (err) {
                             this.adapter.log.error(`Cannot get token: ${err}`);
