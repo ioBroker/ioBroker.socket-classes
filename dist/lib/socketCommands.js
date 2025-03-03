@@ -177,18 +177,39 @@ class SocketCommands {
             // operation: create, read, write, list, delete, sendto, execute, sendToHost, readLogs
             if (SocketCommands.COMMANDS_PERMISSIONS[_command]) {
                 // If permission required
-                if (SocketCommands.COMMANDS_PERMISSIONS[_command].type) {
-                    if (SocketCommands.COMMANDS_PERMISSIONS[_command].type === 'object' &&
-                        socket._acl?.object &&
-                        (socket._acl?.object)[SocketCommands.COMMANDS_PERMISSIONS[_command].operation]) {
-                        return true;
+                const commandType = SocketCommands.COMMANDS_PERMISSIONS[_command].type;
+                if (commandType) {
+                    if (commandType === 'object') {
+                        const operation = SocketCommands.COMMANDS_PERMISSIONS[_command].operation;
+                        if (socket._acl?.object?.[operation]) {
+                            return true;
+                        }
                     }
-                    else if (SocketCommands.COMMANDS_PERMISSIONS[_command].type === 'state' &&
-                        socket._acl?.state &&
-                        (socket._acl?.state)[SocketCommands.COMMANDS_PERMISSIONS[_command].operation]) {
-                        return true;
+                    else if (commandType === 'state') {
+                        const operation = SocketCommands.COMMANDS_PERMISSIONS[_command].operation;
+                        if (socket._acl?.state?.[operation]) {
+                            return true;
+                        }
                     }
-                    this.adapter.log.warn(`No permission for "${socket._acl?.user}" to call ${_command}. Need "${SocketCommands.COMMANDS_PERMISSIONS[_command].type}"."${SocketCommands.COMMANDS_PERMISSIONS[_command].operation}"`);
+                    else if (commandType === 'users') {
+                        const operation = SocketCommands.COMMANDS_PERMISSIONS[_command].operation;
+                        if (socket._acl?.users?.[operation]) {
+                            return true;
+                        }
+                    }
+                    else if (commandType === 'other') {
+                        const operation = SocketCommands.COMMANDS_PERMISSIONS[_command].operation;
+                        if (socket._acl?.other?.[operation]) {
+                            return true;
+                        }
+                    }
+                    else if (commandType === 'file') {
+                        const operation = SocketCommands.COMMANDS_PERMISSIONS[_command].operation;
+                        if (socket._acl?.file?.[operation]) {
+                            return true;
+                        }
+                    }
+                    this.adapter.log.warn(`No permission for "${socket._acl?.user}" to call ${_command}. Need "${commandType}"."${SocketCommands.COMMANDS_PERMISSIONS[_command].operation}"`);
                 }
                 else {
                     return true;
