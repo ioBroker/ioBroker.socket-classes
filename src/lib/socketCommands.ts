@@ -2011,7 +2011,6 @@ export class SocketCommands {
             pattern: string | string[],
             callback: (error: null | undefined | Error | string, states?: Record<string, ioBroker.State>) => void,
         ): void => {
-            this.adapter.log.info('Use getStates');
             this.commands.getStates(socket, pattern, callback);
         };
 
