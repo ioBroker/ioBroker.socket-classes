@@ -1572,7 +1572,6 @@ class SocketCommands {
          * @param callback callback `(error: null | undefined | Error | string, states?: Record<string, ioBroker.State>) => void`
          */
         this.commands.getForeignStates = (socket, pattern, callback) => {
-            this.adapter.log.info('Use getStates');
             this.commands.getStates(socket, pattern, callback);
         };
         /**
