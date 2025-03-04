@@ -1018,6 +1018,10 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+
+* (@GermanBluefox) Removed debug text
+
 ### 2.1.17 (2025-03-03)
 
 * (@GermanBluefox) Corrected the user's right check
