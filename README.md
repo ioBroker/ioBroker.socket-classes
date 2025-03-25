@@ -1018,6 +1018,9 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+* (@GermanBluefox) Allowed the authentication by token in the query
+
 ### 2.2.0 (2025-03-04)
 
 * (@GermanBluefox) Removed debug text

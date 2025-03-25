@@ -43,7 +43,7 @@ class SocketCommon {
     __initAuthentication(_authOptions) {
         throw new Error('"__initAuthentication" must be implemented in SocketCommon!');
     }
-    /** Get user from pure WS socket (used in iobroker.admin and iobroker.ws) */
+    /** Get user from pure WS socket (used in `iobroker.admin` and `iobroker.ws`) */
     __getUserFromSocket(socket, callback) {
         let user;
         let pass;
@@ -58,6 +58,7 @@ class SocketCommon {
             pass = socket.query.pass;
         }
         if (user && typeof user === 'string' && pass && typeof pass === 'string') {
+            // Authentication by user/password
             void this.adapter.checkPassword(user, pass, res => {
                 if (res) {
                     this.adapter.log.debug(`Logged in: ${user}`);
@@ -80,19 +81,20 @@ class SocketCommon {
             });
         }
         else {
+            // Authentication by bearer token
             let accessToken;
-            if (socket.conn.request.headers?.cookie) {
+            if (socket.conn.request.query?.token) {
+                accessToken = socket.conn.request.query.token;
+            }
+            if (!accessToken && socket.conn.request.headers?.authorization?.startsWith('Bearer ')) {
+                accessToken = socket.conn.request.headers.authorization.split(' ')[1];
+            }
+            if (!accessToken && socket.conn.request.headers?.cookie) {
                 const cookies = socket.conn.request.headers.cookie.split(';');
                 accessToken = cookies.find(cookie => cookie.trim().split('=')[0] === 'access_token');
                 if (accessToken) {
                     accessToken = accessToken.split('=')[1];
                 }
-            }
-            if (!accessToken && socket.conn.request.query?.token) {
-                accessToken = socket.conn.request.query.token;
-            }
-            else if (!accessToken && socket.conn.request.headers?.authorization?.startsWith('Bearer ')) {
-                accessToken = socket.conn.request.headers.authorization.split(' ')[1];
             }
             if (accessToken) {
                 socket._secure = !!this.settings.auth;

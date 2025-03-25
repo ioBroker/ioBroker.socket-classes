@@ -147,7 +147,7 @@ export class SocketCommon {
         throw new Error('"__initAuthentication" must be implemented in SocketCommon!');
     }
 
-    /** Get user from pure WS socket (used in iobroker.admin and iobroker.ws) */
+    /** Get user from pure WS socket (used in `iobroker.admin` and `iobroker.ws`) */
     __getUserFromSocket(
         socket: WebSocketClient,
         callback: (error: string | null, user?: string, expirationTime?: number) => void,
@@ -168,6 +168,7 @@ export class SocketCommon {
         }
 
         if (user && typeof user === 'string' && pass && typeof pass === 'string') {
+            // Authentication by user/password
             void this.adapter.checkPassword(user, pass, res => {
                 if (res) {
                     this.adapter.log.debug(`Logged in: ${user}`);
@@ -186,18 +187,20 @@ export class SocketCommon {
                 }
             });
         } else {
+            // Authentication by bearer token
             let accessToken: string | undefined;
-            if (socket.conn.request.headers?.cookie) {
+            if (socket.conn.request.query?.token) {
+                accessToken = socket.conn.request.query.token as string;
+            }
+            if (!accessToken && socket.conn.request.headers?.authorization?.startsWith('Bearer ')) {
+                accessToken = socket.conn.request.headers.authorization.split(' ')[1];
+            }
+            if (!accessToken && socket.conn.request.headers?.cookie) {
                 const cookies: string[] = socket.conn.request.headers.cookie.split(';');
                 accessToken = cookies.find(cookie => cookie.trim().split('=')[0] === 'access_token');
                 if (accessToken) {
                     accessToken = accessToken.split('=')[1];
                 }
-            }
-            if (!accessToken && socket.conn.request.query?.token) {
-                accessToken = socket.conn.request.query.token as string;
-            } else if (!accessToken && socket.conn.request.headers?.authorization?.startsWith('Bearer ')) {
-                accessToken = socket.conn.request.headers.authorization.split(' ')[1];
             }
 
             if (accessToken) {
