@@ -97,7 +97,7 @@ export declare class SocketCommon {
             user?: string;
         }) => void) => void;
     }): void;
-    /** Get user from pure WS socket (used in iobroker.admin and iobroker.ws) */
+    /** Get user from pure WS socket (used in `iobroker.admin` and `iobroker.ws`) */
     __getUserFromSocket(socket: WebSocketClient, callback: (error: string | null, user?: string, expirationTime?: number) => void): void;
     /** Get client address from socket */
     __getClientAddress(socket: WebSocketClient): AddressInfo;
