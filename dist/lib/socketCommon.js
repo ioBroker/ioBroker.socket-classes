@@ -247,6 +247,7 @@ class SocketCommon {
         }
         // it can be used as a client too for cloud
         if (socketClass) {
+            // Case if it is a server
             if (!this.initialized) {
                 // @ts-expect-error socket.io v2 has listen function
                 if (typeof socketClass.listen === 'function') {
@@ -303,7 +304,7 @@ class SocketCommon {
                 this._initSocket(socket, cb);
             });
         }
-        this.server.on('error', (error, details) => {
+        this.server?.on('error', (error, details) => {
             // ignore "failed connection" as it already shown
             if (!error?.message?.includes('failed connection')) {
                 if (error?.message?.includes('authentication failed') ||

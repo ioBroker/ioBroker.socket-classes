@@ -389,6 +389,7 @@ export class SocketCommon {
 
         // it can be used as a client too for cloud
         if (socketClass) {
+            // Case if it is a server
             if (!this.initialized) {
                 // @ts-expect-error socket.io v2 has listen function
                 if (typeof socketClass.listen === 'function') {
@@ -453,7 +454,7 @@ export class SocketCommon {
             });
         }
 
-        this.server!.on('error', (error: Error, details: unknown): void => {
+        this.server?.on('error', (error: Error, details: unknown): void => {
             // ignore "failed connection" as it already shown
             if (!error?.message?.includes('failed connection')) {
                 if (
