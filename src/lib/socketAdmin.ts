@@ -109,6 +109,7 @@ export class SocketAdmin extends SocketCommon {
             store: Store;
             secret?: string;
             oauth2Only?: boolean;
+            noBasicAuth?: boolean;
         },
         socketOptions?: SocketIoOptions,
     ): void {
