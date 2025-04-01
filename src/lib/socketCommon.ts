@@ -513,6 +513,7 @@ export class SocketCommon {
                         if (!this.noDisconnect) {
                             socket.close();
                         }
+                        cb();
                     } else {
                         socket._secure = true;
                         socket._sessionExpiresAt = expirationTime;
