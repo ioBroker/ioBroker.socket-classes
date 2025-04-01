@@ -46,6 +46,7 @@ export interface SocketSettings {
     whiteListSettings?: Record<string, WhiteListSettings>;
     extensions?: (socket: WebSocketClient) => void;
     port?: number;
+    noBasicAuth?: boolean;
     secret: string;
     compatibilityV2?: boolean;
     forceWebSockets?: boolean;
