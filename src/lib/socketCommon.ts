@@ -506,7 +506,7 @@ export class SocketCommon {
                 this.__getUserFromSocket(socket, (err, user, expirationTime) => {
                     if (err || !user) {
                         socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
-                        this.adapter.log.error(`socket.io [init] ${err || 'No user found in cookies'}`);
+                        this.adapter.log.silly(`socket.io [init] ${err || 'No user found in cookies'}`);
                         // ws does not require disconnect
                         if (!this.noDisconnect) {
                             socket.close();
