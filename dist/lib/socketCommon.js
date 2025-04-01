@@ -45,92 +45,97 @@ class SocketCommon {
     }
     /** Get user from pure WS socket (used in `iobroker.admin` and `iobroker.ws`) */
     __getUserFromSocket(socket, callback) {
-        let user;
-        let pass;
-        if (socket.conn.request.headers?.authorization?.startsWith('Basic ')) {
-            const auth = Buffer.from(socket.conn.request.headers.authorization.split(' ')[1], 'base64').toString('utf8');
-            const parts = auth.split(':');
-            user = parts.shift();
-            pass = parts.join(':');
+        // Authentication by bearer token
+        let accessToken;
+        if (socket.conn.request.query?.token) {
+            accessToken = socket.conn.request.query.token;
         }
-        else {
-            user = socket.query.user;
-            pass = socket.query.pass;
+        if (!accessToken && socket.conn.request.headers?.authorization?.startsWith('Bearer ')) {
+            accessToken = socket.conn.request.headers.authorization.split(' ')[1];
         }
-        if (user && typeof user === 'string' && pass && typeof pass === 'string') {
-            // Authentication by user/password
-            void this.adapter.checkPassword(user, pass, res => {
-                if (res) {
-                    this.adapter.log.debug(`Logged in: ${user}`);
-                    if (typeof callback === 'function') {
-                        callback(null, user, 0);
+        if (!accessToken && socket.conn.request.headers?.cookie) {
+            const cookies = socket.conn.request.headers.cookie.split(';');
+            accessToken = cookies.find(cookie => cookie.trim().split('=')[0] === 'access_token');
+            if (accessToken) {
+                accessToken = accessToken.split('=')[1];
+            }
+        }
+        if (accessToken) {
+            socket._secure = !!this.settings.auth;
+            void this.adapter.getSession(`a:${accessToken}`, (obj) => {
+                if (!obj?.user) {
+                    if (socket._acl) {
+                        socket._acl.user = '';
                     }
-                    else {
-                        this.adapter.log.warn('[_getUserFromSocket] Invalid callback');
-                    }
+                    socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
+                    callback('Cannot detect user');
                 }
                 else {
-                    this.adapter.log.warn(`Invalid password or user name: ${user}, ${pass[0]}***(${pass.length})`);
-                    if (typeof callback === 'function') {
-                        callback('unknown user');
-                    }
-                    else {
-                        this.adapter.log.warn('[_getUserFromSocket] Invalid callback');
-                    }
+                    callback(null, obj.user ? `system.user.${obj.user}` : '', obj.aExp);
                 }
             });
+            return;
         }
-        else {
-            // Authentication by bearer token
-            let accessToken;
-            if (socket.conn.request.query?.token) {
-                accessToken = socket.conn.request.query.token;
-            }
-            if (!accessToken && socket.conn.request.headers?.authorization?.startsWith('Bearer ')) {
-                accessToken = socket.conn.request.headers.authorization.split(' ')[1];
-            }
-            if (!accessToken && socket.conn.request.headers?.cookie) {
-                const cookies = socket.conn.request.headers.cookie.split(';');
-                accessToken = cookies.find(cookie => cookie.trim().split('=')[0] === 'access_token');
-                if (accessToken) {
-                    accessToken = accessToken.split('=')[1];
+        else if (socket.conn.request.sessionID) {
+            socket._secure = !!this.settings.auth;
+            socket._sessionID = socket.conn.request.sessionID;
+            // Get user for session
+            void this.adapter.getSession(socket.conn.request.sessionID, obj => {
+                if (!obj?.passport) {
+                    if (socket._acl) {
+                        socket._acl.user = '';
+                    }
+                    socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
+                    callback('Cannot detect user');
                 }
+                else {
+                    callback(null, obj.passport.user ? `system.user.${obj.passport.user}` : '', obj.cookie.expires ? new Date(obj.cookie.expires).getTime() : 0);
+                }
+            });
+            return;
+        }
+        if (!this.settings.noBasicAuth) {
+            let user;
+            let pass;
+            if (socket.conn.request.headers?.authorization?.startsWith('Basic ')) {
+                const auth = Buffer.from(socket.conn.request.headers.authorization.split(' ')[1], 'base64').toString('utf8');
+                const parts = auth.split(':');
+                user = parts.shift();
+                pass = parts.join(':');
             }
-            if (accessToken) {
-                socket._secure = !!this.settings.auth;
-                void this.adapter.getSession(`a:${accessToken}`, (obj) => {
-                    if (!obj?.user) {
-                        if (socket._acl) {
-                            socket._acl.user = '';
+            else {
+                user = socket.query.user;
+                pass = socket.query.pass;
+            }
+            if (user && typeof user === 'string' && pass && typeof pass === 'string') {
+                // Authentication by user/password
+                void this.adapter.checkPassword(user, pass, res => {
+                    if (res) {
+                        this.adapter.log.debug(`Logged in: ${user}`);
+                        if (typeof callback === 'function') {
+                            callback(null, user, 0);
                         }
-                        socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
-                        callback('Cannot detect user');
+                        else {
+                            this.adapter.log.warn('[_getUserFromSocket] Invalid callback');
+                        }
                     }
                     else {
-                        callback(null, obj.user ? `system.user.${obj.user}` : '', obj.aExp);
-                    }
-                });
-            }
-            else if (socket.conn.request.sessionID) {
-                socket._secure = !!this.settings.auth;
-                socket._sessionID = socket.conn.request.sessionID;
-                // Get user for session
-                void this.adapter.getSession(socket.conn.request.sessionID, obj => {
-                    if (!obj?.passport) {
-                        if (socket._acl) {
-                            socket._acl.user = '';
+                        this.adapter.log.warn(`Invalid password or user name: ${user}, ${pass[0]}***(${pass.length})`);
+                        if (typeof callback === 'function') {
+                            callback('unknown user');
                         }
-                        socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
-                        callback('Cannot detect user');
-                    }
-                    else {
-                        callback(null, obj.passport.user ? `system.user.${obj.passport.user}` : '', obj.cookie.expires ? new Date(obj.cookie.expires).getTime() : 0);
+                        else {
+                            this.adapter.log.warn('[_getUserFromSocket] Invalid callback');
+                        }
                     }
                 });
             }
             else {
                 callback('Cannot detect user');
             }
+        }
+        else {
+            callback('Cannot detect user');
         }
     }
     /** Get client address from socket */
