@@ -60,4 +60,5 @@ export declare function authorize(auth: {
     secret?: string;
     store?: Store;
     userProperty?: string;
+    noBasicAuth?: boolean;
 }): (req: IncomingMessage, accept: (err: boolean) => void) => void;

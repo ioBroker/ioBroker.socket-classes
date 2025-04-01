@@ -55,6 +55,7 @@ class SocketAdmin extends socketCommon_1.SocketCommon {
             this.server?.use((0, passportSocket_1.authorize)({
                 passport: passport_1.default,
                 cookieParser: cookie_parser_1.default,
+                noBasicAuth: authOptions.noBasicAuth,
                 checkUser: authOptions.checkUser,
                 secret: authOptions.secret, // the session_secret to parse the cookie
                 store: authOptions.store, // we NEED to use a sessionstore. no memorystore, please

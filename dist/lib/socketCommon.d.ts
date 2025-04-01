@@ -93,6 +93,7 @@ export declare class SocketCommon {
         store: Store;
         secret?: string;
         oauth2Only?: boolean;
+        noBasicAuth?: boolean;
         checkUser?: (user: string, pass: string, cb: (error: Error | null, result?: {
             logged_in: boolean;
             user?: string;
@@ -117,6 +118,7 @@ export declare class SocketCommon {
         store: Store;
         secret?: string;
         oauth2Only?: boolean;
+        noBasicAuth?: boolean;
         checkUser?: (user: string, pass: string, cb: (error: Error | null, result?: {
             logged_in: boolean;
             user?: string;
