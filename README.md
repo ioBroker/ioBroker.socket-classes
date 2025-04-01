@@ -1018,7 +1018,7 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 2.2.4 (2025-04-01)
 
 * (@GermanBluefox) Changed the order of authentications. Basic authentication will be checked as the last one.
 * (@GermanBluefox) Added the setting to disable basic authentication
