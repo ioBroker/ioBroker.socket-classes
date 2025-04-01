@@ -127,6 +127,7 @@ export function authorize(auth: {
     secret?: string;
     store?: Store;
     userProperty?: string;
+    noBasicAuth?: boolean;
 }): (req: IncomingMessage, accept: (err: boolean) => void) => void {
     if (!auth.passport) {
         throw new Error("passport is required to use require('passport'), please install passport");
@@ -227,7 +228,7 @@ export function authorize(auth: {
         }
 
         // Basic authentication
-        if (auth.checkUser && extendedReq.headers.authentication?.startsWith('Basic ')) {
+        if (auth.checkUser && !auth.noBasicAuth && extendedReq.headers.authentication?.startsWith('Basic ')) {
             // extract username and password
             const parts = Buffer.from(extendedReq.headers.authentication.substring(6), 'base64')
                 .toString('utf-8')

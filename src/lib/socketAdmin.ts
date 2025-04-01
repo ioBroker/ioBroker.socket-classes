@@ -67,6 +67,7 @@ export class SocketAdmin extends SocketCommon {
         store: Store;
         secret?: string;
         oauth2Only?: boolean;
+        noBasicAuth?: boolean;
         checkUser?: (
             user: string,
             pass: string,
@@ -86,6 +87,7 @@ export class SocketAdmin extends SocketCommon {
                 authorize({
                     passport,
                     cookieParser,
+                    noBasicAuth: authOptions.noBasicAuth,
                     checkUser: authOptions.checkUser,
                     secret: authOptions.secret, // the session_secret to parse the cookie
                     store: authOptions.store, // we NEED to use a sessionstore. no memorystore, please

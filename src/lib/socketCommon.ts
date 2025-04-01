@@ -133,6 +133,7 @@ export class SocketCommon {
         store: Store;
         secret?: string;
         oauth2Only?: boolean;
+        noBasicAuth?: boolean;
         checkUser?: (
             user: string,
             pass: string,
@@ -371,6 +372,7 @@ export class SocketCommon {
             store: Store;
             secret?: string;
             oauth2Only?: boolean;
+            noBasicAuth?: boolean;
             checkUser?: (
                 user: string,
                 pass: string,
