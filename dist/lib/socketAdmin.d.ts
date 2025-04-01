@@ -30,6 +30,7 @@ export declare class SocketAdmin extends SocketCommon {
         store: Store;
         secret?: string;
         oauth2Only?: boolean;
+        noBasicAuth?: boolean;
     }, socketOptions?: SocketIoOptions): void;
     onThresholdChanged(enabled: boolean): void;
     stateChange(id: string, state: ioBroker.State | null | undefined): void;
