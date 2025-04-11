@@ -1632,17 +1632,22 @@ export class SocketCommandsAdmin extends SocketCommands {
             socket: WebSocketClient,
             callback: (
                 error: string | null | Error | undefined,
-                systemConfig?: { common: ioBroker.SystemConfigCommon; native?: { secret: string } },
+                systemConfig?: { common: ioBroker.SystemConfigCommon; native?: { secret: string; vendor?: any } },
             ) => void,
         ): void => {
             if (this._checkPermissions(socket, 'getObject', callback)) {
                 void this.adapter.getForeignObject('system.config', { user: socket._acl?.user }, (error, obj) => {
                     obj ||= {} as ioBroker.SystemConfigObject;
                     const secret = obj?.native?.secret;
+                    const vendor = obj?.native?.vendor;
                     // @ts-expect-error to save the memory
                     delete obj.native;
                     if (secret) {
                         obj.native = { secret };
+                    }
+                    if (vendor) {
+                        obj.native ||= {};
+                        obj.native.vendor = vendor;
                     }
                     SocketCommands._fixCallback(callback, error, obj);
                 });

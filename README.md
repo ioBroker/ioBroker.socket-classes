@@ -734,7 +734,7 @@ Get all installed adapters in a compact form to save bandwidth.
 
 #### <a name="getcompactsystemconfig_a"></a>`getCompactSystemConfig(callback)`
 Get the system configuration in a compact form to save bandwidth.
-* `callback` *(error: string | null | Error | undefined, systemConfig?: {common: ioBroker.SystemConfigCommon; native?: {secret: string}}) => void*: - Callback function `(error: string | null, systemConfig?: { common: any; native?: { secret: string } }) => void`
+* `callback` *(error: string | null | Error | undefined, systemConfig?: {common: ioBroker.SystemConfigCommon; native?: {secret: string; vendor?: any}}) => void*: - Callback function `(error: string | null, systemConfig?: { common: any; native?: { secret: string } }) => void`
 
 #### <a name="getcompactsystemrepositories_a"></a>`getCompactSystemRepositories(callback)`
 Get system repositories in a compact form to save bandwidth.
@@ -1018,6 +1018,10 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+
+* (@GermanBluefox) Deliver vendor information in `getCompactSystemConfig` command
+
 ### 2.2.7 (2025-04-01)
 
 * (@GermanBluefox) Changed the order of authentications. Basic authentication will be checked as the last one.
