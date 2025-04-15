@@ -348,7 +348,9 @@ class SocketCommon {
                         if (!this.noDisconnect) {
                             socket.close();
                         }
-                        cb();
+                        if (cb) {
+                            cb();
+                        }
                     }
                     else {
                         socket._secure = true;
@@ -617,7 +619,7 @@ class SocketCommon {
             }
         }
         this.commands.subscribeSocket(socket);
-        if (cb) {
+        if (typeof cb === 'function') {
             cb();
         }
     }

@@ -499,7 +499,7 @@ export class SocketCommon {
         this.#updateConnectedInfo();
     }
 
-    _initSocket(socket: WebSocketClient, cb: (customHandler?: boolean) => void): void {
+    _initSocket(socket: WebSocketClient, cb?: (customHandler?: boolean) => void): void {
         this.commands!.disableEventThreshold();
         const address = this.__getClientAddress(socket);
 
@@ -513,7 +513,9 @@ export class SocketCommon {
                         if (!this.noDisconnect) {
                             socket.close();
                         }
-                        cb();
+                        if (cb) {
+                            cb();
+                        }
                     } else {
                         socket._secure = true;
                         socket._sessionExpiresAt = expirationTime;
@@ -550,7 +552,7 @@ export class SocketCommon {
         }
     }
 
-    unsubscribeSocket(socket: WebSocketClient, type: SocketSubscribeTypes): void {
+    unsubscribeSocket(socket: WebSocketClient, type?: SocketSubscribeTypes): void {
         return this.commands!.unsubscribeSocket(socket, type);
     }
 
@@ -699,7 +701,7 @@ export class SocketCommon {
     }
 
     // install event handlers on socket
-    _socketEvents(socket: WebSocketClient, address: string, cb: (customHandler?: boolean) => void): void {
+    _socketEvents(socket: WebSocketClient, address: string, cb?: (customHandler?: boolean) => void): void {
         if (this.serverMode) {
             this.adapter.log.info(`==> Connected ${socket._acl?.user} from ${address}`);
         } else {
@@ -824,7 +826,7 @@ export class SocketCommon {
 
         this.commands!.subscribeSocket(socket);
 
-        if (cb) {
+        if (typeof cb === 'function') {
             cb();
         }
     }
@@ -869,7 +871,7 @@ export class SocketCommon {
         return this.commands!._checkPermissions(socket, command, callback, args);
     }
 
-    addCommandHandler(command: string, handler: (socket: WebSocketClient, ...args: any[]) => void): void {
+    addCommandHandler(command: string, handler?: (socket: WebSocketClient, ...args: any[]) => void): void {
         this.commands!.addCommandHandler(command, handler);
     }
 

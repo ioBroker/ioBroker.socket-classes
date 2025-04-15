@@ -17,7 +17,7 @@ import type { Ratings } from './socketCommands';
 export class SocketAdmin extends SocketCommon {
     private adminCommands: SocketCommandsAdmin;
 
-    constructor(settings: SocketSettings, adapter: ioBroker.Adapter, objects: Record<string, ioBroker.Object>) {
+    constructor(settings: SocketSettings, adapter: ioBroker.Adapter, objects?: Record<string, ioBroker.Object>) {
         super(settings, adapter);
 
         // user another set of commands for admin

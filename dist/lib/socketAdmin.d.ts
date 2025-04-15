@@ -13,7 +13,7 @@ import type { Ratings } from './socketCommands';
 export declare class SocketAdmin extends SocketCommon {
     #private;
     private adminCommands;
-    constructor(settings: SocketSettings, adapter: ioBroker.Adapter, objects: Record<string, ioBroker.Object>);
+    constructor(settings: SocketSettings, adapter: ioBroker.Adapter, objects?: Record<string, ioBroker.Object>);
     __getIsNoDisconnect(): boolean;
     __initAuthentication(authOptions: {
         store: Store;

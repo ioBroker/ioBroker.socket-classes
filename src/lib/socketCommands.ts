@@ -658,7 +658,7 @@ export class SocketCommands {
     }
 
     unsubscribeSocket(socket: WebSocketClient, type?: SocketSubscribeTypes): void {
-        if (!socket || !socket.subscribe) {
+        if (!socket?.subscribe) {
             return;
         }
         // inform all instances about disconnected socket
@@ -788,7 +788,7 @@ export class SocketCommands {
         }
     }
 
-    addCommandHandler(command: string, handler: (socket: WebSocketClient, ...args: any[]) => void): void {
+    addCommandHandler(command: string, handler?: (socket: WebSocketClient, ...args: any[]) => void): void {
         if (handler) {
             this.commands[command] = handler;
         } else if (command in this.commands) {

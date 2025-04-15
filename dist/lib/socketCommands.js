@@ -523,7 +523,7 @@ class SocketCommands {
         }
     }
     unsubscribeSocket(socket, type) {
-        if (!socket || !socket.subscribe) {
+        if (!socket?.subscribe) {
             return;
         }
         // inform all instances about disconnected socket

@@ -160,7 +160,7 @@ export class SocketCommandsAdmin extends SocketCommands {
 
     public readonly states: Record<string, ioBroker.State> | undefined;
 
-    private readonly objects: Record<string, ioBroker.Object>;
+    private readonly objects: Record<string, ioBroker.Object> | undefined;
     private thresholdInterval: NodeJS.Timeout | null = null;
     private readonly cmdSessions: Record<string, any> = {};
     private eventsThreshold: {
@@ -181,7 +181,7 @@ export class SocketCommandsAdmin extends SocketCommands {
         adapter: ioBroker.Adapter,
         updateSession: (socket: WebSocketClient) => boolean,
         context: SocketDataContext,
-        objects: Record<string, ioBroker.Object>,
+        objects?: Record<string, ioBroker.Object>,
         states?: Record<string, ioBroker.State>,
     ) {
         super(adapter, updateSession, context);
