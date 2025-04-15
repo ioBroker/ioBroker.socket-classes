@@ -62,7 +62,7 @@ export declare class SocketCommands {
     subscribeSocket(socket: WebSocketClient, type?: SocketSubscribeTypes): void;
     unsubscribeSocket(socket: WebSocketClient, type?: SocketSubscribeTypes): void;
     _unsubscribeFiles(socket: WebSocketClient, id: string, pattern: string | string[], callback?: (error: string | null) => void): void;
-    addCommandHandler(command: string, handler: (socket: WebSocketClient, ...args: any[]) => void): void;
+    addCommandHandler(command: string, handler?: (socket: WebSocketClient, ...args: any[]) => void): void;
     getCommandHandler(command: string): (socket: WebSocketClient, ...args: any[]) => void;
     /**
      * Converts old structures of config definitions into new one - `adminUI`

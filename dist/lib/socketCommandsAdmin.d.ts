@@ -120,7 +120,7 @@ export declare class SocketCommandsAdmin extends SocketCommands {
     private cacheGB;
     private onThresholdChanged;
     private secret;
-    constructor(adapter: ioBroker.Adapter, updateSession: (socket: WebSocketClient) => boolean, context: SocketDataContext, objects: Record<string, ioBroker.Object>, states?: Record<string, ioBroker.State>);
+    constructor(adapter: ioBroker.Adapter, updateSession: (socket: WebSocketClient) => boolean, context: SocketDataContext, objects?: Record<string, ioBroker.Object>, states?: Record<string, ioBroker.State>);
     start(onThresholdChanged: ((on: boolean) => void) | null): void;
     /**
      * Read a file with ratings from server

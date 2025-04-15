@@ -124,17 +124,17 @@ export declare class SocketCommon {
             user?: string;
         }) => void) => void;
     }, socketOptions?: SocketIoOptions): void;
-    _initSocket(socket: WebSocketClient, cb: (customHandler?: boolean) => void): void;
-    unsubscribeSocket(socket: WebSocketClient, type: SocketSubscribeTypes): void;
+    _initSocket(socket: WebSocketClient, cb?: (customHandler?: boolean) => void): void;
+    unsubscribeSocket(socket: WebSocketClient, type?: SocketSubscribeTypes): void;
     _unsubscribeAll(): void;
     static getWhiteListIpForAddress(address: string, whiteList: {
         [address: string]: WhiteListSettings;
     }): string | null;
     static _getPermissionsForIp(address: string, whiteList: Record<string, WhiteListSettings>): WhiteListSettings | undefined;
     static _mergeACLs(address: string, acl: SocketACL, whiteList: Record<string, WhiteListSettings> | undefined): SocketACL;
-    _socketEvents(socket: WebSocketClient, address: string, cb: (customHandler?: boolean) => void): void;
+    _socketEvents(socket: WebSocketClient, address: string, cb?: (customHandler?: boolean) => void): void;
     checkPermissions(socket: WebSocketClient, command: PermissionCommands, callback: ((error: string | null, ...args: any[]) => void) | undefined, ...args: any[]): boolean;
-    addCommandHandler(command: string, handler: (socket: WebSocketClient, ...args: any[]) => void): void;
+    addCommandHandler(command: string, handler?: (socket: WebSocketClient, ...args: any[]) => void): void;
     sendLog(obj: ioBroker.LogMessage): void;
     publish(socket: WebSocketClient, type: SocketSubscribeTypes, id: string, obj: ioBroker.Object | ioBroker.State | null | undefined): boolean;
     publishInstanceMessage(socket: WebSocketClient, sourceInstance: string, messageType: string, data: any): boolean;
