@@ -308,7 +308,7 @@ export class SocketCommon {
                         if (err) {
                             this.adapter.log.error(`Cannot get token: ${err}`);
                         } else if (!tokenData?.user) {
-                            this.adapter.log.error('No session found');
+                            this.adapter.log.silly('No session found');
                         } else {
                             socket._sessionExpiresAt = tokenData.aExp;
                         }

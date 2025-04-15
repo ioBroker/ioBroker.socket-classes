@@ -911,7 +911,7 @@ export class SocketCommands {
             if (accessToken) {
                 void this.adapter.getSession(`a:${accessToken}`, (token: InternalStorageToken): void => {
                     if (!token?.user) {
-                        this.adapter.log.error('No session found');
+                        this.adapter.log.silly('No session found');
                         callback('No access token found', false);
                     } else {
                         // Replace access token in cookie

@@ -1018,6 +1018,11 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+
+### **WORK IN PROGRESS**
+
+* (@GermanBluefox) Removed debug text
+
 ### 2.2.8 (2025-04-11)
 
 * (@GermanBluefox) Deliver vendor information in `getCompactSystemConfig` command

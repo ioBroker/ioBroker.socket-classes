@@ -729,7 +729,7 @@ class SocketCommands {
             if (accessToken) {
                 void this.adapter.getSession(`a:${accessToken}`, (token) => {
                     if (!token?.user) {
-                        this.adapter.log.error('No session found');
+                        this.adapter.log.silly('No session found');
                         callback('No access token found', false);
                     }
                     else {
