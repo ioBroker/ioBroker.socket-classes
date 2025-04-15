@@ -114,7 +114,7 @@ export declare class SocketCommon {
      * @param handler Web socket custom handler
      */
     addWsRoute(path: string, handler: (socket: WebSocketClient, cb: (customHandler?: boolean) => void) => void): void;
-    start(server: Server, socketClass: typeof SocketIO, authOptions: {
+    start(server: Server | WebSocketClient, socketClass?: typeof SocketIO, authOptions?: {
         store: Store;
         secret?: string;
         oauth2Only?: boolean;

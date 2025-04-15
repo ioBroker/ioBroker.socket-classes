@@ -26,7 +26,7 @@ export declare class SocketAdmin extends SocketCommon {
         }) => void) => void;
     }): void;
     __getSessionID(socket: WebSocketClient): string | null;
-    start(server: Server, socketClass: typeof SocketIO, authOptions: {
+    start(server: Server | WebSocketClient, socketClass?: typeof SocketIO, authOptions?: {
         store: Store;
         secret?: string;
         oauth2Only?: boolean;

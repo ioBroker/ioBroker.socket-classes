@@ -366,9 +366,9 @@ export class SocketCommon {
     }
 
     start(
-        server: Server,
-        socketClass: typeof SocketIO,
-        authOptions: {
+        server: Server | WebSocketClient,
+        socketClass?: typeof SocketIO,
+        authOptions?: {
             store: Store;
             secret?: string;
             oauth2Only?: boolean;
@@ -406,7 +406,7 @@ export class SocketCommon {
                     this.server = socketClass.listen(server, socketOptions);
                 } else if (typeof socketClass.constructor === 'function') {
                     // iobroker socket
-                    this.server = new socketClass(server);
+                    this.server = new socketClass(server as Server);
                 } else {
                     // socket.io 4.x
                     // @ts-expect-error socket.io v4 could be created without new
@@ -426,7 +426,7 @@ export class SocketCommon {
             }
 
             if (this.settings.auth && this.server) {
-                this.__initAuthentication(authOptions);
+                this.__initAuthentication(authOptions!);
             }
 
             // Enable cross-domain access

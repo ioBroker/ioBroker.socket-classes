@@ -103,9 +103,9 @@ export class SocketAdmin extends SocketCommon {
     }
 
     start(
-        server: Server,
-        socketClass: typeof SocketIO,
-        authOptions: {
+        server: Server | WebSocketClient,
+        socketClass?: typeof SocketIO,
+        authOptions?: {
             store: Store;
             secret?: string;
             oauth2Only?: boolean;
