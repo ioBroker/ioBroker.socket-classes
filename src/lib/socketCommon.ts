@@ -52,7 +52,7 @@ export interface SocketSettings {
     noBasicAuth?: boolean;
 
     // For authentication
-    secret: string;
+    secret?: string;
 
     // socket.io attributes
     compatibilityV2?: boolean;

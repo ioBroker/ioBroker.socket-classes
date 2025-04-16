@@ -47,7 +47,7 @@ export interface SocketSettings {
     extensions?: (socket: WebSocketClient) => void;
     port?: number;
     noBasicAuth?: boolean;
-    secret: string;
+    secret?: string;
     compatibilityV2?: boolean;
     forceWebSockets?: boolean;
     crossDomain?: boolean;

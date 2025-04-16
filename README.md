@@ -1018,6 +1018,10 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+
+* (@GermanBluefox) Make secret optional for cloud usage
+
 ### 2.2.11 (2025-04-15)
 
 * (@GermanBluefox) Make objects optional for `SocketAdmin`
