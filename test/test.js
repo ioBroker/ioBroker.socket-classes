@@ -6,7 +6,7 @@ describe('Implement tests', () => {
         settings.crossDomain = true;
         settings.ttl = 3600;
 
-        const server = new SocketCommandsAdmin({ config: settings });
+        const server = new SocketCommandsAdmin({ config: settings }, null, { language: 'en' });
 
         server.destroy();
 
