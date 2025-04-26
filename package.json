@@ -68,8 +68,5 @@
       "name": "bluefox",
       "email": "dogafox@gmail.com"
     }
-  ],
-  "overrides": {
-    "@iobroker/adapter-core": "^3.2.1"
-  }
+  ]
 }
