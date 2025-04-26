@@ -71,9 +71,19 @@ class SocketCommands {
     states;
     constructor(adapter, updateSession, context) {
         this.adapter = adapter;
-        this.#updateSession = updateSession;
-        this.context = context;
-        this.#updateSession ||= () => true;
+        this.#updateSession = updateSession || (() => true);
+        this.context = context || {
+            language: 'en',
+            ratings: null,
+            ratingTimeout: null,
+        };
+        if (!context?.language) {
+            void adapter.getForeignObjectAsync('system.config').then(obj => {
+                if (obj?.common?.language) {
+                    this.context.language = obj.common.language;
+                }
+            });
+        }
         this._sendToHost = null;
         this.#initCommands();
     }

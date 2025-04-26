@@ -179,8 +179,8 @@ export class SocketCommandsAdmin extends SocketCommands {
 
     constructor(
         adapter: ioBroker.Adapter,
-        updateSession: (socket: WebSocketClient) => boolean,
-        context: SocketDataContext,
+        updateSession?: (socket: WebSocketClient) => boolean,
+        context?: SocketDataContext,
         objects?: Record<string, ioBroker.Object>,
         states?: Record<string, ioBroker.State>,
     ) {

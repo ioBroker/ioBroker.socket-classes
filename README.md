@@ -1018,6 +1018,10 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+
+* (@GermanBluefox) Typing improvement
+
 ### 2.2.12 (2025-04-16)
 
 * (@GermanBluefox) Make secret optional for cloud usage

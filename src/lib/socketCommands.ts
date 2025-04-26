@@ -144,15 +144,25 @@ export class SocketCommands {
 
     constructor(
         adapter: ioBroker.Adapter,
-        updateSession: (socket: WebSocketClient) => boolean,
-        context: SocketDataContext,
+        updateSession?: (socket: WebSocketClient) => boolean,
+        context?: SocketDataContext,
     ) {
         this.adapter = adapter;
 
-        this.#updateSession = updateSession;
-        this.context = context;
+        this.#updateSession = updateSession || (() => true);
+        this.context = context || {
+            language: 'en',
+            ratings: null,
+            ratingTimeout: null,
+        };
 
-        this.#updateSession ||= () => true;
+        if (!context?.language) {
+            void adapter.getForeignObjectAsync('system.config').then(obj => {
+                if (obj?.common?.language) {
+                    this.context.language = obj.common.language;
+                }
+            });
+        }
 
         this._sendToHost = null;
 

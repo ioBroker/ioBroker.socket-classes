@@ -108,7 +108,7 @@ function extractFunctionDescription(fileContent, command) {
     const params = types.map(t => {
         const description = paramsDescriptions.find(it => it.name === t.name.replace('?', ''))?.description;
         if (!description) {
-            debugger
+            debugger;
         }
 
         return {
@@ -142,7 +142,7 @@ function replaceReadme(key, text) {
 }
 
 function getCommands(Commands, content, index) {
-    const commands = new Commands({ config: { thresholdValue: 1 } });
+    const commands = new Commands({ config: { thresholdValue: 1 } }, undefined, { language: 'en' });
     const texts = [];
     const links = [];
 
@@ -181,8 +181,7 @@ function getCommands(Commands, content, index) {
 }
 
 if (process.argv.includes('--webList')) {
-    const content =
-        readFileSync('src/lib/socketCommands.ts').toString('utf-8');
+    const content = readFileSync('src/lib/socketCommands.ts').toString('utf-8');
     const { SocketCommands } = require('./dist/lib/socketCommands');
     const texts = getCommands(SocketCommands, content, '_w');
 

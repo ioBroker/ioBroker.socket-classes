@@ -42,7 +42,7 @@ export declare class SocketCommands {
         result?: any;
     }) => void) => void) | null;
     states: Record<string, ioBroker.State> | undefined;
-    constructor(adapter: ioBroker.Adapter, updateSession: (socket: WebSocketClient) => boolean, context: SocketDataContext);
+    constructor(adapter: ioBroker.Adapter, updateSession?: (socket: WebSocketClient) => boolean, context?: SocketDataContext);
     /**
      * Convert errors into strings and then call cb
      *
