@@ -156,7 +156,7 @@ export class SocketCommands {
             ratingTimeout: null,
         };
 
-        if (!context?.language) {
+        if (!context?.language && adapter?.getForeignObjectAsync) {
             void adapter.getForeignObjectAsync('system.config').then(obj => {
                 if (obj?.common?.language) {
                     this.context.language = obj.common.language;
