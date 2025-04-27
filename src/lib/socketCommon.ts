@@ -7,12 +7,13 @@
  */
 import type { Server as HttpServer } from 'node:http';
 import type { Server as HttpsServer } from 'node:https';
+import type { AddressInfo } from 'node:net';
 import type { SocketIO, Socket as WebSocketClient, SocketACL } from '@iobroker/ws-server';
+import type { CommandsPermissionsObject } from '@iobroker/types/build/types';
+
 import { SocketCommands, type SocketDataContext } from './socketCommands';
 import type { Store } from './passportSocket';
 import type { InternalStorageToken, PermissionCommands, SocketSubscribeTypes } from '../types';
-import type { AddressInfo } from 'node:net';
-import type { CommandsPermissionsObject } from '@iobroker/types/build/types';
 import type { SocketCommandsAdmin } from './socketCommandsAdmin';
 
 export interface WhiteListSettings {
