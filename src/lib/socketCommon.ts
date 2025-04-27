@@ -113,7 +113,7 @@ export class SocketCommon {
         this.adapter = adapter;
         this.noDisconnect = this.__getIsNoDisconnect();
 
-        this.settings.defaultUser = this.settings.defaultUser || 'system.user.admin';
+        this.settings.defaultUser ||= 'system.user.admin';
         if (!this.settings.defaultUser.match(/^system\.user\./)) {
             this.settings.defaultUser = `system.user.${this.settings.defaultUser}`;
         }
@@ -485,13 +485,13 @@ export class SocketCommon {
         this.allNamespaces?.on('error', (error: Error, details: unknown): void => {
             // ignore "failed connection" as it already shown
             if (!error?.message?.includes('failed connection')) {
-                if (error && error.message && error.message.includes('authentication failed')) {
+                if (error?.message?.includes('authentication failed')) {
                     this.adapter.log.debug(
-                        `Error: ${(error && error.message) || JSON.stringify(error)}${details ? ` - ${!details || typeof details === 'object' ? JSON.stringify(details) : (details as string).toString()}` : ''}`,
+                        `Error: ${error?.message || JSON.stringify(error)}${details ? ` - ${!details || typeof details === 'object' ? JSON.stringify(details) : (details as string).toString()}` : ''}`,
                     );
                 } else {
                     this.adapter.log.error(
-                        `Error: ${(error && error.message) || JSON.stringify(error)}${details ? ` - ${!details || typeof details === 'object' ? JSON.stringify(details) : (details as string).toString()}` : ''}`,
+                        `Error: ${error?.message || JSON.stringify(error)}${details ? ` - ${!details || typeof details === 'object' ? JSON.stringify(details) : (details as string).toString()}` : ''}`,
                     );
                 }
             }

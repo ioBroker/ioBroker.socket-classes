@@ -5,6 +5,7 @@ import { existsSync, readdirSync, lstatSync } from 'node:fs';
 
 import type { tools } from '@iobroker/js-controller-common-db';
 import { type Socket as WebSocketClient } from '@iobroker/ws-server';
+
 import { type Ratings, SocketCommands, type SocketDataContext } from './socketCommands';
 import type { SocketCallback } from '../types';
 
@@ -258,7 +259,9 @@ export class SocketCommandsAdmin extends SocketCommands {
 
             // auto update only in admin
             if (this.adapter.name === 'admin') {
-                this.context.ratingTimeout && clearTimeout(this.context.ratingTimeout);
+                if (this.context.ratingTimeout) {
+                    clearTimeout(this.context.ratingTimeout);
+                }
                 this.context.ratingTimeout = setTimeout(() => {
                     this.context.ratingTimeout = null;
                     void this.updateRatings(uuid).then(() => this.adapter.log.info('Adapter rating updated'));
@@ -364,7 +367,9 @@ export class SocketCommandsAdmin extends SocketCommands {
             });
         } catch (error) {
             this.adapter.log.error(`[sendToHost] ERROR: ${error.toString()}`);
-            typeof callback === 'function' && setImmediate(() => callback({ error }));
+            if (typeof callback === 'function') {
+                setImmediate(() => callback({ error }));
+            }
         }
     };
 
@@ -391,9 +396,7 @@ export class SocketCommandsAdmin extends SocketCommands {
             return response.data;
         } catch (error) {
             if (error.response) {
-                throw new Error(
-                    (error.response.data && error.response.data.error) || error.response.data || error.response.status,
-                );
+                throw new Error(error.response.data?.error || error.response.data || error.response.status);
             }
 
             if (error.request) {
@@ -492,7 +495,7 @@ export class SocketCommandsAdmin extends SocketCommands {
             this.adapter.log.info('Subscribe to all states again');
 
             setTimeout(async () => {
-                this.onThresholdChanged && this.onThresholdChanged(false);
+                this.onThresholdChanged?.(false);
                 try {
                     await this.adapter.unsubscribeForeignStatesAsync('system.adapter.*');
                 } catch (e) {
@@ -520,7 +523,7 @@ export class SocketCommandsAdmin extends SocketCommands {
                 );
                 this.eventsThreshold.timeActivated = Date.now();
 
-                this.onThresholdChanged && this.onThresholdChanged(true);
+                this.onThresholdChanged?.(true);
 
                 for (const pattern of Object.keys(this.subscribes.stateChange)) {
                     try {
@@ -1022,9 +1025,13 @@ export class SocketCommandsAdmin extends SocketCommands {
                     this.unsubscribe(socket, 'log', 'dummy');
                 }
 
-                this.adapter.log.level === 'debug' && this._showSubscribes(socket, 'log');
+                if (this.adapter.log.level === 'debug') {
+                    this._showSubscribes(socket, 'log');
+                }
 
-                typeof callback === 'function' && setImmediate(callback, null);
+                if (typeof callback === 'function') {
+                    setImmediate(callback, null);
+                }
             }
         };
 
@@ -1255,7 +1262,7 @@ export class SocketCommandsAdmin extends SocketCommands {
             } else {
                 try {
                     void this.adapter.getForeignObject('system.config', { user: socket._acl?.user }, (error, obj) => {
-                        if (obj && obj.native && obj.native.secret) {
+                        if (obj?.native?.secret) {
                             this.secret = obj.native.secret;
                             SocketCommands._fixCallback(
                                 callback,
@@ -1291,7 +1298,7 @@ export class SocketCommandsAdmin extends SocketCommands {
                 SocketCommands._fixCallback(callback, null, this.adapter.encrypt(this.secret, plainText));
             } else {
                 void this.adapter.getForeignObject('system.config', { user: socket._acl?.user }, (error, obj) => {
-                    if (obj && obj.native && obj.native.secret) {
+                    if (obj?.native?.secret) {
                         this.secret = obj.native.secret;
                         try {
                             const encrypted = this.adapter.encrypt(this.secret, plainText);
@@ -1667,9 +1674,7 @@ export class SocketCommandsAdmin extends SocketCommands {
         ): void => {
             if (this._checkPermissions(socket, 'getObject', callback)) {
                 void this.adapter.getForeignObject('system.repositories', { user: socket._acl?.user }, (error, obj) => {
-                    obj &&
-                        obj.native &&
-                        obj.native.repositories &&
+                    if (obj?.native?.repositories) {
                         Object.keys(obj.native.repositories).forEach(name => {
                             if (obj.native.repositories[name].json) {
                                 // limit information to _repoInfo
@@ -1678,6 +1683,7 @@ export class SocketCommandsAdmin extends SocketCommands {
                                 };
                             }
                         });
+                    }
                     SocketCommands._fixCallback(callback, error, obj);
                 });
             }
@@ -2078,11 +2084,15 @@ export class SocketCommandsAdmin extends SocketCommands {
     }
 
     destroy(): void {
-        this.thresholdInterval && clearInterval(this.thresholdInterval);
-        this.thresholdInterval = null;
+        if (this.thresholdInterval) {
+            clearInterval(this.thresholdInterval);
+            this.thresholdInterval = null;
+        }
 
-        this.cacheGB && clearInterval(this.cacheGB);
-        this.cacheGB = null;
+        if (this.cacheGB) {
+            clearInterval(this.cacheGB);
+            this.cacheGB = null;
+        }
 
         super.destroy();
     }

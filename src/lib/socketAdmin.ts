@@ -119,7 +119,7 @@ export class SocketAdmin extends SocketCommon {
     }
 
     onThresholdChanged(enabled: boolean): void {
-        this.server && this.server.sockets && this.server.sockets.emit('eventsThreshold', enabled);
+        this.server?.sockets?.emit('eventsThreshold', enabled);
     }
 
     stateChange(id: string, state: ioBroker.State | null | undefined): void {
