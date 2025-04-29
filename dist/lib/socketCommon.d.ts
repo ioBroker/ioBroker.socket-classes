@@ -7,11 +7,11 @@
  */
 import type { Server as HttpServer } from 'node:http';
 import type { Server as HttpsServer } from 'node:https';
+import type { AddressInfo } from 'node:net';
 import type { SocketIO, Socket as WebSocketClient, SocketACL } from '@iobroker/ws-server';
 import { SocketCommands, type SocketDataContext } from './socketCommands';
 import type { Store } from './passportSocket';
 import type { PermissionCommands, SocketSubscribeTypes } from '../types';
-import type { AddressInfo } from 'node:net';
 import type { SocketCommandsAdmin } from './socketCommandsAdmin';
 export interface WhiteListSettings {
     /** Like "admin" or "user". No "system.user." prefix */

@@ -100,7 +100,9 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
             }
             // auto update only in admin
             if (this.adapter.name === 'admin') {
-                this.context.ratingTimeout && clearTimeout(this.context.ratingTimeout);
+                if (this.context.ratingTimeout) {
+                    clearTimeout(this.context.ratingTimeout);
+                }
                 this.context.ratingTimeout = setTimeout(() => {
                     this.context.ratingTimeout = null;
                     void this.updateRatings(uuid).then(() => this.adapter.log.info('Adapter rating updated'));
@@ -190,7 +192,9 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
         }
         catch (error) {
             this.adapter.log.error(`[sendToHost] ERROR: ${error.toString()}`);
-            typeof callback === 'function' && setImmediate(() => callback({ error }));
+            if (typeof callback === 'function') {
+                setImmediate(() => callback({ error }));
+            }
         }
     };
     // remove this function when js.controller 4.x are mainstream
@@ -212,7 +216,7 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
         }
         catch (error) {
             if (error.response) {
-                throw new Error((error.response.data && error.response.data.error) || error.response.data || error.response.status);
+                throw new Error(error.response.data?.error || error.response.data || error.response.status);
             }
             if (error.request) {
                 throw new Error('no response');
@@ -305,7 +309,7 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
             this.eventsThreshold.timeActivated = 0;
             this.adapter.log.info('Subscribe to all states again');
             setTimeout(async () => {
-                this.onThresholdChanged && this.onThresholdChanged(false);
+                this.onThresholdChanged?.(false);
                 try {
                     await this.adapter.unsubscribeForeignStatesAsync('system.adapter.*');
                 }
@@ -329,7 +333,7 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
             setTimeout(async () => {
                 this.adapter.log.info(`Unsubscribe from all states, except system's, because over ${this.eventsThreshold.repeatSeconds} seconds the number of events is over ${this.eventsThreshold.value} (in last second ${this.eventsThreshold.count})`);
                 this.eventsThreshold.timeActivated = Date.now();
-                this.onThresholdChanged && this.onThresholdChanged(true);
+                this.onThresholdChanged?.(true);
                 for (const pattern of Object.keys(this.subscribes.stateChange)) {
                     try {
                         await this.adapter.unsubscribeForeignStatesAsync(pattern);
@@ -750,8 +754,12 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
                 else {
                     this.unsubscribe(socket, 'log', 'dummy');
                 }
-                this.adapter.log.level === 'debug' && this._showSubscribes(socket, 'log');
-                typeof callback === 'function' && setImmediate(callback, null);
+                if (this.adapter.log.level === 'debug') {
+                    this._showSubscribes(socket, 'log');
+                }
+                if (typeof callback === 'function') {
+                    setImmediate(callback, null);
+                }
             }
         };
         /**
@@ -945,7 +953,7 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
             else {
                 try {
                     void this.adapter.getForeignObject('system.config', { user: socket._acl?.user }, (error, obj) => {
-                        if (obj && obj.native && obj.native.secret) {
+                        if (obj?.native?.secret) {
                             this.secret = obj.native.secret;
                             socketCommands_1.SocketCommands._fixCallback(callback, null, this.adapter.decrypt(this.secret, encryptedText));
                         }
@@ -975,7 +983,7 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
             }
             else {
                 void this.adapter.getForeignObject('system.config', { user: socket._acl?.user }, (error, obj) => {
-                    if (obj && obj.native && obj.native.secret) {
+                    if (obj?.native?.secret) {
                         this.secret = obj.native.secret;
                         try {
                             const encrypted = this.adapter.encrypt(this.secret, plainText);
@@ -1256,9 +1264,7 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
         this.commands.getCompactSystemRepositories = (socket, callback) => {
             if (this._checkPermissions(socket, 'getObject', callback)) {
                 void this.adapter.getForeignObject('system.repositories', { user: socket._acl?.user }, (error, obj) => {
-                    obj &&
-                        obj.native &&
-                        obj.native.repositories &&
+                    if (obj?.native?.repositories) {
                         Object.keys(obj.native.repositories).forEach(name => {
                             if (obj.native.repositories[name].json) {
                                 // limit information to _repoInfo
@@ -1267,6 +1273,7 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
                                 };
                             }
                         });
+                    }
                     socketCommands_1.SocketCommands._fixCallback(callback, error, obj);
                 });
             }
@@ -1579,10 +1586,14 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
         }
     }
     destroy() {
-        this.thresholdInterval && clearInterval(this.thresholdInterval);
-        this.thresholdInterval = null;
-        this.cacheGB && clearInterval(this.cacheGB);
-        this.cacheGB = null;
+        if (this.thresholdInterval) {
+            clearInterval(this.thresholdInterval);
+            this.thresholdInterval = null;
+        }
+        if (this.cacheGB) {
+            clearInterval(this.cacheGB);
+            this.cacheGB = null;
+        }
         super.destroy();
     }
 }

@@ -142,7 +142,7 @@ class SocketCommands {
                 name = name.substring(0, name.length - 1);
             }
             const files = await this.adapter.readDirAsync(adapter, name, options);
-            if (files && files.length) {
+            if (files?.length) {
                 for (let f = 0; f < files.length; f++) {
                     await this.#unlink(adapter, `${name}/${files[f].file}`);
                 }
@@ -311,7 +311,7 @@ class SocketCommands {
             this.adapter.log.warn('Empty pattern on subscribe!');
             return;
         }
-        this.subscribes[type] = this.subscribes[type] || {};
+        this.subscribes[type] ||= {};
         let p;
         let key;
         pattern = pattern.toString();
@@ -335,8 +335,9 @@ class SocketCommands {
         }
         let s;
         if (socket) {
-            socket.subscribe = socket.subscribe || {};
-            s = socket.subscribe[type] = socket.subscribe[type] || [];
+            socket.subscribe ||= {};
+            socket.subscribe[type] ||= [];
+            s = socket.subscribe[type];
             if (s.find(item => item.pattern === key)) {
                 return;
             }
@@ -390,7 +391,7 @@ class SocketCommands {
         }
         const options = socket?._acl?.user ? { user: socket._acl.user } : undefined;
         if (socket && typeof socket === 'object') {
-            if (!socket.subscribe || !socket.subscribe[type]) {
+            if (!socket.subscribe?.[type]) {
                 return;
             }
             for (let i = socket.subscribe[type].length - 1; i >= 0; i--) {
@@ -488,7 +489,7 @@ class SocketCommands {
         }
     }
     subscribeSocket(socket, type) {
-        if (!socket || !socket.subscribe) {
+        if (!socket?.subscribe) {
             return;
         }
         if (!type) {
@@ -589,8 +590,12 @@ class SocketCommands {
             else {
                 this.subscribe(socket, 'stateChange', pattern);
             }
-            this.adapter.log.level === 'debug' && this._showSubscribes(socket, 'stateChange');
-            typeof callback === 'function' && setImmediate(callback, null);
+            if (this.adapter.log.level === 'debug') {
+                this._showSubscribes(socket, 'stateChange');
+            }
+            if (typeof callback === 'function') {
+                setImmediate(callback, null);
+            }
         }
     }
     #unsubscribeStates(socket, pattern, callback) {
@@ -603,8 +608,12 @@ class SocketCommands {
             else {
                 this.unsubscribe(socket, 'stateChange', pattern);
             }
-            this.adapter.log.level === 'debug' && this._showSubscribes(socket, 'stateChange');
-            typeof callback === 'function' && setImmediate(callback, null);
+            if (this.adapter.log.level === 'debug') {
+                this._showSubscribes(socket, 'stateChange');
+            }
+            if (typeof callback === 'function') {
+                setImmediate(callback, null);
+            }
         }
     }
     #subscribeFiles(socket, id, pattern, callback) {
@@ -617,8 +626,12 @@ class SocketCommands {
             else {
                 this.subscribe(socket, 'fileChange', id, pattern);
             }
-            this.adapter.log.level === 'debug' && this._showSubscribes(socket, 'fileChange');
-            typeof callback === 'function' && setImmediate(callback, null);
+            if (this.adapter.log.level === 'debug') {
+                this._showSubscribes(socket, 'fileChange');
+            }
+            if (typeof callback === 'function') {
+                setImmediate(callback, null);
+            }
         }
     }
     _unsubscribeFiles(socket, id, pattern, callback) {
@@ -631,8 +644,12 @@ class SocketCommands {
             else {
                 this.unsubscribe(socket, 'fileChange', id, pattern);
             }
-            this.adapter.log.level === 'debug' && this._showSubscribes(socket, 'fileChange');
-            typeof callback === 'function' && setImmediate(callback, null);
+            if (this.adapter.log.level === 'debug') {
+                this._showSubscribes(socket, 'fileChange');
+            }
+            if (typeof callback === 'function') {
+                setImmediate(callback, null);
+            }
         }
     }
     addCommandHandler(command, handler) {
@@ -829,10 +846,10 @@ class SocketCommands {
                         instance: options,
                     };
                 }
-                options = options || {};
+                options ||= {};
                 // @ts-expect-error fixed in js-controller
                 options.user = socket._acl?.user;
-                options.aggregate = options.aggregate || 'none';
+                options.aggregate ||= 'none';
                 try {
                     this.adapter.getHistory(id, options, (error, ...args) => SocketCommands._fixCallback(callback, error, ...args));
                 }
@@ -857,7 +874,7 @@ class SocketCommands {
                 }
                 else {
                     void import('axios').then(({ default: axios }) => {
-                        axiosGet = axiosGet || axios.get;
+                        axiosGet ||= axios.get;
                         this.#httpGet(url, callback);
                     });
                 }
@@ -879,7 +896,9 @@ class SocketCommands {
                     this.adapter.sendTo(adapterInstance, command, message, res => typeof callback === 'function' && setImmediate(() => callback(res)));
                 }
                 catch (error) {
-                    typeof callback === 'function' && setImmediate(() => callback({ error }));
+                    if (typeof callback === 'function') {
+                        setImmediate(() => callback({ error }));
+                    }
                 }
             }
         };
@@ -918,9 +937,10 @@ class SocketCommands {
                     }
                     catch (error) {
                         this.adapter.log.error(`Cannot convert data: ${error.toString()}`);
-                        return callback && callback({ error: `Cannot convert data: ${error.toString()}` });
+                        callback?.({ error: `Cannot convert data: ${error.toString()}` });
+                        return;
                     }
-                    zipFiles = zipFiles || adapter_core_1.commonTools.zipFiles;
+                    zipFiles ||= adapter_core_1.commonTools.zipFiles;
                     zipFiles
                         .writeDirAsZip(this.adapter, // normally we have to pass here the internal "objects" object, but as
                     // only writeFile is used, and it has the same name, we can pass here the
@@ -2045,8 +2065,8 @@ class SocketCommands {
             }
             const sid = socket.id;
             // GUI subscribes for messages from targetInstance
-            this.#clientSubscribes[sid] = this.#clientSubscribes[sid] || {};
-            this.#clientSubscribes[sid][targetInstance] = this.#clientSubscribes[sid][targetInstance] || [];
+            this.#clientSubscribes[sid] ||= {};
+            this.#clientSubscribes[sid][targetInstance] ||= [];
             if (!this.#clientSubscribes[sid][targetInstance].includes(messageType)) {
                 this.#clientSubscribes[sid][targetInstance].push(messageType);
             }
@@ -2069,7 +2089,7 @@ class SocketCommands {
                 targetInstance = `system.adapter.${targetInstance}`;
             }
             // GUI unsubscribes for messages from targetInstance
-            if (this.#clientSubscribes[sid] && this.#clientSubscribes[sid][targetInstance]) {
+            if (this.#clientSubscribes[sid]?.[targetInstance]) {
                 const pos = this.#clientSubscribes[sid][targetInstance].indexOf(messageType);
                 if (pos !== -1) {
                     this.#clientSubscribes[sid][targetInstance].splice(pos, 1);

@@ -72,7 +72,7 @@ class SocketAdmin extends socketCommon_1.SocketCommon {
         this.adminCommands.start(thresholdEnabled => this.onThresholdChanged(thresholdEnabled));
     }
     onThresholdChanged(enabled) {
-        this.server && this.server.sockets && this.server.sockets.emit('eventsThreshold', enabled);
+        this.server?.sockets?.emit('eventsThreshold', enabled);
     }
     stateChange(id, state) {
         this.adminCommands.stateChange(id, state);

@@ -26,7 +26,7 @@ class SocketCommon {
         this.settings = settings || {};
         this.adapter = adapter;
         this.noDisconnect = this.__getIsNoDisconnect();
-        this.settings.defaultUser = this.settings.defaultUser || 'system.user.admin';
+        this.settings.defaultUser ||= 'system.user.admin';
         if (!this.settings.defaultUser.match(/^system\.user\./)) {
             this.settings.defaultUser = `system.user.${this.settings.defaultUser}`;
         }
@@ -201,8 +201,13 @@ class SocketCommon {
                     });
                 }
             }
+            if (socket._sessionExpiresAt < now) {
+                this.adapter.log.warn('REAUTHENTICATE!');
+                socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
+                return false;
+            }
             // Check socket expiration time
-            return socket._sessionExpiresAt > now;
+            return true;
         }
         // Legacy authentication method
         const sessionId = socket._sessionID;
@@ -325,11 +330,11 @@ class SocketCommon {
         this.allNamespaces?.on('error', (error, details) => {
             // ignore "failed connection" as it already shown
             if (!error?.message?.includes('failed connection')) {
-                if (error && error.message && error.message.includes('authentication failed')) {
-                    this.adapter.log.debug(`Error: ${(error && error.message) || JSON.stringify(error)}${details ? ` - ${!details || typeof details === 'object' ? JSON.stringify(details) : details.toString()}` : ''}`);
+                if (error?.message?.includes('authentication failed')) {
+                    this.adapter.log.debug(`Error: ${error?.message || JSON.stringify(error)}${details ? ` - ${!details || typeof details === 'object' ? JSON.stringify(details) : details.toString()}` : ''}`);
                 }
                 else {
-                    this.adapter.log.error(`Error: ${(error && error.message) || JSON.stringify(error)}${details ? ` - ${!details || typeof details === 'object' ? JSON.stringify(details) : details.toString()}` : ''}`);
+                    this.adapter.log.error(`Error: ${error?.message || JSON.stringify(error)}${details ? ` - ${!details || typeof details === 'object' ? JSON.stringify(details) : details.toString()}` : ''}`);
                 }
             }
         });
