@@ -468,7 +468,7 @@ export class SocketCommands {
         let s;
         if (socket) {
             socket.subscribe ||= {};
-            socket.subscribe[type] ||= []
+            socket.subscribe[type] ||= [];
             s = socket.subscribe[type];
 
             if (s.find(item => item.pattern === key)) {
