@@ -317,8 +317,14 @@ export class SocketCommon {
                 }
             }
 
+            if (socket._sessionExpiresAt < now) {
+                this.adapter.log.warn('REAUTHENTICATE!');
+                socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
+                return false;
+            }
+
             // Check socket expiration time
-            return socket._sessionExpiresAt > now;
+            return true;
         }
 
         // Legacy authentication method

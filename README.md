@@ -1018,6 +1018,10 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+
+* (@GermanBluefox) Send `reauthenticate` command if token expired
+
 ### 2.2.16 (2025-04-27)
 
 * (@GermanBluefox) Typing improvement
