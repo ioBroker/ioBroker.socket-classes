@@ -51,6 +51,8 @@ export interface SocketSettings {
     compatibilityV2?: boolean;
     forceWebSockets?: boolean;
     crossDomain?: boolean;
+    /** If true, the state 'info.connected' will be filled */
+    noInfoConnected?: boolean;
 }
 export interface SocketIoOptions {
     transports?: 'websocket'[];

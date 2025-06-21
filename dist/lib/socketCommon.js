@@ -630,7 +630,7 @@ class SocketCommon {
     }
     #updateConnectedInfo() {
         // only in server mode
-        if (this.serverMode) {
+        if (this.serverMode && !this.settings.noInfoConnected) {
             if (this.infoTimeout) {
                 clearTimeout(this.infoTimeout);
                 this.infoTimeout = null;
