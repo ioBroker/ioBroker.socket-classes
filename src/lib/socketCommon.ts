@@ -59,6 +59,9 @@ export interface SocketSettings {
     compatibilityV2?: boolean;
     forceWebSockets?: boolean;
     crossDomain?: boolean;
+
+    /** If true, the state 'info.connected' will be filled */
+    noInfoConnected?: boolean;
 }
 
 export interface SocketIoOptions {
@@ -840,7 +843,7 @@ export class SocketCommon {
 
     #updateConnectedInfo(): void {
         // only in server mode
-        if (this.serverMode) {
+        if (this.serverMode && !this.settings.noInfoConnected) {
             if (this.infoTimeout) {
                 clearTimeout(this.infoTimeout);
                 this.infoTimeout = null;
