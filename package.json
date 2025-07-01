@@ -38,7 +38,7 @@
     "@types/passport": "^1.0.17",
     "chai": "^4.5.0",
     "iobroker.js-controller": "^7.0.7",
-    "mocha": "^11.7.0",
+    "mocha": "^11.7.1",
     "typescript": "~5.8.3"
   },
   "bugs": {
