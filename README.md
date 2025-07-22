@@ -1018,6 +1018,10 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+
+* (@GermanBluefox) Fixed change of the language in the admin
+
 ### 2.2.19 (2025-06-21)
 
 * (@GermanBluefox) Added an option to disable filling of `info.connected`

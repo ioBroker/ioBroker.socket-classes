@@ -156,7 +156,8 @@ export class SocketCommands {
             ratingTimeout: null,
         };
 
-        if (!context?.language && adapter?.getForeignObjectAsync) {
+        // Do not initialize the context.language by admin, as admin could change the language
+        if (adapter.name !== 'admin' && !context?.language && adapter?.getForeignObjectAsync) {
             void adapter.getForeignObjectAsync('system.config').then(obj => {
                 if (obj?.common?.language) {
                     this.context.language = obj.common.language;
