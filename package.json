@@ -36,7 +36,7 @@
     "@types/cookie-parser": "^1.4.9",
     "@types/node": "^24.0.15",
     "@types/passport": "^1.0.17",
-    "chai": "^4.5.0",
+    "chai": "^5.2.1",
     "iobroker.js-controller": "^7.0.7",
     "mocha": "^11.7.1",
     "typescript": "~5.8.3"
