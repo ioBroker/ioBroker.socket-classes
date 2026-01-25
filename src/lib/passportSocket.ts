@@ -165,7 +165,7 @@ export function authorize(auth: {
         }
 
         extendedReq.cookie = parseCookie(auth, extendedReq.headers.cookie || '');
-        if (extendedReq.cookie) {
+        if (extendedReq.cookie && extendedReq.headers.cookie) {
             extendedReq.sessionID = extendedReq.cookie['connect.sid'] || '';
 
             const accessToken = extendedReq.headers.cookie.split(';').find(c => c.trim().startsWith('access_token='));
