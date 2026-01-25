@@ -106,6 +106,7 @@ function authorize(auth) {
                 extendedReq.user = { logged_in: true, user: tokenData.user };
                 auth.success(extendedReq, accept);
             });
+            return;
         }
         // Basic authentication
         if (auth.checkUser && !auth.noBasicAuth && extendedReq.headers.authentication?.startsWith('Basic ')) {

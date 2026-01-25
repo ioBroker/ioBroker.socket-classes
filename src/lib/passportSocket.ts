@@ -225,6 +225,7 @@ export function authorize(auth: {
                     auth.success(extendedReq, accept);
                 },
             );
+            return;
         }
 
         // Basic authentication
