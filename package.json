@@ -43,10 +43,10 @@
     "bugs": {
         "url": "https://github.com/ioBroker/ioBroker.socket-classes/issues"
     },
-    "main": "dist/index.js",
+    "main": "build/index.js",
     "files": [
         "LICENSE",
-        "dist/"
+        "build/"
     ],
     "scripts": {
         "lint": "eslint -c eslint.config.mjs",

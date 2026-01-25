@@ -182,7 +182,7 @@ function getCommands(Commands, content, index) {
 
 if (process.argv.includes('--webList')) {
     const content = readFileSync('src/lib/socketCommands.ts').toString('utf-8');
-    const { SocketCommands } = require('./dist/lib/socketCommands');
+    const { SocketCommands } = require('./build/lib/socketCommands');
     const texts = getCommands(SocketCommands, content, '_w');
 
     replaceReadme('WEB_METHODS', texts.join('\n'));
@@ -190,25 +190,25 @@ if (process.argv.includes('--webList')) {
     const content =
         readFileSync('src/lib/socketCommands.ts').toString('utf-8') +
         readFileSync('src/lib/socketCommandsAdmin.ts').toString('utf-8');
-    const { SocketCommandsAdmin } = require('./dist/lib/socketCommandsAdmin');
+    const { SocketCommandsAdmin } = require('./build/lib/socketCommandsAdmin');
     const texts = getCommands(SocketCommandsAdmin, content, '_a');
 
     replaceReadme('ADMIN_METHODS', texts.join('\n'));
 } else if (process.argv.includes('--prebuild')) {
-    if (!existsSync(`${__dirname}/dist`)) {
-        mkdirSync(`${__dirname}/dist`);
+    if (!existsSync(`${__dirname}/build`)) {
+        mkdirSync(`${__dirname}/build`);
     }
-    copyFileSync(`${__dirname}/src/types.d.ts`, `${__dirname}/dist/types.d.ts`);
+    copyFileSync(`${__dirname}/src/types.d.ts`, `${__dirname}/build/types.d.ts`);
 } else {
     const content =
         readFileSync('src/lib/socketCommands.ts').toString('utf-8') +
         readFileSync('src/lib/socketCommandsAdmin.ts').toString('utf-8');
-    const { SocketCommands } = require('./dist/lib/socketCommands');
+    const { SocketCommands } = require('./build/lib/socketCommands');
     let texts = getCommands(SocketCommands, content, '_w');
 
     replaceReadme('WEB_METHODS', texts.join('\n'));
 
-    const { SocketCommandsAdmin } = require('./dist/lib/socketCommandsAdmin');
+    const { SocketCommandsAdmin } = require('./build/lib/socketCommandsAdmin');
     texts = getCommands(SocketCommandsAdmin, content, '_a');
 
     replaceReadme('ADMIN_METHODS', texts.join('\n'));

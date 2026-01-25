@@ -1,5 +1,5 @@
 describe('Implement tests', () => {
-    const { SocketCommandsAdmin } = require('../dist/index');
+    const { SocketCommandsAdmin } = require('../build/index');
 
     it('Test', done => {
         const settings = {};
