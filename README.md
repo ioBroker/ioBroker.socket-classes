@@ -1018,8 +1018,7 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
-
-### **WORK IN PROGRESS**
+### 2.2.21 (2026-01-25)
 
 * (@Copilot) Added missing return statement for Bearer token auth
 
