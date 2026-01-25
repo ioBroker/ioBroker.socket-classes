@@ -1,2 +1,6 @@
 /node_modules
 /.idea
+/iobroker-data
+/iob
+/iobroker
+/package-lock.json
