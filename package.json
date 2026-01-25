@@ -52,6 +52,7 @@
         "lint": "eslint -c eslint.config.mjs",
         "test": "npm run test:integration",
         "test:integration": "mocha --exit",
+        "test:package": "mocha --exit",
         "build": "npm run build-backend && npm run docs",
         "build-backend": "tsc -p tsconfig.build.json && node tasks --prebuild",
         "release": "release-script",
