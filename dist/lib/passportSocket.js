@@ -56,7 +56,7 @@ function authorize(auth) {
             });
         }
         extendedReq.cookie = parseCookie(auth, extendedReq.headers.cookie || '');
-        if (extendedReq.cookie) {
+        if (extendedReq.cookie && extendedReq.headers.cookie) {
             extendedReq.sessionID = extendedReq.cookie['connect.sid'] || '';
             const accessToken = extendedReq.headers.cookie.split(';').find(c => c.trim().startsWith('access_token='));
             // Authentication with access token in cookies
@@ -106,6 +106,7 @@ function authorize(auth) {
                 extendedReq.user = { logged_in: true, user: tokenData.user };
                 auth.success(extendedReq, accept);
             });
+            return;
         }
         // Basic authentication
         if (auth.checkUser && !auth.noBasicAuth && extendedReq.headers.authentication?.startsWith('Basic ')) {
