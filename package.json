@@ -34,7 +34,7 @@
     "@iobroker/ws-server": "^4.3.9",
     "@iobroker/types": "^7.1.0",
     "@types/cookie-parser": "^1.4.10",
-    "@types/node": "^24.10.9",
+    "@types/node": "^25.3.3",
     "@types/passport": "^1.0.17",
     "iobroker.js-controller": "^7.1.0",
     "mocha": "^11.7.5",
