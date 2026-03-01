@@ -31,7 +31,7 @@
     "@alcalzone/release-script-plugin-license": "^4.0.0",
     "@iobroker/eslint-config": "^2.2.0",
     "@iobroker/js-controller-common-db": "^7.1.0",
-    "@iobroker/ws-server": "^4.3.9",
+    "@iobroker/ws-server": "^4.3.11",
     "@iobroker/types": "^7.1.0",
     "@types/cookie-parser": "^1.4.10",
     "@types/node": "^24.10.9",
