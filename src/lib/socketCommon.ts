@@ -543,6 +543,9 @@ export class SocketCommon {
                                     this.settings.whiteListSettings,
                                 );
                                 this._socketEvents(socket, address.address, cb);
+                                if (expirationTime) {
+                                    socket.emit('tokenInfo', { expiresAt: expirationTime });
+                                }
                             },
                         );
                     }
