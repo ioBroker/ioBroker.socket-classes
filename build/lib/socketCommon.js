@@ -367,6 +367,9 @@ class SocketCommon {
                         void this.adapter.calculatePermissions(user, socketCommands_1.SocketCommands.COMMANDS_PERMISSIONS, (acl) => {
                             socket._acl = SocketCommon._mergeACLs(address.address, acl, this.settings.whiteListSettings);
                             this._socketEvents(socket, address.address, cb);
+                            if (expirationTime) {
+                                socket.emit('tokenInfo', { expiresAt: expirationTime });
+                            }
                         });
                     }
                 });

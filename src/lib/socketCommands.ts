@@ -956,6 +956,7 @@ export class SocketCommands {
                             socket.conn.request.query.token = accessToken;
                         }
                         socket._sessionExpiresAt = token.aExp;
+                        socket.emit('tokenInfo', { expiresAt: token.aExp });
                         callback(null, true);
                     }
                 });
