@@ -100,7 +100,7 @@ adapter.on('message', obj => {
 });
 ```
 
-and after that client will receive messages from instance
+and after that the client will receive messages from instance
 
 ```js
 function sendImage(camera, data) {
@@ -135,6 +135,7 @@ function sendImage(camera, data) {
 * [`getAdapterName`](#getadaptername_w)
 * [`clientSubscribe`](#clientsubscribe_w)
 * [`clientUnsubscribe`](#clientunsubscribe_w)
+* [`getCompactSystemConfig`](#getcompactsystemconfig_w)
 * [`getAdapterInstances`](#getadapterinstances_w)
 * [`getObject`](#getobject_w)
 * [`getObjects`](#getobjects_w)
@@ -187,7 +188,7 @@ Write error into ioBroker log
 #### <a name="log_w"></a>`log(text, level)`
 Write log entry into ioBroker log
 * `text` *string*: log text
-* `level` *ioBroker.LogLevel*: one of `['silly', 'debug', 'info', 'warn', 'error']`. Default is 'debug'.
+* `level` *ioBroker.LogLevel*: one of `['silly', 'debug', 'info', 'warn', 'error']`. The default is 'debug'.
 
 #### <a name="checkfeaturesupported_w"></a>`checkFeatureSupported(feature, callback)`
 Check if the same feature is supported by the current js-controller
@@ -195,7 +196,7 @@ Check if the same feature is supported by the current js-controller
 * `callback` *(error: string | Error | null | undefined, isSupported?: boolean) => void) => void*: callback `(error: string | Error | null | undefined, isSupported: boolean) => void`
 
 #### <a name="gethistory_w"></a>`getHistory(id, options, callback)`
-Get history data from specific instance
+Get the history data from the specific instance
 * `id` *string*: object ID
 * `options` *ioBroker.GetHistoryOptions*: History options
 * `callback` *(error: string | Error | null | undefined, result: ioBroker.GetHistoryResult) => void) => void*: callback `(error: string | Error | null | undefined, result: ioBroker.GetHistoryResult) => void`
@@ -246,8 +247,8 @@ Get adapter name: "iobroker.ws", "iobroker.socketio", "iobroker.web", "iobroker.
 
 #### <a name="clientsubscribe_w"></a>`clientSubscribe(targetInstance, messageType, data, callback)`
 Client subscribes to specific instance's messages.
-Client informs specific instance about subscription on its messages.
-After subscription, the socket will receive "im" messages from desired instance
+Client informs a specific instance about subscription on its messages.
+After subscription, the socket will receive "im" messages from the desired instance
 The target instance MUST acknowledge the subscription and return result
 * `targetInstance` *string*: Instance name, e.g., 'cameras.0'
 * `messageType` *string*: Message type, e.g., 'startRecording/cam1'
@@ -261,9 +262,13 @@ The target instance MUST NOT acknowledge the un-subscription
 * `messageType` *string*: Message type, e.g., 'startRecording/cam1'
 * `callback` *(error: string | null | Error | undefined) => void) => void*: Callback `(error: string | null) => void`
 
+#### <a name="getcompactsystemconfig_w"></a>`getCompactSystemConfig(callback)`
+Get the system configuration in a compact form to save bandwidth.
+* `callback` *(error: string | null | Error | undefined, systemConfig?: {common: ioBroker.SystemConfigCommon; native?: {secret: string; vendor?: any}}) => void*: - Callback function `(error: string | null, systemConfig?: { common: any; native?: { secret: string } }) => void`
+
 #### <a name="getadapterinstances_w"></a>`getAdapterInstances(adapterName, callback)`
 Read all instances of the given adapter, or all instances of all adapters if adapterName is not defined
-* `adapterName` *string | undefined*: adapter name, e.g. `history`. To get all instances of all adapters just place here "".
+* `adapterName` *string | undefined*: adapter name, e.g. `history`. To get all instances of all adapters, just place here "".
 * `callback` *(error: null | undefined | Error | string, instanceList?: ioBroker.InstanceObject[]) => void) => void*: callback `(error: null | undefined | Error | string, instanceList?: ioBroker.InstanceObject[]) => void`
 
 ### Objects
@@ -273,8 +278,8 @@ Get one object.
 * `callback` *(error: Error | undefined | string | null, obj?: ioBroker.Object) => void) => void*: Callback `(error: string | null, obj?: ioBroker.Object) => void`
 
 #### <a name="getobjects_w"></a>`getObjects(list, callback)`
-Get all objects that are relevant for web: all states and enums with rooms.
-This is non-admin version of "all objects" and will be overloaded in admin
+Get all objects that are relevant for the web: all states and enums with rooms.
+This is a non-admin version of "all objects" and will be overloaded in admin
 * `list` *string[] | null*: Optional list of IDs
 * `callback` *(error: Error | undefined | string | null, objs?: Record<string, ioBroker.Object>) => void) => void*: Callback `(error: string | null, objs?: Record<string, ioBroker.Object>) => void`
 
@@ -394,7 +399,7 @@ This function is overloaded in admin (because admin accepts only base64)
 * `callback?` *(error: null | undefined | Error | string) => void*: Callback `(error: null | undefined | Error | string) => void`
 
 #### <a name="unlink_w"></a>`unlink(adapter, name, callback)`
-Delete file in ioBroker DB
+Delete a file in ioBroker DB
 * `adapter` *string*: instance name, e.g. `vis.0`
 * `name` *string*: file name, e.g. `main/vis-views.json`
 * `callback` *(error: null | undefined | Error | string) => void) => void*: Callback `(error: null | undefined | Error | string) => void`
@@ -432,7 +437,7 @@ Create a folder in ioBroker DB
 * `callback` *(error: null | undefined | Error | string) => void) => void*: Callback `(error: null | undefined | Error | string) => void`
 
 #### <a name="readdir_w"></a>`readDir(adapter, dirName, options, callback?)`
-Read content of folder in ioBroker DB
+Read the content of the folder in ioBroker DB
 * `adapter` *string*: instance name, e.g. `vis.0`
 * `dirName` *string*: folder name, e.g. `main`
 * `options` *object | ((error: null | undefined | Error | string, files: ioBroker.ReadDirResult[]) => void)*: for future use
@@ -449,7 +454,7 @@ Change a file mode in ioBroker DB
 Change file owner in ioBroker DB
 * `adapter` *string*: instance name, e.g. `vis.0`
 * `fileName` *string*: file name, e.g. `main/vis-views.json`
-* `options` *{owner: `system.user.${string}`; ownerGroup?: `system.group.${string}`}*: options `{owner: 'system.user.user', ownerGroup: 'system.group.administrator'}` or `system.user.user`. If ownerGroup is not defined, it will be taken from owner.
+* `options` *{owner: `system.user.${string}`; ownerGroup?: `system.group.${string}`}*: options `{owner: 'system.user.user', ownerGroup: 'system.group.administrator'}` or `system.user.user`. If ownerGroup is not defined, it will be taken from an owner.
 * `callback?` *(error: null | undefined | Error | string) => void*: Callback `(error: null | undefined | Error | string) => void`
 
 #### <a name="fileexists_w"></a>`fileExists(adapter, fileName, callback)`
@@ -492,6 +497,7 @@ Unsubscribe from file changes in ioBroker DB
 * [`getAdapterName`](#getadaptername_a)
 * [`clientSubscribe`](#clientsubscribe_a)
 * [`clientUnsubscribe`](#clientunsubscribe_a)
+* [`getCompactSystemConfig`](#getcompactsystemconfig_a)
 * [`getAdapterInstances`](#getadapterinstances_a)
 * [`getHostByIp`](#gethostbyip_a)
 * [`requireLog`](#requirelog_a)
@@ -509,7 +515,6 @@ Unsubscribe from file changes in ioBroker DB
 * [`getCompactInstances`](#getcompactinstances_a)
 * [`getCompactAdapters`](#getcompactadapters_a)
 * [`getCompactInstalled`](#getcompactinstalled_a)
-* [`getCompactSystemConfig`](#getcompactsystemconfig_a)
 * [`getCompactSystemRepositories`](#getcompactsystemrepositories_a)
 * [`getCompactRepository`](#getcompactrepository_a)
 * [`getCompactHosts`](#getcompacthosts_a)
@@ -574,7 +579,7 @@ Write error into ioBroker log
 #### <a name="log_a"></a>`log(text, level)`
 Write log entry into ioBroker log
 * `text` *string*: log text
-* `level` *ioBroker.LogLevel*: one of `['silly', 'debug', 'info', 'warn', 'error']`. Default is 'debug'.
+* `level` *ioBroker.LogLevel*: one of `['silly', 'debug', 'info', 'warn', 'error']`. The default is 'debug'.
 
 #### <a name="checkfeaturesupported_a"></a>`checkFeatureSupported(feature, callback)`
 Check if the same feature is supported by the current js-controller
@@ -582,7 +587,7 @@ Check if the same feature is supported by the current js-controller
 * `callback` *(error: string | Error | null | undefined, isSupported?: boolean) => void) => void*: callback `(error: string | Error | null | undefined, isSupported: boolean) => void`
 
 #### <a name="gethistory_a"></a>`getHistory(id, options, callback)`
-Get history data from specific instance
+Get the history data from the specific instance
 * `id` *string*: object ID
 * `options` *ioBroker.GetHistoryOptions*: History options
 * `callback` *(error: string | Error | null | undefined, result: ioBroker.GetHistoryResult) => void) => void*: callback `(error: string | Error | null | undefined, result: ioBroker.GetHistoryResult) => void`
@@ -633,8 +638,8 @@ Get adapter name: "iobroker.ws", "iobroker.socketio", "iobroker.web", "iobroker.
 
 #### <a name="clientsubscribe_a"></a>`clientSubscribe(targetInstance, messageType, data, callback)`
 Client subscribes to specific instance's messages.
-Client informs specific instance about subscription on its messages.
-After subscription, the socket will receive "im" messages from desired instance
+Client informs a specific instance about subscription on its messages.
+After subscription, the socket will receive "im" messages from the desired instance
 The target instance MUST acknowledge the subscription and return result
 * `targetInstance` *string*: Instance name, e.g., 'cameras.0'
 * `messageType` *string*: Message type, e.g., 'startRecording/cam1'
@@ -648,9 +653,13 @@ The target instance MUST NOT acknowledge the un-subscription
 * `messageType` *string*: Message type, e.g., 'startRecording/cam1'
 * `callback` *(error: string | null | Error | undefined) => void) => void*: Callback `(error: string | null) => void`
 
+#### <a name="getcompactsystemconfig_a"></a>`getCompactSystemConfig(callback)`
+Get the system configuration in a compact form to save bandwidth.
+* `callback` *(error: string | null | Error | undefined, systemConfig?: {common: ioBroker.SystemConfigCommon; native?: {secret: string; vendor?: any}}) => void*: - Callback function `(error: string | null, systemConfig?: { common: any; native?: { secret: string } }) => void`
+
 #### <a name="getadapterinstances_a"></a>`getAdapterInstances(adapterName, callback)`
 Read all instances of the given adapter, or all instances of all adapters if adapterName is not defined
-* `adapterName` *string | undefined*: adapter name, e.g. `history`. To get all instances of all adapters just place here "".
+* `adapterName` *string | undefined*: adapter name, e.g. `history`. To get all instances of all adapters, just place here "".
 * `callback` *(error: null | undefined | Error | string, instanceList?: ioBroker.InstanceObject[]) => void) => void*: callback `(error: null | undefined | Error | string, instanceList?: ioBroker.InstanceObject[]) => void`
 
 ### Admin
@@ -660,7 +669,7 @@ Read the host object by IP address.
 * `callback?` *(error: string | null | Error | undefined, hostObject?: ioBroker.HostObject | null) => void*: - Callback function `(ip: string, obj: ioBroker.HostObject | null) => void`
 
 #### <a name="requirelog_a"></a>`requireLog(isEnabled, callback?)`
-Activate or deactivate logging events. Events will be sent to the socket as `log` event. Adapter must have `common.logTransporter = true`.
+Activate or deactivate logging events. Events will be sent to the socket as `log` events. Adapter must have `common.logTransporter = true`.
 * `isEnabled` *boolean*: - Is logging enabled
 * `callback?` *(error: string | null | Error | undefined) => void*: - Callback function `(error: string | null) => void`
 
@@ -671,7 +680,7 @@ Get the log files from the given host.
 
 #### <a name="cmdexec_a"></a>`cmdExec(host, id, cmd, callback?)`
 Execute the shell command on host/controller.
-Following response commands are expected: `cmdStdout`, `cmdStderr`, `cmdExit`.
+The following response commands are expected: `cmdStdout`, `cmdStderr`, `cmdExit`.
 * `host` *string*: - Host name, e.g., `system.host.raspberrypi`
 * `id` *number*: - Session ID, e.g., `Date.now()`. This session ID will come in events `cmdStdout`, `cmdStderr`, `cmdExit`
 * `cmd` *string*: - Command to execute
@@ -732,13 +741,9 @@ Get all installed adapters in a compact form to save bandwidth.
 * `host` *string*: - Host name, e.g., `system.host.raspberrypi`
 * `callback` *(result?: Record<string, {version: string}>) => void) => void*: - Callback function `(error: string | null, results?: Record<string, { version: string }>) => void`
 
-#### <a name="getcompactsystemconfig_a"></a>`getCompactSystemConfig(callback)`
-Get the system configuration in a compact form to save bandwidth.
-* `callback` *(error: string | null | Error | undefined, systemConfig?: {common: ioBroker.SystemConfigCommon; native?: {secret: string; vendor?: any}}) => void*: - Callback function `(error: string | null, systemConfig?: { common: any; native?: { secret: string } }) => void`
-
 #### <a name="getcompactsystemrepositories_a"></a>`getCompactSystemRepositories(callback)`
 Get system repositories in a compact form to save bandwidth.
-* `callback` *(error: string | null | Error | undefined, systemRepositories?: CompactSystemRepository) => void) => void*: - Callback function `(error: string | null, systemRepositories?: { common: any; native?: { repositories: Record<string, { json: { _repoInfo: any } } } } }) => void`
+* `callback` *(error: string | null | Error | undefined, systemRepositories?: CompactSystemRepository) => void) => void*: - Callback function `(error: string | null, systemRepositories?: { common: any; native?: { repositories: Record<string, { json: { _repoInfo: any } } } }) => void`
 
 #### <a name="getcompactrepository_a"></a>`getCompactRepository(host, callback)`
 Get the repository in a compact form to save bandwidth.
@@ -847,8 +852,8 @@ Get one object.
 * `callback` *(error: Error | undefined | string | null, obj?: ioBroker.Object) => void) => void*: Callback `(error: string | null, obj?: ioBroker.Object) => void`
 
 #### <a name="getobjects_a"></a>`getObjects(list, callback)`
-Get all objects that are relevant for web: all states and enums with rooms.
-This is non-admin version of "all objects" and will be overloaded in admin
+Get all objects that are relevant for the web: all states and enums with rooms.
+This is a non-admin version of "all objects" and will be overloaded in admin
 * `list` *string[] | null*: Optional list of IDs
 * `callback` *(error: Error | undefined | string | null, objs?: Record<string, ioBroker.Object>) => void) => void*: Callback `(error: string | null, objs?: Record<string, ioBroker.Object>) => void`
 
@@ -936,7 +941,7 @@ This function is overloaded in admin (because admin accepts only base64)
 * `callback?` *(error: null | undefined | Error | string) => void*: Callback `(error: null | undefined | Error | string) => void`
 
 #### <a name="unlink_a"></a>`unlink(adapter, name, callback)`
-Delete file in ioBroker DB
+Delete a file in ioBroker DB
 * `adapter` *string*: instance name, e.g. `vis.0`
 * `name` *string*: file name, e.g. `main/vis-views.json`
 * `callback` *(error: null | undefined | Error | string) => void) => void*: Callback `(error: null | undefined | Error | string) => void`
@@ -974,7 +979,7 @@ Create a folder in ioBroker DB
 * `callback` *(error: null | undefined | Error | string) => void) => void*: Callback `(error: null | undefined | Error | string) => void`
 
 #### <a name="readdir_a"></a>`readDir(adapter, dirName, options, callback?)`
-Read content of folder in ioBroker DB
+Read the content of the folder in ioBroker DB
 * `adapter` *string*: instance name, e.g. `vis.0`
 * `dirName` *string*: folder name, e.g. `main`
 * `options` *object | ((error: null | undefined | Error | string, files: ioBroker.ReadDirResult[]) => void)*: for future use
@@ -991,7 +996,7 @@ Change a file mode in ioBroker DB
 Change file owner in ioBroker DB
 * `adapter` *string*: instance name, e.g. `vis.0`
 * `fileName` *string*: file name, e.g. `main/vis-views.json`
-* `options` *{owner: `system.user.${string}`; ownerGroup?: `system.group.${string}`}*: options `{owner: 'system.user.user', ownerGroup: 'system.group.administrator'}` or `system.user.user`. If ownerGroup is not defined, it will be taken from owner.
+* `options` *{owner: `system.user.${string}`; ownerGroup?: `system.group.${string}`}*: options `{owner: 'system.user.user', ownerGroup: 'system.group.administrator'}` or `system.user.user`. If ownerGroup is not defined, it will be taken from an owner.
 * `callback?` *(error: null | undefined | Error | string) => void*: Callback `(error: null | undefined | Error | string) => void`
 
 #### <a name="fileexists_a"></a>`fileExists(adapter, fileName, callback)`
@@ -1018,9 +1023,12 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+* (@GermanBluefox) Moved `getCompactSystemConfig` to common commands. Made it available in web and admin.
+
 ### 2.2.21 (2026-01-25)
 
-* (@Copilot) Added missing return statement for Bearer token auth
+* (@Copilot) Added a missing return statement for Bearer token auth
 
 ### 2.2.20 (2025-07-22)
 
@@ -1082,7 +1090,7 @@ Unsubscribe from file changes in ioBroker DB
 
 ### 2.1.12 (2025-02-26)
 
-* (@GermanBluefox) Added login with token in the query or as bearer token
+* (@GermanBluefox) Added login with a token in the query or as bearer token
 
 ### 2.1.7 (2025-02-23)
 * (@GermanBluefox) Added support for OAuth2 authentication
@@ -1133,7 +1141,7 @@ Unsubscribe from file changes in ioBroker DB
 * (foxriver76) fixed crash on invalid patterns with js-controller version 5
 
 ### 1.3.3 (2023-08-01)
-* (@GermanBluefox) Implemented subscribing of a client on messages from specific instance
+* (@GermanBluefox) Implemented subscribing of a client on messages from a specific instance
 * (@GermanBluefox) Moved checkFeatureSupported to regular connection and not only admin
 
 ### 1.2.0 (2023-07-07)
@@ -1150,7 +1158,7 @@ Unsubscribe from file changes in ioBroker DB
 * (@GermanBluefox) Allow deletion of fullcalendar objects
 
 ### 1.1.1 (2022-12-22)
-* (@GermanBluefox) Corrected error with subscribe
+* (@GermanBluefox) Corrected error with subscription
 
 ### 1.1.0 (2022-12-22)
 * (@GermanBluefox) Added user check to many commands
@@ -1187,7 +1195,7 @@ Unsubscribe from file changes in ioBroker DB
 * (@GermanBluefox) Corrected getAdapterInstances
 
 ### 0.4.9 (2022-06-20)
-* (@GermanBluefox) Do not show error with failed authentication
+* (@GermanBluefox) Do not show an error with failed authentication
 
 ### 0.4.7 (2022-06-20)
 * (@GermanBluefox) Allowed overloading system language
@@ -1199,7 +1207,7 @@ Unsubscribe from file changes in ioBroker DB
 * (@GermanBluefox) allowed running socket.io behind reverse proxy
 
 ### 0.4.4 (2022-06-09)
-* (@GermanBluefox) Do not show requireLog message
+* (@GermanBluefox) Do not show the requireLog message
 
 ### 0.4.3 (2022-06-03)
 * (@GermanBluefox) Allowed call of getAdapterInstances for non admin

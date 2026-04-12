@@ -170,7 +170,7 @@ export class SocketCommandsAdmin extends SocketCommands {
         active: boolean;
         accidents: number;
         repeatSeconds: number; // how many seconds continuously must be number of events > value
-        value: number; // shows how many events allowed in the one check interval
+        value: number; // shows how many events allowed in one check interval
         checkInterval: number; // duration of one check interval
     };
     private readonly cache: Record<string, { ts: number; res: string }> = {};
@@ -346,20 +346,18 @@ export class SocketCommandsAdmin extends SocketCommands {
                 if (!message && SocketCommandsAdmin.ALLOW_CACHE.includes(command)) {
                     this.cache[hash] = { ts: Date.now(), res: JSON.stringify(res) };
 
-                    this.cacheGB =
-                        this.cacheGB ||
-                        setInterval(() => {
-                            const commands = Object.keys(this.cache);
-                            commands.forEach(cmd => {
-                                if (Date.now() - this.cache[cmd].ts > 500) {
-                                    delete this.cache[cmd];
-                                }
-                            });
-                            if (!commands.length && this.cacheGB) {
-                                clearInterval(this.cacheGB);
-                                this.cacheGB = null;
+                    this.cacheGB ||= setInterval(() => {
+                        const commands = Object.keys(this.cache);
+                        commands.forEach(cmd => {
+                            if (Date.now() - this.cache[cmd].ts > 500) {
+                                delete this.cache[cmd];
                             }
-                        }, 2000);
+                        });
+                        if (!Object.keys(this.cache).length && this.cacheGB) {
+                            clearInterval(this.cacheGB);
+                            this.cacheGB = null;
+                        }
+                    }, 2000);
                 }
                 if (typeof callback === 'function') {
                     setImmediate(() => callback(res as { error?: string; result?: any }));
@@ -1007,7 +1005,7 @@ export class SocketCommandsAdmin extends SocketCommands {
 
         /**
          * #DOCUMENTATION admin
-         * Activate or deactivate logging events. Events will be sent to the socket as `log` event. Adapter must have `common.logTransporter = true`.
+         * Activate or deactivate logging events. Events will be sent to the socket as `log` events. Adapter must have `common.logTransporter = true`.
          *
          * @param socket - WebSocket client instance
          * @param isEnabled - Is logging enabled
@@ -1158,7 +1156,7 @@ export class SocketCommandsAdmin extends SocketCommands {
         /**
          * #DOCUMENTATION admin
          * Execute the shell command on host/controller.
-         * Following response commands are expected: `cmdStdout`, `cmdStderr`, `cmdExit`.
+         * The following response commands are expected: `cmdStdout`, `cmdStderr`, `cmdExit`.
          *
          * @param socket - WebSocket client instance
          * @param host - Host name, e.g., `system.host.raspberrypi`
@@ -1630,43 +1628,10 @@ export class SocketCommandsAdmin extends SocketCommands {
 
         /**
          * #DOCUMENTATION admin
-         * Get the system configuration in a compact form to save bandwidth.
-         *
-         * @param socket - WebSocket client instance
-         * @param callback - Callback function `(error: string | null, systemConfig?: { common: any; native?: { secret: string } }) => void`
-         */
-        this.commands.getCompactSystemConfig = (
-            socket: WebSocketClient,
-            callback: (
-                error: string | null | Error | undefined,
-                systemConfig?: { common: ioBroker.SystemConfigCommon; native?: { secret: string; vendor?: any } },
-            ) => void,
-        ): void => {
-            if (this._checkPermissions(socket, 'getObject', callback)) {
-                void this.adapter.getForeignObject('system.config', { user: socket._acl?.user }, (error, obj) => {
-                    obj ||= {} as ioBroker.SystemConfigObject;
-                    const secret = obj?.native?.secret;
-                    const vendor = obj?.native?.vendor;
-                    // @ts-expect-error to save the memory
-                    delete obj.native;
-                    if (secret) {
-                        obj.native = { secret };
-                    }
-                    if (vendor) {
-                        obj.native ||= {};
-                        obj.native.vendor = vendor;
-                    }
-                    SocketCommands._fixCallback(callback, error, obj);
-                });
-            }
-        };
-
-        /**
-         * #DOCUMENTATION admin
          * Get system repositories in a compact form to save bandwidth.
          *
          * @param socket - WebSocket client instance
-         * @param callback - Callback function `(error: string | null, systemRepositories?: { common: any; native?: { repositories: Record<string, { json: { _repoInfo: any } } } } }) => void`
+         * @param callback - Callback function `(error: string | null, systemRepositories?: { common: any; native?: { repositories: Record<string, { json: { _repoInfo: any } } } }) => void`
          */
         this.commands.getCompactSystemRepositories = (
             socket: WebSocketClient,

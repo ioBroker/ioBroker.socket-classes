@@ -170,20 +170,18 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
             this.adapter.sendToHost(host, command, message, res => {
                 if (!message && _a.ALLOW_CACHE.includes(command)) {
                     this.cache[hash] = { ts: Date.now(), res: JSON.stringify(res) };
-                    this.cacheGB =
-                        this.cacheGB ||
-                            setInterval(() => {
-                                const commands = Object.keys(this.cache);
-                                commands.forEach(cmd => {
-                                    if (Date.now() - this.cache[cmd].ts > 500) {
-                                        delete this.cache[cmd];
-                                    }
-                                });
-                                if (!commands.length && this.cacheGB) {
-                                    clearInterval(this.cacheGB);
-                                    this.cacheGB = null;
-                                }
-                            }, 2000);
+                    this.cacheGB ||= setInterval(() => {
+                        const commands = Object.keys(this.cache);
+                        commands.forEach(cmd => {
+                            if (Date.now() - this.cache[cmd].ts > 500) {
+                                delete this.cache[cmd];
+                            }
+                        });
+                        if (!Object.keys(this.cache).length && this.cacheGB) {
+                            clearInterval(this.cacheGB);
+                            this.cacheGB = null;
+                        }
+                    }, 2000);
                 }
                 if (typeof callback === 'function') {
                     setImmediate(() => callback(res));
@@ -740,7 +738,7 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
         };
         /**
          * #DOCUMENTATION admin
-         * Activate or deactivate logging events. Events will be sent to the socket as `log` event. Adapter must have `common.logTransporter = true`.
+         * Activate or deactivate logging events. Events will be sent to the socket as `log` events. Adapter must have `common.logTransporter = true`.
          *
          * @param socket - WebSocket client instance
          * @param isEnabled - Is logging enabled
@@ -866,7 +864,7 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
         /**
          * #DOCUMENTATION admin
          * Execute the shell command on host/controller.
-         * Following response commands are expected: `cmdStdout`, `cmdStderr`, `cmdExit`.
+         * The following response commands are expected: `cmdStdout`, `cmdStderr`, `cmdExit`.
          *
          * @param socket - WebSocket client instance
          * @param host - Host name, e.g., `system.host.raspberrypi`
@@ -1230,36 +1228,10 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
         };
         /**
          * #DOCUMENTATION admin
-         * Get the system configuration in a compact form to save bandwidth.
-         *
-         * @param socket - WebSocket client instance
-         * @param callback - Callback function `(error: string | null, systemConfig?: { common: any; native?: { secret: string } }) => void`
-         */
-        this.commands.getCompactSystemConfig = (socket, callback) => {
-            if (this._checkPermissions(socket, 'getObject', callback)) {
-                void this.adapter.getForeignObject('system.config', { user: socket._acl?.user }, (error, obj) => {
-                    obj ||= {};
-                    const secret = obj?.native?.secret;
-                    const vendor = obj?.native?.vendor;
-                    // @ts-expect-error to save the memory
-                    delete obj.native;
-                    if (secret) {
-                        obj.native = { secret };
-                    }
-                    if (vendor) {
-                        obj.native ||= {};
-                        obj.native.vendor = vendor;
-                    }
-                    socketCommands_1.SocketCommands._fixCallback(callback, error, obj);
-                });
-            }
-        };
-        /**
-         * #DOCUMENTATION admin
          * Get system repositories in a compact form to save bandwidth.
          *
          * @param socket - WebSocket client instance
-         * @param callback - Callback function `(error: string | null, systemRepositories?: { common: any; native?: { repositories: Record<string, { json: { _repoInfo: any } } } } }) => void`
+         * @param callback - Callback function `(error: string | null, systemRepositories?: { common: any; native?: { repositories: Record<string, { json: { _repoInfo: any } } } }) => void`
          */
         this.commands.getCompactSystemRepositories = (socket, callback) => {
             if (this._checkPermissions(socket, 'getObject', callback)) {

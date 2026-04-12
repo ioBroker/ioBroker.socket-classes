@@ -561,7 +561,7 @@ export class SocketCommands {
                                         this.adapter.log.error(`Cannot unsubscribe "${pattern}": ${e.message}`),
                                     );
                             }
-                            delete this.subscribes[type][pattern];
+                            delete this.subscribes[type][key];
                         }
                     }
 
@@ -702,9 +702,9 @@ export class SocketCommands {
                             .unsubscribeForeignObjectsAsync(pattern, options)
                             .catch(e => this.adapter.log.error(`Cannot unsubscribe "${pattern}": ${e.message}`));
                     } else if (type === 'log') {
-                        if (this.adapter.requireLog && !this.#logEnabled) {
-                            this.#logEnabled = true;
-                            void this.adapter.requireLog(true, options);
+                        if (this.adapter.requireLog && this.#logEnabled) {
+                            this.#logEnabled = false;
+                            void this.adapter.requireLog(false, options);
                         }
                     } else if (type === 'fileChange' && this.adapter.unsubscribeForeignFiles) {
                         const [id, fileName] = pattern.split('####');
@@ -838,7 +838,7 @@ export class SocketCommands {
             obj.common.adminUI = { config: 'none' };
             if (obj.common.noConfig) {
                 obj.common.adminUI.config = 'none';
-                // @ts-expect-error this attribute is deprecated, but still used
+                // @ts-expect-error this attribute is deprecated but still used
             } else if (obj.common.jsonConfig) {
                 obj.common.adminUI.config = 'json';
             } else if (obj.common.materialize) {
@@ -847,7 +847,7 @@ export class SocketCommands {
                 obj.common.adminUI.config = 'html';
             }
 
-            // @ts-expect-error this attribute is deprecated, but still used
+            // @ts-expect-error this attribute is deprecated but still used
             if (obj.common.jsonCustom) {
                 obj.common.adminUI.custom = 'json';
             } else if (obj.common.supportCustoms) {
@@ -981,7 +981,7 @@ export class SocketCommands {
          *
          * @param _socket Socket instance (not used)
          * @param text log text
-         * @param level one of `['silly', 'debug', 'info', 'warn', 'error']`. Default is 'debug'.
+         * @param level one of `['silly', 'debug', 'info', 'warn', 'error']`. The default is 'debug'.
          */
         this.commands.log = (_socket: WebSocketClient, text: string, level: ioBroker.LogLevel): void => {
             if (level === 'error') {
@@ -1019,7 +1019,7 @@ export class SocketCommands {
 
         /**
          * #DOCUMENTATION commands
-         * Get history data from specific instance
+         * Get the history data from the specific instance
          *
          * @param socket Socket instance
          * @param id object ID
@@ -1586,7 +1586,7 @@ export class SocketCommands {
 
         /**
          * #DOCUMENTATION files
-         * Delete file in ioBroker DB
+         * Delete a file in ioBroker DB
          *
          * @param socket Socket instance
          * @param adapter instance name, e.g. `vis.0`
@@ -1756,7 +1756,7 @@ export class SocketCommands {
 
         /**
          * #DOCUMENTATION files
-         * Read content of folder in ioBroker DB
+         * Read the content of the folder in ioBroker DB
          *
          * @param socket Socket instance
          * @param adapter instance name, e.g. `vis.0`
@@ -1797,7 +1797,7 @@ export class SocketCommands {
          * @param adapter instance name, e.g. `vis.0`
          * @param fileName file name, e.g. `main/vis-views.json`
          * @param options options `{mode: 0x644}`
-         * @param options.mode File mode in linux format 0x644. The first digit is user, second group, third others. Bit 1 is `execute`, bit 2 is `write`, bit 3 is `read`
+         * @param options.mode File mode in linux format 0x644. The first digit is a user, the second is a group, third others. Bit 1 is `execute`, bit 2 is `write`, bit 3 is `read`
          * @param callback Callback `(error: string | Error | null | undefined) => void`
          */
         this.commands.chmodFile = (
@@ -1835,9 +1835,9 @@ export class SocketCommands {
          * @param socket Socket instance
          * @param adapter instance name, e.g. `vis.0`
          * @param fileName file name, e.g. `main/vis-views.json`
-         * @param options options `{owner: 'system.user.user', ownerGroup: 'system.group.administrator'}` or `system.user.user`. If ownerGroup is not defined, it will be taken from owner.
+         * @param options options `{owner: 'system.user.user', ownerGroup: 'system.group.administrator'}` or `system.user.user`. If ownerGroup is not defined, it will be taken from an owner.
          * @param options.owner New owner, like 'system.user.user'
-         * @param options.ownerGroup New owner group, like 'system.group.administrator' If ownerGroup is not defined, it will be taken from owner.
+         * @param options.ownerGroup New owner group, like 'system.group.administrator' If ownerGroup is not defined, it will be taken from an owner.
          * @param callback Callback `(error: null | undefined | Error | string) => void`
          */
         this.commands.chownFile = (
@@ -1940,7 +1940,7 @@ export class SocketCommands {
          * Read all instances of the given adapter, or all instances of all adapters if adapterName is not defined
          *
          * @param socket Socket instance
-         * @param adapterName adapter name, e.g. `history`. To get all instances of all adapters just place here "".
+         * @param adapterName adapter name, e.g. `history`. To get all instances of all adapters, just place here "".
          * @param callback callback `(error: null | undefined | Error | string, instanceList?: ioBroker.InstanceObject[]) => void`
          */
         this.commands.getAdapterInstances = (
@@ -2261,8 +2261,8 @@ export class SocketCommands {
 
         /**
          * #DOCUMENTATION objects
-         * Get all objects that are relevant for web: all states and enums with rooms.
-         * This is non-admin version of "all objects" and will be overloaded in admin
+         * Get all objects that are relevant for the web: all states and enums with rooms.
+         * This is a non-admin version of "all objects" and will be overloaded in admin
          *
          * @param socket Socket instance
          * @param list Optional list of IDs
@@ -2597,8 +2597,8 @@ export class SocketCommands {
         /**
          * #DOCUMENTATION commands
          * Client subscribes to specific instance's messages.
-         * Client informs specific instance about subscription on its messages.
-         * After subscription, the socket will receive "im" messages from desired instance
+         * Client informs a specific instance about subscription on its messages.
+         * After subscription, the socket will receive "im" messages from the desired instance
          * The target instance MUST acknowledge the subscription and return result
          *
          * @param socket Socket instance
@@ -2675,6 +2675,39 @@ export class SocketCommands {
             }
             SocketCommands._fixCallback(callback, null, false);
         };
+
+        /**
+         * #DOCUMENTATION commands
+         * Get the system configuration in a compact form to save bandwidth.
+         *
+         * @param socket - WebSocket client instance
+         * @param callback - Callback function `(error: string | null, systemConfig?: { common: any; native?: { secret: string } }) => void`
+         */
+        this.commands.getCompactSystemConfig = (
+            socket: WebSocketClient,
+            callback: (
+                error: string | null | Error | undefined,
+                systemConfig?: { common: ioBroker.SystemConfigCommon; native?: { secret: string; vendor?: any } },
+            ) => void,
+        ): void => {
+            if (this._checkPermissions(socket, 'getObject', callback)) {
+                void this.adapter.getForeignObject('system.config', { user: socket._acl?.user }, (error, obj) => {
+                    obj ||= {} as ioBroker.SystemConfigObject;
+                    const secret = obj?.native?.secret;
+                    const vendor = obj?.native?.vendor;
+                    // @ts-expect-error to save the memory
+                    delete obj.native;
+                    if (secret) {
+                        obj.native = { secret };
+                    }
+                    if (vendor) {
+                        obj.native ||= {};
+                        obj.native.vendor = vendor;
+                    }
+                    SocketCommands._fixCallback(callback, error, obj);
+                });
+            }
+        };
     }
 
     /** Init all commands: common, objects, states, files */
@@ -2686,7 +2719,7 @@ export class SocketCommands {
     }
 
     #informAboutDisconnect(socketId: string): void {
-        // say to all instances, that this socket was disconnected
+        // say to all instances that this socket was disconnected
         if (this.#clientSubscribes[socketId]) {
             Object.keys(this.#clientSubscribes[socketId]).forEach(targetInstance => {
                 this.adapter.sendTo(targetInstance, 'clientUnsubscribe', {

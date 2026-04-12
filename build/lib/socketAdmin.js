@@ -7,7 +7,7 @@ exports.SocketAdmin = void 0;
 /**
  *      Class Socket
  *
- *      Copyright 2014-2025 bluefox <dogafox@gmail.com>,
+ *      Copyright 2014-2026 bluefox <dogafox@gmail.com>,
  *      MIT License
  *
  */
