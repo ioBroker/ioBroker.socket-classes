@@ -1023,7 +1023,7 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 2.3.1 (2026-04-12)
 * (@GermanBluefox) Moved `getCompactSystemConfig` to common commands. Made it available in web and admin.
 * (@Marc-Berg) Emit tokenInfo event with exp on socket connection
 
