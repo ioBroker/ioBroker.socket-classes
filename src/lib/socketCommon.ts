@@ -253,7 +253,7 @@ export class SocketCommon {
         }
     }
 
-    /** Get client address from socket */
+    /** Get the client address from the socket */
     __getClientAddress(socket: WebSocketClient): AddressInfo {
         let address;
         if (socket.connection) {

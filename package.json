@@ -1,6 +1,6 @@
 {
   "name": "@iobroker/socket-classes",
-  "version": "2.2.21",
+  "version": "2.3.0",
   "description": "ioBroker server-side web sockets",
   "author": {
     "name": "bluefox",
@@ -22,21 +22,21 @@
   },
   "dependencies": {
     "@iobroker/adapter-core": "^3.3.2",
-    "axios": "^1.13.3",
+    "axios": "^1.15.0",
     "cookie-parser": "^1.4.7",
     "passport": "^0.7.0"
   },
   "devDependencies": {
-    "@alcalzone/release-script": "^5.0.0",
-    "@alcalzone/release-script-plugin-license": "^4.0.0",
+    "@alcalzone/release-script": "^5.1.1",
+    "@alcalzone/release-script-plugin-license": "^5.1.1",
     "@iobroker/eslint-config": "^2.2.0",
-    "@iobroker/js-controller-common-db": "^7.1.0",
-    "@iobroker/ws-server": "^4.3.9",
-    "@iobroker/types": "^7.1.0",
+    "@iobroker/js-controller-common-db": "^7.1.1",
+    "@iobroker/ws-server": "^4.3.11",
+    "@iobroker/types": "^7.1.1",
     "@types/cookie-parser": "^1.4.10",
-    "@types/node": "^24.10.9",
+    "@types/node": "^25.6.0",
     "@types/passport": "^1.0.17",
-    "iobroker.js-controller": "^7.1.0",
+    "iobroker.js-controller": "^7.1.1",
     "mocha": "^11.7.5",
     "typescript": "~5.9.3"
   },
@@ -68,5 +68,8 @@
       "name": "bluefox",
       "email": "dogafox@gmail.com"
     }
-  ]
+  ],
+  "overrides": {
+    "@iobroker/adapter-core": "^3.3.2"
+  }
 }

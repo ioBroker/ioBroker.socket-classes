@@ -138,7 +138,7 @@ class SocketCommon {
             callback('Cannot detect user');
         }
     }
-    /** Get client address from socket */
+    /** Get the client address from the socket */
     __getClientAddress(socket) {
         let address;
         if (socket.connection) {

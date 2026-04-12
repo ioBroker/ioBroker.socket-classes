@@ -103,7 +103,7 @@ export declare class SocketCommon {
     }): void;
     /** Get user from pure WS socket (used in `iobroker.admin` and `iobroker.ws`) */
     __getUserFromSocket(socket: WebSocketClient, callback: (error: string | null, user?: string, expirationTime?: number) => void): void;
-    /** Get client address from socket */
+    /** Get the client address from the socket */
     __getClientAddress(socket: WebSocketClient): AddressInfo;
     __updateSession(socket: WebSocketClient): boolean;
     __getSessionID(_socket: WebSocketClient): string | null;
