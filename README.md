@@ -139,6 +139,7 @@ function sendImage(camera, data) {
 * [`getAdapterInstances`](#getadapterinstances_w)
 * [`getObject`](#getobject_w)
 * [`getObjects`](#getobjects_w)
+* [`getAllObjects`](#getallobjects_w)
 * [`subscribeObjects`](#subscribeobjects_w)
 * [`unsubscribeObjects`](#unsubscribeobjects_w)
 * [`getObjectView`](#getobjectview_w)
@@ -282,6 +283,10 @@ Get all objects that are relevant for the web: all states and enums with rooms.
 This is a non-admin version of "all objects" and will be overloaded in admin
 * `list` *string[] | null*: Optional list of IDs
 * `callback` *(error: Error | undefined | string | null, objs?: Record<string, ioBroker.Object>) => void) => void*: Callback `(error: string | null, objs?: Record<string, ioBroker.Object>) => void`
+
+#### <a name="getallobjects_w"></a>`getAllObjects(callback)`
+Get all objects that are relevant for the web: all states and enums with rooms.
+* `callback` *(error: null | undefined | Error | string, result?: Record<string, ioBroker.Object>) => void) => void*: - Callback function `(error: string | null, objects?: Record<string, ioBroker.Object>) => void`
 
 #### <a name="subscribeobjects_w"></a>`subscribeObjects(pattern, callback)`
 Subscribe to object changes by pattern. The events will come as 'objectChange' events to the socket.
@@ -536,12 +541,12 @@ Unsubscribe from file changes in ioBroker DB
 * [`changePassword`](#changepassword_a)
 * [`getObject`](#getobject_a)
 * [`getObjects`](#getobjects_a)
+* [`getAllObjects`](#getallobjects_a)
 * [`subscribeObjects`](#subscribeobjects_a)
 * [`unsubscribeObjects`](#unsubscribeobjects_a)
 * [`getObjectView`](#getobjectview_a)
 * [`setObject`](#setobject_a)
 * [`delObject`](#delobject_a)
-* [`getAllObjects`](#getallobjects_a)
 * [`extendObject`](#extendobject_a)
 * [`getForeignObjects`](#getforeignobjects_a)
 * [`delObjects`](#delobjects_a)
@@ -857,6 +862,10 @@ This is a non-admin version of "all objects" and will be overloaded in admin
 * `list` *string[] | null*: Optional list of IDs
 * `callback` *(error: Error | undefined | string | null, objs?: Record<string, ioBroker.Object>) => void) => void*: Callback `(error: string | null, objs?: Record<string, ioBroker.Object>) => void`
 
+#### <a name="getallobjects_a"></a>`getAllObjects(callback)`
+Get all objects that are relevant for the web: all states and enums with rooms.
+* `callback` *(error: null | undefined | Error | string, result?: Record<string, ioBroker.Object>) => void) => void*: - Callback function `(error: string | null, objects?: Record<string, ioBroker.Object>) => void`
+
 #### <a name="subscribeobjects_a"></a>`subscribeObjects(pattern, callback)`
 Subscribe to object changes by pattern. The events will come as 'objectChange' events to the socket.
 * `pattern` *string | string[]*: Pattern like `system.adapter.*` or array of IDs like `['system.adapter.admin.0.memRss', 'system.adapter.admin.0.memHeapTotal']`
@@ -885,10 +894,6 @@ Delete an object. Only deletion of flot and fullcalendar objects is allowed
 * `id` *string*: Object ID, like 'flot.0.myChart'
 * `_options` *any*: Options for deletion. Ignored
 * `callback` *(error: string | null | Error | undefined) => void) => void*: Callback `(error: string | null) => void`
-
-#### <a name="getallobjects_a"></a>`getAllObjects(callback)`
-Read absolutely all objects.
-* `callback` *(error: null | undefined | Error | string, result?: Record<string, ioBroker.Object>) => void) => void*: - Callback function `(error: string | null, objects?: Record<string, ioBroker.Object>) => void`
 
 #### <a name="extendobject_a"></a>`extendObject(id, obj, callback?)`
 Extend the existing object.
@@ -1023,7 +1028,7 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 2.3.2 (2026-04-17)
 * (@GermanBluefox) Implement `getAllObjects` in common commands. Made it available in web and admin. But they are different in admin and web
 
 ### 2.3.1 (2026-04-12)
