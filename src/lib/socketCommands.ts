@@ -2343,6 +2343,20 @@ export class SocketCommands {
 
         /**
          * #DOCUMENTATION objects
+         * Get all objects that are relevant for the web: all states and enums with rooms.
+         *
+         * @param socket - WebSocket client instance
+         * @param callback - Callback function `(error: string | null, objects?: Record<string, ioBroker.Object>) => void`
+         */
+        this.commands.getAllObjects = (
+            socket: WebSocketClient,
+            callback: (error: null | undefined | Error | string, result?: Record<string, ioBroker.Object>) => void,
+        ): void => {
+            return this.commands.getObjects(socket, callback);
+        };
+
+        /**
+         * #DOCUMENTATION objects
          * Subscribe to object changes by pattern. The events will come as 'objectChange' events to the socket.
          *
          * @param socket Socket instance
