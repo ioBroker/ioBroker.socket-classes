@@ -278,7 +278,7 @@ export class SocketCommands {
         callback: ((error: string | null, ...args: any[]) => void) | undefined,
         ...args: any[]
     ): boolean {
-        const _command: string = command as unknown as string;
+        const _command: string = command;
         if (socket._acl?.user !== 'system.user.admin') {
             // type: file, object, state, other
             // operation: create, read, write, list, delete, sendto, execute, sendToHost, readLogs
