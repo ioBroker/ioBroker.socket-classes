@@ -870,9 +870,15 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
          * @param host - Host name, e.g., `system.host.raspberrypi`
          * @param id - Session ID, e.g., `Date.now()`. This session ID will come in events `cmdStdout`, `cmdStderr`, `cmdExit`
          * @param cmd - Command to execute
+         * @param files - Optional files to send with the command (base64 encoded). The command can refer to them just by name. Requires controller feature `CONTROLLER_CMD_EXEC_FILES`.
          * @param callback - Callback function `(error: string | null) => void`
          */
-        this.commands.cmdExec = (socket, host, id, cmd, callback) => {
+        this.commands.cmdExec = (socket, host, id, cmd, files, callback) => {
+            // Backward compatibility: old clients call cmdExec(socket, host, id, cmd, callback) without files
+            if (typeof files === 'function') {
+                callback = files;
+                files = undefined;
+            }
             if (id === undefined) {
                 this.adapter.log.error(`cmdExec no session ID for "${cmd}"`);
                 socketCommands_1.SocketCommands._fixCallback(callback, 'no session ID');
@@ -882,7 +888,7 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
                 // remember socket for this ID.
                 this.cmdSessions[id] = { socket };
                 try {
-                    this.adapter.sendToHost(host, 'cmdExec', { data: cmd, id });
+                    this.adapter.sendToHost(host, 'cmdExec', { data: cmd, id, files: files || undefined });
                     socketCommands_1.SocketCommands._fixCallback(callback, null);
                 }
                 catch (error) {

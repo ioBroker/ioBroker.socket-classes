@@ -1,5 +1,18 @@
 export type SocketOperation = 'read' | 'write' | 'list' | 'delete' | 'create' | 'http' | 'execute' | 'sendto' | '';
 
+/**
+ * A file sent along with a `cmdExec` command. The controller writes it to a temporary folder and the
+ * command can refer to it just by its name. Requires controller feature `CONTROLLER_CMD_EXEC_FILES`.
+ */
+export interface CommandFile {
+    /** File name (without path; the command refers to the file by this name) */
+    name: string;
+    /** File content, base64 encoded (binary Buffers cannot be transferred over the socket) */
+    file: string;
+    /** If true, the temporary file is not deleted after the command finished */
+    doNotDelete?: boolean;
+}
+
 // We must save both tokens, as by logout we must revoke both
 export interface InternalStorageToken {
     /** Access token */

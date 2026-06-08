@@ -683,12 +683,13 @@ Get the log files from the given host.
 * `host` *string*: - Host ID, e.g., `system.host.raspberrypi`
 * `callback?` *(error: string | null | Error | undefined, list?: {fileName: string; size: number}[]) => void*: - Callback function `(error: string | null, list?: { fileName: string; size: number }[]) => void`
 
-#### <a name="cmdexec_a"></a>`cmdExec(host, id, cmd, callback?)`
+#### <a name="cmdexec_a"></a>`cmdExec(host, id, cmd, files?, callback?)`
 Execute the shell command on host/controller.
 The following response commands are expected: `cmdStdout`, `cmdStderr`, `cmdExit`.
 * `host` *string*: - Host name, e.g., `system.host.raspberrypi`
 * `id` *number*: - Session ID, e.g., `Date.now()`. This session ID will come in events `cmdStdout`, `cmdStderr`, `cmdExit`
 * `cmd` *string*: - Command to execute
+* `files?` *CommandFile[] | ((error: string | null | Error | undefined) => void)*: - Optional files to send with the command (base64 encoded). The command can refer to them just by name. Requires controller feature `CONTROLLER_CMD_EXEC_FILES`.
 * `callback?` *(error: string | null | Error | undefined) => void*: - Callback function `(error: string | null) => void`
 
 #### <a name="eventsthreshold_a"></a>`eventsThreshold(isActive)`
@@ -1028,6 +1029,10 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+* (@GermanBluefox) Extended cmdExec with files
+* (@GermanBluefox) Migrated to TS 6
+
 ### 2.3.2 (2026-04-17)
 * (@GermanBluefox) Implement `getAllObjects` in common commands. Made it available in web and admin. But they are different in admin and web
 
