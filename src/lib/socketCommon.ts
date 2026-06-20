@@ -77,7 +77,7 @@ export interface SocketIoOptions {
     pingTimeout: number;
     cors?: {
         // for socket.4.x
-        origin: number;
+        origin: string;
         allowedHeaders: string[];
         credentials: boolean;
     };

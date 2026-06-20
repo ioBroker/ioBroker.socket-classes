@@ -1029,6 +1029,10 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+* (@GermanBluefox) Updated packages
+* (@GermanBluefox) Corrected type
+
 ### 2.3.4 (2026-06-08)
 * (@GermanBluefox) Extended cmdExec with files
 * (@GermanBluefox) Migrated to TS 6
