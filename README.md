@@ -1029,7 +1029,7 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 2.3.6 (2026-06-20)
 * (@GermanBluefox) Updated packages
 * (@GermanBluefox) Corrected type
 
