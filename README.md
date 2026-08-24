@@ -1032,7 +1032,7 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 2.3.8 (2026-08-24)
 * (@GermanBluefox) Security: `decrypt` and `encrypt` only serve a request from the process-wide cached system secret if the caller is an administrator. The cache is shared across all sockets, so once any user who may read `system.config` had populated it, every authenticated user could encrypt and decrypt with the system secret regardless of their own rights. For non-administrators the secret is now resolved through a read that is ACL-checked for the calling user.
 * (@GermanBluefox) Security: `clientSubscribe` and `clientUnsubscribe` now require the `other.sendto` permission. They deliver a message to an arbitrary adapter instance via `sendTo`, but were not covered by any permission check, so an authenticated user without `other.sendto` could reach any instance. Reported by Santosh Kumar Puppala.
 * (@GermanBluefox) Security: `eventsThreshold` now requires the `other.execute` permission. Enabling the threshold unsubscribes the adapter from all state patterns for every connected client, so it must not be reachable by a low-privilege user.
