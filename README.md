@@ -64,6 +64,9 @@ io.close();
 ```
 
 ## GUI subscribes
+`clientSubscribe` and `clientUnsubscribe` deliver a message to an adapter instance and therefore
+require the same permission as `sendTo`: `other.sendto`. Users without it receive a permission error.
+
 GUI client can send to desired instance the `subscribe` message
 ```js
     socket.emit('clientSubscribe', 'cameras.0', 'startCamera', { width: 640, height: 480 }, result => console.log('Started: ' + result));
@@ -1029,6 +1032,10 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+* (@GermanBluefox) Security: `clientSubscribe` and `clientUnsubscribe` now require the `other.sendto` permission. They deliver a message to an arbitrary adapter instance via `sendTo`, but were not covered by any permission check, so an authenticated user without `other.sendto` could reach any instance. Reported by Santosh Kumar Puppala.
+* (@GermanBluefox) Security: `eventsThreshold` now requires the `other.execute` permission. Enabling the threshold unsubscribes the adapter from all state patterns for every connected client, so it must not be reachable by a low-privilege user.
+
 ### 2.3.6 (2026-06-20)
 * (@GermanBluefox) Updated packages
 * (@GermanBluefox) Corrected type

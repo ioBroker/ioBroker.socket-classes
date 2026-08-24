@@ -47,7 +47,10 @@ export const COMMANDS_PERMISSIONS: Record<
     cmdExec: { type: 'other', operation: 'execute' },
     sendTo: { type: 'other', operation: 'sendto' },
     sendToHost: { type: 'other', operation: 'sendto' },
+    clientSubscribe: { type: 'other', operation: 'sendto' },
+    clientUnsubscribe: { type: 'other', operation: 'sendto' },
     readLogs: { type: 'other', operation: 'execute' },
+    eventsThreshold: { type: 'other', operation: 'execute' },
 
     readDir: { type: 'file', operation: 'list' },
     createFile: { type: 'file', operation: 'create' },
@@ -2636,6 +2639,9 @@ export class SocketCommands {
                 callback = data;
                 data = null;
             }
+            if (!this._checkPermissions(socket, 'clientSubscribe', callback, targetInstance)) {
+                return;
+            }
             if (!targetInstance.startsWith('system.adapter.')) {
                 targetInstance = `system.adapter.${targetInstance}`;
             }
@@ -2668,6 +2674,9 @@ export class SocketCommands {
             messageType: string,
             callback: (error: string | null | Error | undefined) => void,
         ): void => {
+            if (!this._checkPermissions(socket, 'clientUnsubscribe', callback, targetInstance)) {
+                return;
+            }
             const sid = socket.id;
             if (!targetInstance.startsWith('system.adapter.')) {
                 targetInstance = `system.adapter.${targetInstance}`;

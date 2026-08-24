@@ -901,10 +901,13 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
          * #DOCUMENTATION admin
          * Enable or disable the event threshold. Used only for admin to limit the number of events to the front-end.
          *
-         * @param _socket - WebSocket client instance
+         * @param socket - WebSocket client instance
          * @param isActive - If true, then events will be limited
          */
-        this.commands.eventsThreshold = (_socket, isActive) => {
+        this.commands.eventsThreshold = (socket, isActive) => {
+            if (!this._checkPermissions(socket, 'eventsThreshold', undefined, isActive)) {
+                return;
+            }
             if (!isActive) {
                 this.disableEventThreshold();
             }

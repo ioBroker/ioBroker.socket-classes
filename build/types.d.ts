@@ -37,6 +37,8 @@ export type PermissionCommands =
     | 'sendTo'
     | 'cmdExec'
     | 'sendToHost'
+    | 'clientSubscribe'
+    | 'clientUnsubscribe'
     | 'authEnabled'
     | 'getUserPermissions'
     | 'getVersion'
@@ -77,6 +79,7 @@ export type PermissionCommands =
     | 'addUser'
     | 'changePassword'
     | 'readLogs'
+    | 'eventsThreshold'
     | 'delState'
     | 'extendObject';
 
