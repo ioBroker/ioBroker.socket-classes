@@ -742,6 +742,21 @@ export class SocketCommandsAdmin extends SocketCommands {
         }
     }
 
+    /**
+     * Check if the socket belongs to an administrator: `system.user.admin` itself or a member
+     * of `system.group.administrator`. A socket without ACL means authentication is disabled,
+     * which grants full access.
+     *
+     * @param socket - WebSocket client instance
+     */
+    static #isAdmin(socket: WebSocketClient): boolean {
+        return (
+            !socket._acl ||
+            socket._acl.user === 'system.user.admin' ||
+            socket._acl.groups.includes('system.group.administrator')
+        );
+    }
+
     static #checkObject(
         obj: ioBroker.Object,
         options: { user: string; groups: string[] },
@@ -1265,27 +1280,26 @@ export class SocketCommandsAdmin extends SocketCommands {
             encryptedText: string,
             callback: (error: string | null | Error | undefined, decryptedText?: string) => void,
         ): void => {
-            if (this.secret) {
+            // `this.secret` is shared process-wide, so it may only be served from the warm
+            // cache to administrators, who could read `system.config` anyway. For everyone
+            // else it is resolved through a read that is ACL-checked for *this* caller.
+            if (this.secret && SocketCommandsAdmin.#isAdmin(socket)) {
                 SocketCommands._fixCallback(callback, null, this.adapter.decrypt(this.secret, encryptedText));
-            } else {
-                try {
-                    void this.adapter.getForeignObject('system.config', { user: socket._acl?.user }, (error, obj) => {
-                        if (obj?.native?.secret) {
-                            this.secret = obj.native.secret;
-                            SocketCommands._fixCallback(
-                                callback,
-                                null,
-                                this.adapter.decrypt(this.secret, encryptedText),
-                            );
-                        } else {
-                            this.adapter.log.error(`No system.config found: ${error}`);
-                            SocketCommands._fixCallback(callback, error);
-                        }
-                    });
-                } catch (error) {
-                    this.adapter.log.error(`Cannot decrypt: ${error}`);
-                    SocketCommands._fixCallback(callback, error);
-                }
+                return;
+            }
+            try {
+                void this.adapter.getForeignObject('system.config', { user: socket._acl?.user }, (error, obj) => {
+                    if (obj?.native?.secret) {
+                        this.secret = obj.native.secret;
+                        SocketCommands._fixCallback(callback, null, this.adapter.decrypt(this.secret, encryptedText));
+                    } else {
+                        this.adapter.log.error(`No system.config found: ${error}`);
+                        SocketCommands._fixCallback(callback, error);
+                    }
+                });
+            } catch (error) {
+                this.adapter.log.error(`Cannot decrypt: ${error}`);
+                SocketCommands._fixCallback(callback, error);
             }
         };
 
@@ -1302,25 +1316,26 @@ export class SocketCommandsAdmin extends SocketCommands {
             plainText: string,
             callback: (error: string | null | Error | undefined, encryptedText?: string) => void,
         ): void => {
-            if (this.secret) {
+            // See `decrypt`: the shared secret cache may only short-circuit for administrators.
+            if (this.secret && SocketCommandsAdmin.#isAdmin(socket)) {
                 SocketCommands._fixCallback(callback, null, this.adapter.encrypt(this.secret, plainText));
-            } else {
-                void this.adapter.getForeignObject('system.config', { user: socket._acl?.user }, (error, obj) => {
-                    if (obj?.native?.secret) {
-                        this.secret = obj.native.secret;
-                        try {
-                            const encrypted = this.adapter.encrypt(this.secret, plainText);
-                            SocketCommands._fixCallback(callback, null, encrypted);
-                        } catch (error) {
-                            this.adapter.log.error(`Cannot encrypt: ${error}`);
-                            SocketCommands._fixCallback(callback, error);
-                        }
-                    } else {
-                        this.adapter.log.error(`No system.config found: ${error}`);
+                return;
+            }
+            void this.adapter.getForeignObject('system.config', { user: socket._acl?.user }, (error, obj) => {
+                if (obj?.native?.secret) {
+                    this.secret = obj.native.secret;
+                    try {
+                        const encrypted = this.adapter.encrypt(this.secret, plainText);
+                        SocketCommands._fixCallback(callback, null, encrypted);
+                    } catch (error) {
+                        this.adapter.log.error(`Cannot encrypt: ${error}`);
                         SocketCommands._fixCallback(callback, error);
                     }
-                });
-            }
+                } else {
+                    this.adapter.log.error(`No system.config found: ${error}`);
+                    SocketCommands._fixCallback(callback, error);
+                }
+            });
         };
 
         /**
