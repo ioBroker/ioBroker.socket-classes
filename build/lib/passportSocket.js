@@ -30,6 +30,145 @@ function getQuery(url) {
     }
     return result;
 }
+/**
+ * Try every supported authentication of an upgrade request and answer it through `auth.success` or `auth.fail`.
+ * Never call this directly, use `authorize()`, which catches what this throws.
+ */
+function authenticate(auth, extendedReq, accept) {
+    extendedReq.query = getQuery(extendedReq.url);
+    // Authentication with user, password in a query
+    if (auth.checkUser && extendedReq.query.user && extendedReq.query.pass) {
+        return auth.checkUser(extendedReq.query.user, extendedReq.query.pass, (error, result) => {
+            if (error) {
+                return auth.fail(extendedReq, 'Cannot check user', false, accept);
+            }
+            if (!result) {
+                return auth.fail(extendedReq, 'User not found', false, accept);
+            }
+            extendedReq.user = result;
+            extendedReq.user.user = extendedReq.query.user;
+            extendedReq.user.logged_in = true;
+            auth.success(extendedReq, accept);
+        });
+    }
+    extendedReq.cookie = parseCookie(auth, extendedReq.headers.cookie || '');
+    if (extendedReq.cookie && extendedReq.headers.cookie) {
+        extendedReq.sessionID = extendedReq.cookie['connect.sid'] || '';
+        const accessToken = extendedReq.headers.cookie.split(';').find(c => c.trim().startsWith('access_token='));
+        // Authentication with access token in cookies
+        if (accessToken) {
+            void auth.store?.get(`a:${accessToken.split('=')[1]}`, (err, token) => {
+                const tokenData = token;
+                if (err) {
+                    return auth.fail(extendedReq, `Error in session store:\n${err.message}`, true, accept);
+                }
+                if (!tokenData?.user) {
+                    return auth.fail(extendedReq, 'No session found', false, accept);
+                }
+                // extendedReq.user
+                extendedReq.user = { logged_in: true, user: tokenData.user };
+                auth.success(extendedReq, accept);
+            });
+            return;
+        }
+    }
+    // Authentication with access token in a query
+    if (extendedReq.query.token) {
+        void auth.store?.get(`a:${extendedReq.query.token}`, (err, token) => {
+            const tokenData = token;
+            if (err) {
+                return auth.fail(extendedReq, `Error in session store:\n${err.message}`, true, accept);
+            }
+            if (!tokenData?.user) {
+                return auth.fail(extendedReq, 'No session found', false, accept);
+            }
+            // extendedReq.user
+            extendedReq.user = { logged_in: true, user: tokenData.user };
+            auth.success(extendedReq, accept);
+        });
+        return;
+    }
+    // Authentication with access token as Bearer token
+    if (extendedReq.headers.authentication?.startsWith('Bearer ')) {
+        void auth.store?.get(`a:${extendedReq.headers.authentication.substring(7)}`, (err, token) => {
+            const tokenData = token;
+            if (err) {
+                return auth.fail(extendedReq, `Error in session store:\n${err.message}`, true, accept);
+            }
+            if (!tokenData?.user) {
+                return auth.fail(extendedReq, 'No session found', false, accept);
+            }
+            // extendedReq.user
+            extendedReq.user = { logged_in: true, user: tokenData.user };
+            auth.success(extendedReq, accept);
+        });
+        return;
+    }
+    // Basic authentication
+    if (auth.checkUser && !auth.noBasicAuth && extendedReq.headers.authentication?.startsWith('Basic ')) {
+        // extract username and password
+        const parts = Buffer.from(extendedReq.headers.authentication.substring(6), 'base64')
+            .toString('utf-8')
+            .split(':');
+        const username = parts.shift();
+        const password = parts.join(':');
+        if (auth.checkUser && password && username) {
+            return auth.checkUser(username, password, (error, result) => {
+                if (error) {
+                    return auth.fail(extendedReq, 'Cannot check user', false, accept);
+                }
+                if (!result) {
+                    return auth.fail(extendedReq, 'User not found', false, accept);
+                }
+                extendedReq.user = result;
+                extendedReq.user.user = username;
+                extendedReq.user.logged_in = true;
+                auth.success(extendedReq, accept);
+            });
+        }
+    }
+    extendedReq.user = {
+        logged_in: false,
+    };
+    // sessionID is only assigned inside the cookie branch above, so a request
+    // without a cookie header reaches this point with it still undefined. The
+    // session store rejects that with a thrown error instead of a callback,
+    // which takes down the upgrade handler of the whole adapter.
+    if (!extendedReq.sessionID) {
+        return auth.fail(extendedReq, 'No session id', false, accept);
+    }
+    auth.store?.get(extendedReq.sessionID, (err, session) => {
+        // session looks like:
+        // {
+        //     cookie: {
+        //         originalMaxAge: 5999991,
+        //         expires: '2025-02-07T17:15:06.466Z',
+        //         httpOnly: true,
+        //         path: '/',
+        //     },
+        //     passport: {
+        //         user: 'admin',
+        //     },
+        // };
+        if (err) {
+            return auth.fail(extendedReq, `Error in session store:\n${err.message}`, true, accept);
+        }
+        if (!session) {
+            return auth.fail(extendedReq, 'No session found', false, accept);
+        }
+        if (!session.passport) {
+            return auth.fail(extendedReq, 'Passport was not initialized', true, accept);
+        }
+        const userKey = session.passport.user;
+        if (!userKey) {
+            return auth.fail(extendedReq, 'User not authorized through passport. (User Property not found)', false, accept);
+        }
+        // extendedReq.user
+        extendedReq.user = session.passport;
+        extendedReq.user.logged_in = true;
+        auth.success(extendedReq, accept);
+    });
+}
 function authorize(auth) {
     if (!auth.passport) {
         throw new Error("passport is required to use require('passport'), please install passport");
@@ -39,139 +178,30 @@ function authorize(auth) {
     }
     return function (req, accept) {
         const extendedReq = req;
-        extendedReq.query = getQuery(extendedReq.url);
-        // Authentication with user, password in a query
-        if (auth.checkUser && extendedReq.query.user && extendedReq.query.pass) {
-            return auth.checkUser(extendedReq.query.user, extendedReq.query.pass, (error, result) => {
-                if (error) {
-                    return auth.fail(extendedReq, 'Cannot check user', false, accept);
-                }
-                if (!result) {
-                    return auth.fail(extendedReq, 'User not found', false, accept);
-                }
-                extendedReq.user = result;
-                extendedReq.user.user = extendedReq.query.user;
-                extendedReq.user.logged_in = true;
-                auth.success(extendedReq, accept);
-            });
-        }
-        extendedReq.cookie = parseCookie(auth, extendedReq.headers.cookie || '');
-        if (extendedReq.cookie && extendedReq.headers.cookie) {
-            extendedReq.sessionID = extendedReq.cookie['connect.sid'] || '';
-            const accessToken = extendedReq.headers.cookie.split(';').find(c => c.trim().startsWith('access_token='));
-            // Authentication with access token in cookies
-            if (accessToken) {
-                void auth.store?.get(`a:${accessToken.split('=')[1]}`, (err, token) => {
-                    const tokenData = token;
-                    if (err) {
-                        return auth.fail(extendedReq, `Error in session store:\n${err.message}`, true, accept);
-                    }
-                    if (!tokenData?.user) {
-                        return auth.fail(extendedReq, 'No session found', false, accept);
-                    }
-                    // extendedReq.user
-                    extendedReq.user = { logged_in: true, user: tokenData.user };
-                    auth.success(extendedReq, accept);
-                });
+        // The websocket server calls this from its synchronous `verifyClient` hook and does not catch
+        // anything, so a throw in here does not just fail one connection, it takes the adapter down.
+        // Answer every request exactly once and turn an unexpected error into a normal rejection.
+        let answered = false;
+        const answerOnce = (err) => {
+            if (answered) {
                 return;
             }
-        }
-        // Authentication with access token in a query
-        if (extendedReq.query.token) {
-            void auth.store?.get(`a:${extendedReq.query.token}`, (err, token) => {
-                const tokenData = token;
-                if (err) {
-                    return auth.fail(extendedReq, `Error in session store:\n${err.message}`, true, accept);
-                }
-                if (!tokenData?.user) {
-                    return auth.fail(extendedReq, 'No session found', false, accept);
-                }
-                // extendedReq.user
-                extendedReq.user = { logged_in: true, user: tokenData.user };
-                auth.success(extendedReq, accept);
-            });
-            return;
-        }
-        // Authentication with access token as Bearer token
-        if (extendedReq.headers.authentication?.startsWith('Bearer ')) {
-            void auth.store?.get(`a:${extendedReq.headers.authentication.substring(7)}`, (err, token) => {
-                const tokenData = token;
-                if (err) {
-                    return auth.fail(extendedReq, `Error in session store:\n${err.message}`, true, accept);
-                }
-                if (!tokenData?.user) {
-                    return auth.fail(extendedReq, 'No session found', false, accept);
-                }
-                // extendedReq.user
-                extendedReq.user = { logged_in: true, user: tokenData.user };
-                auth.success(extendedReq, accept);
-            });
-            return;
-        }
-        // Basic authentication
-        if (auth.checkUser && !auth.noBasicAuth && extendedReq.headers.authentication?.startsWith('Basic ')) {
-            // extract username and password
-            const parts = Buffer.from(extendedReq.headers.authentication.substring(6), 'base64')
-                .toString('utf-8')
-                .split(':');
-            const username = parts.shift();
-            const password = parts.join(':');
-            if (auth.checkUser && password && username) {
-                return auth.checkUser(username, password, (error, result) => {
-                    if (error) {
-                        return auth.fail(extendedReq, 'Cannot check user', false, accept);
-                    }
-                    if (!result) {
-                        return auth.fail(extendedReq, 'User not found', false, accept);
-                    }
-                    extendedReq.user = result;
-                    extendedReq.user.user = username;
-                    extendedReq.user.logged_in = true;
-                    auth.success(extendedReq, accept);
-                });
-            }
-        }
-        extendedReq.user = {
-            logged_in: false,
+            answered = true;
+            accept(err);
         };
-        // sessionID is only assigned inside the cookie branch above, so a request
-        // without a cookie header reaches this point with it still undefined. The
-        // session store rejects that with a thrown error instead of a callback,
-        // which takes down the upgrade handler of the whole adapter.
-        if (!extendedReq.sessionID) {
-            return auth.fail(extendedReq, 'No session found', false, accept);
+        try {
+            authenticate(auth, extendedReq, answerOnce);
         }
-        auth.store?.get(extendedReq.sessionID, (err, session) => {
-            // session looks like:
-            // {
-            //     cookie: {
-            //         originalMaxAge: 5999991,
-            //         expires: '2025-02-07T17:15:06.466Z',
-            //         httpOnly: true,
-            //         path: '/',
-            //     },
-            //     passport: {
-            //         user: 'admin',
-            //     },
-            // };
-            if (err) {
-                return auth.fail(extendedReq, `Error in session store:\n${err.message}`, true, accept);
+        catch (e) {
+            const message = e instanceof Error ? e.message : String(e);
+            try {
+                auth.fail(extendedReq, `Error in authorization:\n${message}`, true, answerOnce);
             }
-            if (!session) {
-                return auth.fail(extendedReq, 'No session found', false, accept);
+            catch {
+                // even the failure handler gave up, just reject the connection
+                answerOnce(false);
             }
-            if (!session.passport) {
-                return auth.fail(extendedReq, 'Passport was not initialized', true, accept);
-            }
-            const userKey = session.passport.user;
-            if (!userKey) {
-                return auth.fail(extendedReq, 'User not authorized through passport. (User Property not found)', false, accept);
-            }
-            // extendedReq.user
-            extendedReq.user = session.passport;
-            extendedReq.user.logged_in = true;
-            auth.success(extendedReq, accept);
-        });
+        }
     };
 }
 //# sourceMappingURL=passportSocket.js.map

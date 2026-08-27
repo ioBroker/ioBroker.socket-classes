@@ -46,7 +46,7 @@ export interface Store {
         };
     }) => void;
 }
-export declare function authorize(auth: {
+export interface AuthOptions {
     passport: passport.PassportStatic;
     cookieParser: (secret: string | string[] | undefined, options?: {
         decode?(val: string): string;
@@ -61,4 +61,5 @@ export declare function authorize(auth: {
     store?: Store;
     userProperty?: string;
     noBasicAuth?: boolean;
-}): (req: IncomingMessage, accept: (err: boolean) => void) => void;
+}
+export declare function authorize(auth: AuthOptions): (req: IncomingMessage, accept: (err: boolean) => void) => void;
