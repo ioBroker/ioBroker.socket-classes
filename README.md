@@ -1032,7 +1032,7 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 2.4.0 (2026-08-27)
 * (@joltcoke) Security: an upgrade request that carries neither credentials nor a cookie header no longer crashes the adapter. `sessionID` is assigned only inside the cookie branch of `authorize()`, so such a request reached the session store lookup with it still undefined and js-controller threw while validating the id. The exception escaped the synchronous `verifyClient()` callback of the websocket server, so any unauthenticated client could stop an instance running with `auth: true`. The request is now rejected through `auth.fail()`, and `PassportHttpRequest.sessionID` is declared optional so the compiler rejects a future unguarded use. Affects 2.2.21 up to and including 2.3.8. Reported and fixed by Florian Schirmer.
 * (@GermanBluefox) Security: `authorize()` answers every upgrade request exactly once now and turns an unexpected exception into a regular rejection instead of letting it escape into the upgrade handler, so a future error on that path cannot take the adapter down again.
 
