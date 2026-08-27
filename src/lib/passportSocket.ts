@@ -21,7 +21,7 @@ export interface PassportHttpRequest extends IncomingMessage {
     };
     query: Record<string, string>;
     cookie: Record<string, string> | undefined;
-    sessionID: string;
+    sessionID?: string;
     user: { logged_in: boolean; user?: string };
 }
 
@@ -260,6 +260,14 @@ export function authorize(auth: {
         extendedReq.user = {
             logged_in: false,
         };
+
+        // sessionID is only assigned inside the cookie branch above, so a request
+        // without a cookie header reaches this point with it still undefined. The
+        // session store rejects that with a thrown error instead of a callback,
+        // which takes down the upgrade handler of the whole adapter.
+        if (!extendedReq.sessionID) {
+            return auth.fail(extendedReq, 'No session found', false, accept);
+        }
 
         auth.store?.get(
             extendedReq.sessionID,
