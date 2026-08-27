@@ -8,7 +8,7 @@ export interface PassportHttpRequest extends IncomingMessage {
     };
     query: Record<string, string>;
     cookie: Record<string, string> | undefined;
-    sessionID: string;
+    sessionID?: string;
     user: {
         logged_in: boolean;
         user?: string;
