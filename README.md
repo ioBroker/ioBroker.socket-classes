@@ -1032,7 +1032,7 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
-### 2.4.2 (2026-08-31)
+### **WORK IN PROGRESS**
 * (@GermanBluefox) Log messages are only sent to the sockets that subscribed to them. `sendLog()` emitted `log` to every connected socket, so as soon as one client called `requireLog(true)`, all other clients received the log too - including clients of other browsers and clients whose user does not have the rights to subscribe to the log at all.
 * (@GermanBluefox) `logout` destroys the express session again. It used `socket.id` as the session id, which only worked as long as `@iobroker/ws-server` filled the socket id with the session id from the `connect.sid` cookie. The socket id is a per-connection transport identifier generated on the server now, so the session to destroy is taken from `socket._sessionID` / `socket.conn.request.sessionID` instead.
 * (@joltcoke) Decode the websocket auth query so encoded credentials work
