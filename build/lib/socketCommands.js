@@ -1000,6 +1000,10 @@ class SocketCommands {
          * @param callback callback `(error?: Error) => void`
          */
         this.commands.logout = (socket, callback) => {
+            // The session that has to be destroyed. `socket.id` must not be used for that:
+            // it is only a transport identifier, generated per connection by @iobroker/ws-server,
+            // and never a session id.
+            const sessionID = socket._sessionID || socket.conn.request.sessionID || undefined;
             // try to extract access token
             let accessToken;
             if (socket.conn.request.headers?.authorization?.startsWith('Bearer ')) {
@@ -1024,8 +1028,8 @@ class SocketCommands {
                     if (token?.aToken) {
                         void this.adapter.destroySession(`a:${token.aToken}`, () => {
                             void this.adapter.destroySession(`r:${token.rToken}`, () => {
-                                if (socket.id) {
-                                    void this.adapter.destroySession(socket.id, callback);
+                                if (sessionID) {
+                                    void this.adapter.destroySession(sessionID, callback);
                                 }
                                 else if (callback) {
                                     callback();
@@ -1034,8 +1038,8 @@ class SocketCommands {
                         });
                     }
                     else {
-                        if (socket.id) {
-                            void this.adapter.destroySession(socket.id, callback);
+                        if (sessionID) {
+                            void this.adapter.destroySession(sessionID, callback);
                         }
                         else if (callback) {
                             callback();
@@ -1043,8 +1047,8 @@ class SocketCommands {
                     }
                 });
             }
-            else if (socket.id) {
-                void this.adapter.destroySession(socket.id, callback);
+            else if (sessionID) {
+                void this.adapter.destroySession(sessionID, callback);
             }
             else if (callback) {
                 callback(new Error('No session'));

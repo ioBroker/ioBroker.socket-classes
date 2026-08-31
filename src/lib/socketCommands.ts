@@ -1275,6 +1275,11 @@ export class SocketCommands {
          * @param callback callback `(error?: Error) => void`
          */
         this.commands.logout = (socket: WebSocketClient, callback: ioBroker.ErrorCallback): void => {
+            // The session that has to be destroyed. `socket.id` must not be used for that:
+            // it is only a transport identifier, generated per connection by @iobroker/ws-server,
+            // and never a session id.
+            const sessionID: string | undefined = socket._sessionID || socket.conn.request.sessionID || undefined;
+
             // try to extract access token
             let accessToken: string | undefined;
             if (socket.conn.request.headers?.authorization?.startsWith('Bearer ')) {
@@ -1299,23 +1304,23 @@ export class SocketCommands {
                     if (token?.aToken) {
                         void this.adapter.destroySession(`a:${token.aToken}`, () => {
                             void this.adapter.destroySession(`r:${token.rToken}`, () => {
-                                if (socket.id) {
-                                    void this.adapter.destroySession(socket.id, callback);
+                                if (sessionID) {
+                                    void this.adapter.destroySession(sessionID, callback);
                                 } else if (callback) {
                                     callback();
                                 }
                             });
                         });
                     } else {
-                        if (socket.id) {
-                            void this.adapter.destroySession(socket.id, callback);
+                        if (sessionID) {
+                            void this.adapter.destroySession(sessionID, callback);
                         } else if (callback) {
                             callback();
                         }
                     }
                 });
-            } else if (socket.id) {
-                void this.adapter.destroySession(socket.id, callback);
+            } else if (sessionID) {
+                void this.adapter.destroySession(sessionID, callback);
             } else if (callback) {
                 callback(new Error('No session'));
             }

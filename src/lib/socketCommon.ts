@@ -890,7 +890,20 @@ export class SocketCommon {
 
     sendLog(obj: ioBroker.LogMessage): void {
         // TODO Build in some threshold
-        this.server?.sockets?.emit('log', obj);
+        const sockets = this.getSocketsList();
+        if (!sockets) {
+            return;
+        }
+
+        // Only the sockets that called `requireLog(true)` have an entry in `subscribe.log`.
+        // Without this check the log would be broadcast to every connected client, even to
+        // those that are not allowed to subscribe to it.
+        // this could be an object or array: an array is ioBroker, an object is socket.io
+        for (const socket of Array.isArray(sockets) ? sockets : Object.values(sockets)) {
+            if (socket.subscribe?.log?.length) {
+                socket.emit('log', obj);
+            }
+        }
     }
 
     publish(
