@@ -40,6 +40,22 @@ class SocketCommon {
     __getIsNoDisconnect() {
         throw new Error('"__getIsNoDisconnect" must be implemented in SocketCommon!');
     }
+    /**
+     * Kick a client by closing its connection. Which method exists depends on the transport:
+     * a socket.io socket exposes only `disconnect()`, the ws socket has `close()` and
+     * `disconnect()` as an alias of it.
+     */
+    #disconnectSocket(socket) {
+        const transportSocket = socket;
+        if (typeof transportSocket.disconnect === 'function') {
+            // for a real socket.io socket "true" closes the underlying connection
+            // and not only the namespace; the ws socket ignores the argument
+            transportSocket.disconnect(true);
+        }
+        else if (typeof transportSocket.close === 'function') {
+            transportSocket.close();
+        }
+    }
     __initAuthentication(_authOptions) {
         throw new Error('"__initAuthentication" must be implemented in SocketCommon!');
     }
@@ -351,7 +367,7 @@ class SocketCommon {
                         this.adapter.log.silly(`socket.io [init] ${err || 'No user found in cookies'}`);
                         // ws does not require disconnect
                         if (!this.noDisconnect) {
-                            socket.close();
+                            this.#disconnectSocket(socket);
                         }
                         if (cb) {
                             cb();
@@ -590,7 +606,7 @@ class SocketCommon {
                             socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
                             // ws does not require disconnect
                             if (!this.noDisconnect) {
-                                socket.close();
+                                this.#disconnectSocket(socket);
                             }
                         }
                         if (socket._authPending) {
@@ -615,7 +631,7 @@ class SocketCommon {
                             socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
                             // ws does not require disconnect
                             if (!this.noDisconnect) {
-                                socket.close();
+                                this.#disconnectSocket(socket);
                             }
                         }
                         if (socket._authPending) {
