@@ -20,13 +20,35 @@ function parseCookie(auth, cookieHeader) {
     });
     return result;
 }
+/**
+ * Decode a query string component the way a URL query is meant to be read: '+' becomes a
+ * space and percent escapes are resolved. A malformed percent sequence is kept verbatim
+ * instead of throwing, so a broken query can never crash the upgrade handler.
+ */
+function decodeQueryComponent(value) {
+    try {
+        return decodeURIComponent(value.replace(/\+/g, ' '));
+    }
+    catch {
+        return value;
+    }
+}
 function getQuery(url) {
     const query = (url || '').split('?')[1] || '';
-    const parts = query.split('&');
     const result = {};
-    for (let p = 0; p < parts.length; p++) {
-        const parts1 = parts[p].split('=');
-        result[parts1[0]] = parts1[1];
+    for (const part of query.split('&')) {
+        if (!part) {
+            continue;
+        }
+        // Split on the first '=' only and decode both sides. Splitting on every '=' would
+        // drop everything after a '=' inside the value (e.g. base64 padding), and without
+        // decoding an url-encoded credential would be compared in its encoded form and
+        // rejected, so a user or password containing & = # % + or whitespace could not be
+        // authenticated at all.
+        const eq = part.indexOf('=');
+        const rawKey = eq === -1 ? part : part.slice(0, eq);
+        const rawValue = eq === -1 ? '' : part.slice(eq + 1);
+        result[decodeQueryComponent(rawKey)] = decodeQueryComponent(rawValue);
     }
     return result;
 }
