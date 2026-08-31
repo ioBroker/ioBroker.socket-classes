@@ -85,6 +85,25 @@ describe('passportSocket authorize', () => {
         strictEqual(calls.storeGet.length, 0, 'must not consult the session store');
     });
 
+    it('decodes url-encoded user and password from the query before checking them', () => {
+        const received = {};
+        const { auth, calls } = createAuth({
+            checkUser: (user, pass, callback) => {
+                received.user = user;
+                received.pass = pass;
+                callback(null, { logged_in: true });
+            },
+        });
+        // user "a b", password "p=q&r": the space, '=' and '&' are percent-encoded on the wire
+        const request = { url: '/?sid=1&user=a%20b&pass=p%3Dq%26r', headers: {} };
+
+        passportSocket(auth)(request, () => {});
+
+        strictEqual(calls.succeeded.length, 1, 'must authorize');
+        strictEqual(received.user, 'a b', 'must decode the user');
+        strictEqual(received.pass, 'p=q&r', 'must keep the whole decoded password, including = and &');
+    });
+
     it('rejects a cookie header without connect.sid without asking the store', () => {
         const { auth, calls } = createAuth();
         const request = { url: '/?sid=1', headers: { cookie: 'other=1' } };
