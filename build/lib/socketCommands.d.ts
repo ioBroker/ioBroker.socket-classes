@@ -28,6 +28,8 @@ export interface SocketDataContext {
 export declare class SocketCommands {
     #private;
     static ERROR_PERMISSION: string;
+    /** Commands that must be executed even when the access token of the socket has expired */
+    static COMMANDS_WITHOUT_SESSION_CHECK: string[];
     static COMMANDS_PERMISSIONS: Record<string, {
         type: 'object' | 'state' | 'users' | 'other' | 'file' | '';
         operation: SocketOperation;

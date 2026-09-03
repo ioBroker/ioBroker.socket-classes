@@ -8,7 +8,17 @@ const socketCommands_1 = require("./socketCommands");
 // - iobroker ws socket
 class SocketCommon {
     static COMMAND_RE_AUTHENTICATE = 'reauthenticate';
+    /**
+     * How long a socket keeps working after its access token has expired. The browser renews the token
+     * with a timer, and timers of a hidden tab fire late (Chrome wakes them up once a minute at most), so
+     * the socket must not be cut off the very second the token expires.
+     */
+    static SESSION_GRACE_MS = 60_000;
+    /** A socket with an expired token is asked to refresh it at most once in this interval */
+    static REAUTHENTICATE_INTERVAL_MS = 5_000;
     server = null;
+    /** When each socket was last asked to refresh its expired token (only during the grace period) */
+    #reauthenticateRequested = new WeakMap();
     serverMode = false;
     settings;
     adapter;
@@ -186,43 +196,28 @@ class SocketCommon {
     __updateSession(socket) {
         const now = Date.now();
         if (socket._sessionExpiresAt) {
-            // If less than 10 seconds, then recheck the socket
-            if (socket._sessionExpiresAt < Date.now() - 10_000) {
-                let accessToken = socket.conn.request.headers?.cookie
-                    ?.split(';')
-                    .find(c => c.trim().startsWith('access_token='));
-                if (accessToken) {
-                    accessToken = accessToken.split('=')[1];
-                }
-                if (!accessToken) {
-                    // Try to find in a query
-                    accessToken = socket.conn.request.query?.token;
-                    if (!accessToken && socket.conn.request.headers?.authorization?.startsWith('Bearer ')) {
-                        // Try to find in Authentication header
-                        accessToken = socket.conn.request.headers.authorization.split(' ')[1];
-                    }
-                }
-                if (accessToken) {
-                    void this.store?.get(`a:${accessToken}`, (err, token) => {
-                        const tokenData = token;
-                        if (err) {
-                            this.adapter.log.error(`Cannot get token: ${err}`);
-                        }
-                        else if (!tokenData?.user) {
-                            this.adapter.log.silly('No session found');
-                        }
-                        else {
-                            socket._sessionExpiresAt = tokenData.aExp;
-                        }
-                    });
-                }
-            }
+            // OAuth2: the socket knows when the access token it was authenticated with expires. A token is
+            // never prolonged in place, so there is nothing to re-read from the store: the client fetches a
+            // new token and announces it with `updateTokenExpiration`, which is the only thing that moves
+            // `_sessionExpiresAt` forward.
             if (socket._sessionExpiresAt < now) {
-                this.adapter.log.warn('REAUTHENTICATE!');
-                socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
-                return false;
+                if (socket._sessionExpiresAt + SocketCommon.SESSION_GRACE_MS < now) {
+                    // The client had the whole grace period to bring a new token and did not
+                    this.adapter.log.warn('REAUTHENTICATE!');
+                    socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
+                    return false;
+                }
+                // The token has just expired. Keep serving the socket for a while and ask the client to
+                // refresh the token now, as its own timer is obviously late. A client that holds a refresh
+                // token answers with `updateTokenExpiration` and nobody notices; a client without one is
+                // sent to the login page by this event, as before.
+                const requested = this.#reauthenticateRequested.get(socket);
+                if (!requested || now - requested > SocketCommon.REAUTHENTICATE_INTERVAL_MS) {
+                    this.#reauthenticateRequested.set(socket, now);
+                    this.adapter.log.debug('Access token expired, asking the client to refresh it');
+                    socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
+                }
             }
-            // Check socket expiration time
             return true;
         }
         // Legacy authentication method

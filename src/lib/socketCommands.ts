@@ -113,6 +113,8 @@ export interface SocketDataContext {
 
 export class SocketCommands {
     static ERROR_PERMISSION = 'permissionError';
+    /** Commands that must be executed even when the access token of the socket has expired */
+    static COMMANDS_WITHOUT_SESSION_CHECK: string[] = ['updateTokenExpiration'];
     static COMMANDS_PERMISSIONS: Record<
         string,
         { type: 'object' | 'state' | 'users' | 'other' | 'file' | ''; operation: SocketOperation }
@@ -944,6 +946,14 @@ export class SocketCommands {
                     if (!token?.user) {
                         this.adapter.log.silly('No session found');
                         callback('No access token found', false);
+                    } else if (socket._acl?.user && socket._acl.user !== `system.user.${token.user}`) {
+                        // The command is accepted even when the session of the socket has expired, so it
+                        // must not be a way to carry on as somebody else: the token has to belong to the
+                        // user the socket was authenticated as.
+                        this.adapter.log.warn(
+                            `Access token of user "${token.user}" rejected for the socket of ${socket._acl.user}`,
+                        );
+                        callback('Access token belongs to another user', false);
                     } else {
                         // Replace access token in cookie
                         if (socket.conn.request.headers?.cookie?.includes('access_token=')) {
@@ -2764,8 +2774,10 @@ export class SocketCommands {
     applyCommands(socket: WebSocketClient): void {
         Object.keys(this.commands).forEach(command =>
             socket.on(command, (...args): void => {
-                // Check if the authentication is still valid
-                if (this.#updateSession(socket)) {
+                // Check if the authentication is still valid. Announcing a new access token is the only way
+                // to make an expired session valid again, so that command must pass the check - otherwise
+                // a client whose token has expired could never recover without reloading the page.
+                if (SocketCommands.COMMANDS_WITHOUT_SESSION_CHECK.includes(command) || this.#updateSession(socket)) {
                     this.commands[command](socket, ...args);
                 } else {
                     this.adapter.log.debug(

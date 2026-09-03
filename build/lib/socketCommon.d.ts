@@ -76,6 +76,14 @@ export type EventNames = 'connect' | 'disconnect' | 'error';
 export declare class SocketCommon {
     #private;
     static COMMAND_RE_AUTHENTICATE: string;
+    /**
+     * How long a socket keeps working after its access token has expired. The browser renews the token
+     * with a timer, and timers of a hidden tab fire late (Chrome wakes them up once a minute at most), so
+     * the socket must not be cut off the very second the token expires.
+     */
+    static SESSION_GRACE_MS: number;
+    /** A socket with an expired token is asked to refresh it at most once in this interval */
+    static REAUTHENTICATE_INTERVAL_MS: number;
     protected server: SocketIO | null;
     private serverMode;
     protected settings: SocketSettings;

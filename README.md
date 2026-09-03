@@ -1032,6 +1032,11 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+- (@GermanBluefox) A socket keeps working for one minute after its access token has expired and is asked to refresh the token (`reauthenticate`) instead of being cut off at once. The refresh timer of a browser tab in the background fires late, so the connection was lost although the user had a valid refresh token
+- (@GermanBluefox) `updateTokenExpiration` is accepted for a socket with an expired session, as it is the only way to make the session valid again. The new token must belong to the same user as the socket
+- (@GermanBluefox) Removed the dead re-read of the access token before its expiration (the condition was inverted and a token is never prolonged in place)
+
 ### 2.4.3 (2026-08-31)
 * (@GermanBluefox) Log messages are only sent to the sockets that subscribed to them. `sendLog()` emitted `log` to every connected socket, so as soon as one client called `requireLog(true)`, all other clients received the log too - including clients of other browsers and clients whose user does not have the rights to subscribe to the log at all.
 * (@GermanBluefox) `logout` destroys the express session again. It used `socket.id` as the session id, which only worked as long as `@iobroker/ws-server` filled the socket id with the session id from the `connect.sid` cookie. The socket id is a per-connection transport identifier generated on the server now, so the session to destroy is taken from `socket._sessionID` / `socket.conn.request.sessionID` instead.
