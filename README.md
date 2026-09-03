@@ -1032,7 +1032,7 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 2.4.4 (2026-09-03)
 - (@GermanBluefox) A socket keeps working for one minute after its access token has expired and is asked to refresh the token (`reauthenticate`) instead of being cut off at once. The refresh timer of a browser tab in the background fires late, so the connection was lost although the user had a valid refresh token
 - (@GermanBluefox) `updateTokenExpiration` is accepted for a socket with an expired session, as it is the only way to make the session valid again. The new token must belong to the same user as the socket
 - (@GermanBluefox) Removed the dead re-read of the access token before its expiration (the condition was inverted and a token is never prolonged in place)
