@@ -397,13 +397,13 @@ Write a file into ioBroker DB as base64 string
 * `options` *{mode?: number} | ((error: null | undefined | Error | string) => void)*: optional `{mode: 0x0644}`
 * `callback?` *(error: null | undefined | Error | string) => void*: Callback `(error: null | undefined | Error | string) => void`
 
-#### <a name="writefile_w"></a>`writeFile(adapter, fileName, data, options, callback?)`
+#### <a name="writefile_w"></a>`writeFile(adapter, fileName, data, options?, callback?)`
 Write a file into ioBroker DB as text
 This function is overloaded in admin (because admin accepts only base64)
 * `adapter` *string*: instance name, e.g. `vis.0`
 * `fileName` *string*: file name, e.g. `main/vis-views.json`
 * `data` *string*: file content as text
-* `options` *{mode?: number} | ((error: null | undefined | Error | string) => void)*: optional `{mode: 0x0644}`
+* `options?` *{mode?: number} | ((error: null | undefined | Error | string) => void)*: optional `{mode: 0x0644}`
 * `callback?` *(error: null | undefined | Error | string) => void*: Callback `(error: null | undefined | Error | string) => void`
 
 #### <a name="unlink_w"></a>`unlink(adapter, name, callback)`
@@ -940,13 +940,13 @@ Write a file into ioBroker DB as base64 string
 * `options` *{mode?: number} | ((error: null | undefined | Error | string) => void)*: optional `{mode: 0x0644}`
 * `callback?` *(error: null | undefined | Error | string) => void*: Callback `(error: null | undefined | Error | string) => void`
 
-#### <a name="writefile_a"></a>`writeFile(adapter, fileName, data, options, callback?)`
+#### <a name="writefile_a"></a>`writeFile(adapter, fileName, data, options?, callback?)`
 Write a file into ioBroker DB as text
 This function is overloaded in admin (because admin accepts only base64)
 * `adapter` *string*: instance name, e.g. `vis.0`
 * `fileName` *string*: file name, e.g. `main/vis-views.json`
 * `data` *string*: file content as text
-* `options` *{mode?: number} | ((error: null | undefined | Error | string) => void)*: optional `{mode: 0x0644}`
+* `options?` *{mode?: number} | ((error: null | undefined | Error | string) => void)*: optional `{mode: 0x0644}`
 * `callback?` *(error: null | undefined | Error | string) => void*: Callback `(error: null | undefined | Error | string) => void`
 
 #### <a name="unlink_a"></a>`unlink(adapter, name, callback)`
@@ -1032,6 +1032,22 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+- (@GermanBluefox) Security: the files inside a folder are deleted and renamed with the user of the socket, so js-controller checks the permissions for every file and not only for the folder
+- (@GermanBluefox) `logout` does not crash on a ws socket that has no `_query` (cookie authentication or legacy session)
+- (@GermanBluefox) The `objectChange` event of a deleted `system.config` does not crash `publish()`
+- (@GermanBluefox) A socket with subscriptions can be re-subscribed on a fresh commands instance without a `TypeError`
+- (@GermanBluefox) `writeFile`, `delObject` and `delObjects` answer a permission error via the callback also when the options are omitted
+- (@GermanBluefox) Wildcard entries of the IP white list like `192.168.1.*` are matched
+- (@GermanBluefox) The event threshold is not disabled by a check that runs while it is being activated
+- (@GermanBluefox) Instances are informed about a disconnected socket even if the socket has never subscribed to states, objects, files or logs
+- (@GermanBluefox) `getAdapters(adapterName)` delivers the requested adapter instead of an empty list
+- (@GermanBluefox) `updateRatings()` sends the uuid of the system when no uuid is given
+- (@GermanBluefox) `getObjectView` with `depth` returns the root object also for a start key without a trailing dot
+- (@GermanBluefox) `readLogs` recognizes absolute Windows paths like `C:\iobroker\log`
+- (@GermanBluefox) Added detailed unit tests for all classes
+- (@GermanBluefox) Migrated `tasks.js` to TypeScript (`tasks.ts`)
+
 ### 2.4.4 (2026-09-03)
 - (@GermanBluefox) A socket keeps working for one minute after its access token has expired and is asked to refresh the token (`reauthenticate`) instead of being cut off at once. The refresh timer of a browser tab in the background fires late, so the connection was lost although the user had a valid refresh token
 - (@GermanBluefox) `updateTokenExpiration` is accepted for a socket with an expired session, as it is the only way to make the session valid again. The new token must belong to the same user as the socket

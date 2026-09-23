@@ -14,7 +14,7 @@ export default [
         },
     },
     {
-        ignores: ['build/*', 'test/*', 'eslint.config.mjs', 'prettier.config.mjs', 'tasks.js'],
+        ignores: ['build/*', 'test/*', 'eslint.config.mjs', 'prettier.config.mjs', 'tasks.ts'],
     },
     {
         // disable temporary the rule 'jsdoc/require-param' and enable 'jsdoc/require-jsdoc'

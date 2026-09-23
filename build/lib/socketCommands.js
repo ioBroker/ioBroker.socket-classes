@@ -113,7 +113,7 @@ class SocketCommands {
             const files = await this.adapter.readDirAsync(adapter, oldName, options);
             if (files?.length) {
                 for (let f = 0; f < files.length; f++) {
-                    await this.#rename(adapter, `${oldName}/${files[f].file}`, `${newName}/${files[f].file}`);
+                    await this.#rename(adapter, `${oldName}/${files[f].file}`, `${newName}/${files[f].file}`, options);
                 }
             }
         }
@@ -150,7 +150,7 @@ class SocketCommands {
             const files = await this.adapter.readDirAsync(adapter, name, options);
             if (files?.length) {
                 for (let f = 0; f < files.length; f++) {
-                    await this.#unlink(adapter, `${name}/${files[f].file}`);
+                    await this.#unlink(adapter, `${name}/${files[f].file}`, options);
                 }
             }
         }
@@ -261,7 +261,7 @@ class SocketCommands {
                     // replace language
                     if (this.context.language &&
                         id === 'system.config' &&
-                        obj.common) {
+                        obj?.common) {
                         obj.common.language = this.context.language;
                     }
                     socket.emit(type, id, obj);
@@ -507,6 +507,7 @@ class SocketCommands {
             return;
         }
         const options = socket?._acl?.user ? { user: socket._acl.user } : undefined;
+        this.subscribes[type] ||= {};
         for (let i = 0; i < socket.subscribe[type].length; i++) {
             const pattern = socket.subscribe[type][i].pattern;
             if (this.subscribes[type][pattern] === undefined) {
@@ -540,11 +541,14 @@ class SocketCommands {
         }
     }
     unsubscribeSocket(socket, type) {
-        if (!socket?.subscribe) {
+        if (!socket) {
             return;
         }
-        // inform all instances about disconnected socket
+        // inform all instances about disconnected socket, also if the socket has never subscribed to anything
         this.#informAboutDisconnect(socket.id);
+        if (!socket.subscribe) {
+            return;
+        }
         if (!type) {
             // all
             Object.keys(socket.subscribe).forEach(type => this.unsubscribeSocket(socket, type));
@@ -556,7 +560,7 @@ class SocketCommands {
         const options = socket?._acl?.user ? { user: socket._acl.user } : undefined;
         for (let i = 0; i < socket.subscribe[type].length; i++) {
             const pattern = socket.subscribe[type][i].pattern;
-            if (this.subscribes[type][pattern] !== undefined) {
+            if (this.subscribes[type]?.[pattern] !== undefined) {
                 this.subscribes[type][pattern]--;
                 if (this.subscribes[type][pattern] <= 0) {
                     if (type === 'stateChange') {
@@ -1022,7 +1026,7 @@ class SocketCommands {
                 // socket.io has "_query" and not "query" in the request
                 accessToken =
                     socket.conn.request.query?.token ||
-                        socket.conn.request._query.token;
+                        socket.conn.request._query?.token;
             }
             if (!accessToken) {
                 const part = socket.conn.request.headers?.cookie
@@ -1254,13 +1258,13 @@ class SocketCommands {
          * @param callback Callback `(error: null | undefined | Error | string) => void`
          */
         this.commands.writeFile = (socket, adapter, fileName, data, options, callback) => {
+            if (typeof options === 'function') {
+                callback = options;
+                options = undefined;
+            }
             if (this._checkPermissions(socket, 'writeFile', callback, fileName)) {
                 let _options;
-                if (typeof options === 'function') {
-                    callback = options;
-                    _options = { user: socket._acl?.user };
-                }
-                else if (!options || options.mode === undefined) {
+                if (!options || options.mode === undefined) {
                     _options = { user: socket._acl?.user };
                 }
                 else {
@@ -1961,8 +1965,8 @@ class SocketCommands {
                                     let rootWithoutDot;
                                     if (root) {
                                         if (!root.endsWith('.')) {
-                                            root += '.';
                                             rootWithoutDot = root;
+                                            root += '.';
                                         }
                                         else {
                                             rootWithoutDot = root.substring(0, root.length - 1);

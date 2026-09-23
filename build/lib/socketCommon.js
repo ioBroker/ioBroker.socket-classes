@@ -444,21 +444,12 @@ class SocketCommon {
             // no wild-carded ips => no ip configured
             return null;
         }
-        wildCardIps.forEach(ip => {
+        // "*" stands for any value of an octet, like "192.168.1.*"
+        const wildCardIp = wildCardIps.find(ip => {
             const ipParts = ip.split('.');
-            if (ipParts.length === 4) {
-                for (let i = 0; i < 4; i++) {
-                    if (ipParts[i] === '*' && i === 3) {
-                        // match
-                        return ip;
-                    }
-                    if (ipParts[i] !== addressParts[i]) {
-                        break;
-                    }
-                }
-            }
+            return ipParts.length === 4 && ipParts.every((part, i) => part === '*' || part === addressParts[i]);
         });
-        return null;
+        return wildCardIp || null;
     }
     static _getPermissionsForIp(address, whiteList) {
         return whiteList[SocketCommon.getWhiteListIpForAddress(address, whiteList) || 'default'];

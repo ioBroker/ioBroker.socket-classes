@@ -84,7 +84,7 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
             _uuid = uuid;
         }
         try {
-            const response = await axios_1.default.get(`https://rating.iobroker.net/rating?uuid=${uuid}`, {
+            const response = await axios_1.default.get(`https://rating.iobroker.net/rating?uuid=${_uuid}`, {
                 timeout: 15000,
                 validateStatus: status => status < 400,
             });
@@ -328,9 +328,14 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
     #enableEventThreshold() {
         if (!this.eventsThreshold.active) {
             this.eventsThreshold.active = true;
+            // set at once, otherwise a check in between sees an old time and disables the threshold again
+            this.eventsThreshold.timeActivated = Date.now();
             setTimeout(async () => {
+                if (!this.eventsThreshold.active) {
+                    // disabled meanwhile
+                    return;
+                }
                 this.adapter.log.info(`Unsubscribe from all states, except system's, because over ${this.eventsThreshold.repeatSeconds} seconds the number of events is over ${this.eventsThreshold.value} (in last second ${this.eventsThreshold.count})`);
-                this.eventsThreshold.timeActivated = Date.now();
                 this.onThresholdChanged?.(true);
                 for (const pattern of Object.keys(this.subscribes.stateChange)) {
                     try {
@@ -797,7 +802,7 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
                                         const parts = fileName.replace(/\\/g, '/').split('/');
                                         parts.pop();
                                         fileName = parts.join('/');
-                                        if (fileName[0] !== '/' && !fileName.match(/^\W:/)) {
+                                        if (fileName[0] !== '/' && !fileName.match(/^\w:/)) {
                                             const _filename = (0, node_path_1.normalize)(`${__dirname}/../../../`) + fileName;
                                             if (!(0, node_fs_1.existsSync)(_filename)) {
                                                 fileName = (0, node_path_1.normalize)(`${__dirname}/../../`) + fileName;
@@ -1108,7 +1113,7 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
                     }
                     else {
                         callback(null, doc?.rows
-                            .filter(obj => obj && (!adapterName || obj.value.common?.name === this.adapterName))
+                            .filter(obj => obj && (!adapterName || obj.value.common?.name === adapterName))
                             .map(item => {
                             const obj = item.value;
                             if (obj.common) {
@@ -1357,13 +1362,13 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
          * @param callback - Callback function `(error: string | null) => void`
          */
         this.commands.writeFile = (socket, adapter, fileName, data64, options, callback) => {
+            if (typeof options === 'function') {
+                callback = options;
+                options = undefined;
+            }
             if (this._checkPermissions(socket, 'writeFile', callback, fileName)) {
                 let _options;
-                if (typeof options === 'function') {
-                    callback = options;
-                    _options = { user: socket._acl?.user };
-                }
-                else if (!options || options.mode === undefined) {
+                if (!options || options.mode === undefined) {
                     _options = { user: socket._acl?.user };
                 }
                 else {
@@ -1500,10 +1505,13 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
          * @param callback - Callback function `(error: string | null) => void`
          */
         this.commands.delObject = (socket, id, options, callback) => {
+            if (typeof options === 'function') {
+                callback = options;
+                options = undefined;
+            }
             if (this._checkPermissions(socket, 'delObject', callback, id)) {
                 let _options;
-                if (typeof options === 'function') {
-                    callback = options;
+                if (!options) {
                     _options = { user: socket._acl?.user };
                 }
                 else if (options?.recursive) {
@@ -1535,10 +1543,13 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
          * @param callback - Callback function `(error: string | null) => void`
          */
         this.commands.delObjects = (socket, id, options, callback) => {
+            if (typeof options === 'function') {
+                callback = options;
+                options = undefined;
+            }
             if (this._checkPermissions(socket, 'delObject', callback, id)) {
                 let _options;
-                if (typeof options === 'function') {
-                    callback = options;
+                if (!options) {
                     _options = { user: socket._acl?.user, recursive: true };
                 }
                 else if (options?.recursive) {
