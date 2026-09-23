@@ -1032,7 +1032,7 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 2.5.0 (2026-09-23)
 - (@GermanBluefox) Security: the files inside a folder are deleted and renamed with the user of the socket, so js-controller checks the permissions for every file and not only for the folder
 - (@GermanBluefox) `logout` does not crash on a ws socket that has no `_query` (cookie authentication or legacy session)
 - (@GermanBluefox) The `objectChange` event of a deleted `system.config` does not crash `publish()`
