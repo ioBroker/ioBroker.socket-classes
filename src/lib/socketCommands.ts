@@ -103,7 +103,9 @@ export type SupportedFeature =
     | 'CONTROLLER_UI_UPGRADE'
     | 'ADAPTER_WEBSERVER_UPGRADE'
     | 'INSTANCE_MESSAGES'
-    | 'PARTIAL_OBJECT_TREE';
+    | 'PARTIAL_OBJECT_TREE'
+    /** The command `getObjectsCount` counts the objects instead of the client reading them all */
+    | 'OBJECTS_COUNT';
 
 export interface SocketDataContext {
     language?: ioBroker.Languages;
@@ -1031,6 +1033,10 @@ export class SocketCommands {
                 SocketCommands._fixCallback(callback, null, true);
             } else if (feature === 'PARTIAL_OBJECT_TREE') {
                 SocketCommands._fixCallback(callback, null, true);
+            } else if (feature === 'OBJECTS_COUNT') {
+                // only the admin variant of these commands has it, and a client that asks must not
+                // send a command that nobody answers - it would sit there until its timeout
+                SocketCommands._fixCallback(callback, null, !!this.commands.getObjectsCount);
             } else {
                 SocketCommands._fixCallback(callback, null, this.adapter.supportsFeature(feature));
             }

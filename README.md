@@ -522,6 +522,7 @@ Unsubscribe from file changes in ioBroker DB
 * [`updateLicenses`](#updatelicenses_a)
 * [`getCompactInstances`](#getcompactinstances_a)
 * [`getCompactAdapters`](#getcompactadapters_a)
+* [`getObjectsCount`](#getobjectscount_a)
 * [`getCompactInstalled`](#getcompactinstalled_a)
 * [`getCompactSystemRepositories`](#getcompactsystemrepositories_a)
 * [`getCompactRepository`](#getcompactrepository_a)
@@ -744,6 +745,13 @@ Get all instances in a compact form to save bandwidth.
 #### <a name="getcompactadapters_a"></a>`getCompactAdapters(callback)`
 Get all adapters in a compact form to save bandwidth.
 * `callback` *(error: string | null | Error | undefined, result?: Record<string, CompactAdapterInfo>) => void) => void*: - Callback function `(error: string | null, results?: Record<string, { icon: string; v: string; iv: string }>) => void`
+
+#### <a name="getobjectscount_a"></a>`getObjectsCount(callback)`
+Count the objects and the objects of every type.
+Reading all objects only to count them transfers the whole database - tens of megabytes on
+a grown installation, and it blocks this process while it packs them up. This counts them
+where they are and answers with numbers. Announced as the feature `OBJECTS_COUNT`.
+* `callback` *(error: string | null | Error | undefined, result?: ObjectsCount) => void) => void*: - Callback function `(error: string | null, result?: ObjectsCount) => void`
 
 #### <a name="getcompactinstalled_a"></a>`getCompactInstalled(host, callback)`
 Get all installed adapters in a compact form to save bandwidth.
@@ -1032,6 +1040,9 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+- (@GermanBluefox) Added `#countObjects()` method to count the objects and the objects of every type. Reading all objects only to count them transfers the whole database - tens of megabytes on a grown installation, and it blocks this process while it packs them up. This counts them where they are and answers with numbers. Announced as the feature `OBJECTS_COUNT`.
+- 
 ### 2.5.0 (2026-09-23)
 - (@GermanBluefox) Security: the files inside a folder are deleted and renamed with the user of the socket, so js-controller checks the permissions for every file and not only for the folder
 - (@GermanBluefox) `logout` does not crash on a ws socket that has no `_query` (cookie authentication or legacy session)

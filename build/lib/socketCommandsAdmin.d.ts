@@ -108,6 +108,12 @@ export interface RepoAdapterObject extends ioBroker.AdapterCommon {
     allowAdapterReadme?: boolean;
     allowAdapterRating?: boolean;
 }
+export interface ObjectsCount {
+    /** Number of all objects */
+    total: number;
+    /** Number of objects per type, e.g. `{ state: 8170, channel: 979 }` */
+    byType: Record<string, number>;
+}
 export declare class SocketCommandsAdmin extends SocketCommands {
     #private;
     static ALLOW_CACHE: string[];

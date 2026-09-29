@@ -844,6 +844,11 @@ class SocketCommands {
             else if (feature === 'PARTIAL_OBJECT_TREE') {
                 SocketCommands._fixCallback(callback, null, true);
             }
+            else if (feature === 'OBJECTS_COUNT') {
+                // only the admin variant of these commands has it, and a client that asks must not
+                // send a command that nobody answers - it would sit there until its timeout
+                SocketCommands._fixCallback(callback, null, !!this.commands.getObjectsCount);
+            }
             else {
                 SocketCommands._fixCallback(callback, null, this.adapter.supportsFeature(feature));
             }

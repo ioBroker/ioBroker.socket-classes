@@ -2,7 +2,7 @@ import passport from 'passport';
 import cookieParser from 'cookie-parser';
 
 export type { SocketSubscribeTypes, InternalStorageToken, CommandFile } from './types';
-export { SocketCommandsAdmin } from './lib/socketCommandsAdmin';
+export { SocketCommandsAdmin, type ObjectsCount } from './lib/socketCommandsAdmin';
 export { SocketCommands, type SupportedFeature, COMMANDS_PERMISSIONS } from './lib/socketCommands';
 export {
     SocketCommon,
