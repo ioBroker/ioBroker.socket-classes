@@ -1040,9 +1040,10 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 2.6.0 (2026-09-29)
 - (@GermanBluefox) Added `#countObjects()` method to count the objects and the objects of every type. Reading all objects only to count them transfers the whole database - tens of megabytes on a grown installation, and it blocks this process while it packs them up. This counts them where they are and answers with numbers. Announced as the feature `OBJECTS_COUNT`.
-- 
+-
+
 ### 2.5.0 (2026-09-23)
 - (@GermanBluefox) Security: the files inside a folder are deleted and renamed with the user of the socket, so js-controller checks the permissions for every file and not only for the folder
 - (@GermanBluefox) `logout` does not crash on a ws socket that has no `_query` (cookie authentication or legacy session)
