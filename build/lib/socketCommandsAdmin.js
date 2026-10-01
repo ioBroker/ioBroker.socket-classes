@@ -19,9 +19,41 @@ const ADMIN_DESIGN = 'admin';
  * objects themselves weigh: measured on 10,000 objects, 250 kB instead of 32 MB.
  */
 const COUNT_TYPES_VIEW = "function(doc) { emit(doc.type || '', 0) }";
+/**
+ * How often the host is asked for the repository although the answer is not needed.
+ *
+ * The GUI is served from the objects in memory, but the host does more than answer: it sends the
+ * statistics, checks for a new Docker image and for OS updates, applies the blocklist and upgrades
+ * adapters automatically. All of that used to happen on every start of the GUI, because every start
+ * asked for the repository. None of it needs to happen that often, and the answer carries the whole
+ * repository through the message box, so it is asked once an hour.
+ */
+const REPO_SIDE_EFFECT_INTERVAL = 3_600_000;
+/** How long that request waits, so it stays out of the way while the GUI is starting */
+const REPO_SIDE_EFFECT_DELAY = 10_000;
+/**
+ * Reduces a repository to what the GUI needs: the version and the icon of every entry.
+ *
+ * Reading into `result` lets the caller merge the active repositories in their order, the later one
+ * winning, exactly as the host merges them before it answers. Every key is kept, including the
+ * pseudo entry `_repoInfo`, which has neither a version nor an icon and therefore stays an empty
+ * object - as the GUI has always received it.
+ *
+ * @param source repository content, as the host sends it or as it is stored in `system.repositories`
+ * @param result what to read into
+ */
+function toCompactRepository(source, result = {}) {
+    if (source) {
+        for (const name of Object.keys(source)) {
+            result[name] = { version: source[name].version, icon: source[name].extIcon };
+        }
+    }
+    return result;
+}
 class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
     static ALLOW_CACHE = [
         'getRepository',
+        'getRepositoryCompact',
         'getInstalled',
         'getInstalledAdapter',
         'getVersion',
@@ -40,6 +72,10 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
     cacheGB = null; // cache garbage collector
     onThresholdChanged = null;
     secret = '';
+    /** When the host was last asked for the repository for the sake of its side effects, per host */
+    lastRepoSideEffects = {};
+    /** Pending requests of the above, per host */
+    repoSideEffectTimers = {};
     constructor(adapter, updateSession, context, objects, states) {
         super(adapter, updateSession, context);
         this.objects = objects;
@@ -203,6 +239,82 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
             }
         }
     };
+    /**
+     * Asks the host for the repository and answers with the compact form.
+     *
+     * A controller that has `getRepositoryCompact` reduces it itself, so the message box does not
+     * have to carry the whole repository for two fields per adapter. An older one only knows
+     * `getRepository` and is reduced here, as before.
+     *
+     * @param host host to ask, e.g. `system.host.raspberrypi`
+     * @param callback answered with the compact repository
+     */
+    #askHostForRepository(host, callback) {
+        if (this.adapter.supportsFeature('CONTROLLER_REPOSITORY_COMPACT')) {
+            this._sendToHost(host, 'getRepositoryCompact', null, (data) => callback(data || {}));
+        }
+        else {
+            this._sendToHost(host, 'getRepository', null, (data) => callback(toCompactRepository(data)));
+        }
+    }
+    /**
+     * Builds the compact repository from the objects that admin keeps in memory.
+     *
+     * The host answers `getRepository` with the whole merged repository - several megabytes through
+     * the message box, of which the GUI uses two fields per adapter. Admin already holds
+     * `system.repositories` and keeps it up to date, so the same answer can be built here without
+     * asking anybody.
+     *
+     * @returns the compact repository, or null if it cannot be built here and only the host can
+     * answer - because there is no object cache, or because a repository was never downloaded
+     */
+    #compactRepositoryFromObjects() {
+        // web and ws do not hand an object cache to these commands
+        if (!this.objects) {
+            return null;
+        }
+        const systemConfig = this.objects['system.config'];
+        const systemRepos = this.objects['system.repositories'];
+        if (!systemConfig?.common || !systemRepos?.native?.repositories) {
+            return null;
+        }
+        const activeRepo = systemConfig.common.activeRepo;
+        const active = Array.isArray(activeRepo) ? activeRepo : activeRepo ? [activeRepo] : [];
+        if (!active.length) {
+            return null;
+        }
+        const result = {};
+        for (const repoName of active) {
+            const repo = systemRepos.native.repositories[repoName];
+            // A repository that is missing here, that is still a plain link, or that was never
+            // downloaded is something only the host can turn into content
+            if (!repo || typeof repo === 'string' || !repo.json) {
+                return null;
+            }
+            toCompactRepository(repo.json, result);
+        }
+        return result;
+    }
+    /**
+     * Asks the host for the repository without waiting for the answer, at most once an hour and only
+     * after a delay, so the side effects of that command keep happening without holding up the GUI.
+     *
+     * @param host host to ask, e.g. `system.host.raspberrypi`
+     */
+    #triggerRepositorySideEffects(host) {
+        if (this.repoSideEffectTimers[host] ||
+            Date.now() - (this.lastRepoSideEffects[host] || 0) < REPO_SIDE_EFFECT_INTERVAL) {
+            return;
+        }
+        this.lastRepoSideEffects[host] = Date.now();
+        this.repoSideEffectTimers[host] = setTimeout(() => {
+            delete this.repoSideEffectTimers[host];
+            this.adapter.log.debug(`Asking ${host} for the repository, only for the side effects`);
+            this.#askHostForRepository(host, () => {
+                // The answer is thrown away on purpose - see REPO_SIDE_EFFECT_INTERVAL
+            });
+        }, REPO_SIDE_EFFECT_DELAY);
+    }
     /**
      * Makes sure the design document with the views of admin is in the objects database.
      *
@@ -1353,24 +1465,25 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
          * #DOCUMENTATION admin
          * Get the repository in a compact form to save bandwidth.
          *
+         * Answered from the objects admin holds in memory where possible. Asking the host means
+         * several megabytes of repository through the message box for two fields per adapter, which
+         * made every start of the GUI wait seconds for it.
+         *
          * @param socket - WebSocket client instance
          * @param host - Host name, e.g., `system.host.raspberrypi`
          * @param callback - Callback function `(error: string | null, results?: Record<string, { version: string; icon?: string }>) => void`
          */
         this.commands.getCompactRepository = (socket, host, callback) => {
             if (this._checkPermissions(socket, 'sendToHost', callback)) {
-                this._sendToHost(host, 'getRepository', null, (data) => {
-                    // Extract only the version and icon
-                    const castData = data;
-                    const result = {};
-                    if (castData) {
-                        Object.keys(castData).forEach(name => (result[name] = {
-                            version: castData[name].version,
-                            icon: castData[name].extIcon,
-                        }));
-                    }
-                    callback(result);
-                });
+                const fromObjects = this.#compactRepositoryFromObjects();
+                if (fromObjects) {
+                    // The host is still asked, but later and without anybody waiting for it: the GUI
+                    // has what it needs, only the side effects of that command are still wanted
+                    this.#triggerRepositorySideEffects(host);
+                    callback(fromObjects);
+                    return;
+                }
+                this.#askHostForRepository(host, callback);
             }
         };
         /**
@@ -1670,6 +1783,10 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
         if (this.cacheGB) {
             clearInterval(this.cacheGB);
             this.cacheGB = null;
+        }
+        for (const host of Object.keys(this.repoSideEffectTimers)) {
+            clearTimeout(this.repoSideEffectTimers[host]);
+            delete this.repoSideEffectTimers[host];
         }
         super.destroy();
     }

@@ -764,6 +764,9 @@ Get system repositories in a compact form to save bandwidth.
 
 #### <a name="getcompactrepository_a"></a>`getCompactRepository(host, callback)`
 Get the repository in a compact form to save bandwidth.
+Answered from the objects admin holds in memory where possible. Asking the host means
+several megabytes of repository through the message box for two fields per adapter, which
+made every start of the GUI wait seconds for it.
 * `host` *string*: - Host name, e.g., `system.host.raspberrypi`
 * `callback` *(result: Record<string, {version: string; icon?: string}>) => void) => void*: - Callback function `(error: string | null, results?: Record<string, { version: string; icon?: string }>) => void`
 
@@ -1040,6 +1043,11 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+- (@GermanBluefox) `getCompactRepository` is answered from the objects admin holds in memory instead of asking the host. The host answers `getRepository` with the whole merged repository - several megabytes through the message box for the two fields per adapter that the GUI uses - and every start of the admin GUI waited seconds for it (measured on a fast machine with three active repositories: 3140 ms, now 38 ms, with a byte-identical answer). A host without an object cache, or an active repository that was never downloaded, still goes through the host
+- (@GermanBluefox) The host is still asked for the repository, but ten seconds later and at most once an hour, and nobody waits for the answer: the statistics, the check for a new Docker image and for OS updates, the blocklist and the automatic adapter upgrade hang on that command and nothing else triggers them
+- (@GermanBluefox) A controller that announces `CONTROLLER_REPOSITORY_COMPACT` is asked `getRepositoryCompact`, so the message box no longer carries the whole repository when the host has to be asked after all
+
 ### 2.6.0 (2026-09-29)
 - (@GermanBluefox) Added `#countObjects()` method to count the objects and the objects of every type. Reading all objects only to count them transfers the whole database - tens of megabytes on a grown installation, and it blocks this process while it packs them up. This counts them where they are and answers with numbers. Announced as the feature `OBJECTS_COUNT`.
 -

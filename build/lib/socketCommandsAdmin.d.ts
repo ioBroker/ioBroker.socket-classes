@@ -126,6 +126,10 @@ export declare class SocketCommandsAdmin extends SocketCommands {
     private cacheGB;
     private onThresholdChanged;
     private secret;
+    /** When the host was last asked for the repository for the sake of its side effects, per host */
+    private readonly lastRepoSideEffects;
+    /** Pending requests of the above, per host */
+    private readonly repoSideEffectTimers;
     constructor(adapter: ioBroker.Adapter, updateSession?: (socket: WebSocketClient) => boolean, context?: SocketDataContext, objects?: Record<string, ioBroker.Object>, states?: Record<string, ioBroker.State>);
     start(onThresholdChanged: ((on: boolean) => void) | null): void;
     /**
