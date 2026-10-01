@@ -1043,7 +1043,7 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 2.6.1 (2026-10-01)
 - (@GermanBluefox) `getCompactRepository` is answered from the objects admin holds in memory instead of asking the host. The host answers `getRepository` with the whole merged repository - several megabytes through the message box for the two fields per adapter that the GUI uses - and every start of the admin GUI waited seconds for it (measured on a fast machine with three active repositories: 3140 ms, now 38 ms, with a byte-identical answer). A host without an object cache, or an active repository that was never downloaded, still goes through the host
 - (@GermanBluefox) The host is still asked for the repository, but ten seconds later and at most once an hour, and nobody waits for the answer: the statistics, the check for a new Docker image and for OS updates, the blocklist and the automatic adapter upgrade hang on that command and nothing else triggers them
 - (@GermanBluefox) A controller that announces `CONTROLLER_REPOSITORY_COMPACT` is asked `getRepositoryCompact`, so the message box no longer carries the whole repository when the host has to be asked after all
