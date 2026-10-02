@@ -401,9 +401,7 @@ class SocketCommon {
                         this.adapter.log.debug(`Socket from ${address.address} is not authenticated: ${err || 'no user found in cookies'}`);
                         if (!this.noDisconnect) {
                             this.#disconnectSocket(socket);
-                            if (cb) {
-                                cb();
-                            }
+                            cb?.();
                             return;
                         }
                         // A websocket is not disconnected, it stays open and the client is asked to bring a

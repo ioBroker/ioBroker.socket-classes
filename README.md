@@ -1043,7 +1043,7 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 2.6.2 (2026-10-02)
 - (@GermanBluefox) Fixed: a websocket whose access token was not accepted stayed open without a single command handler. The client was asked to re-authenticate, fetched a new token within milliseconds and announced it with `updateTokenExpiration` - the one command that is exempt from the session check exactly for this - but nobody was listening. The client waited for an answer that could not come until its own three second timeout closed the connection, burnt its single-use refresh token for nothing and had to start over, which is why the GUI took seconds to come up with authentication enabled and sometimes did not come up at all. The handlers are installed now, with an empty ACL: every command that needs a permission is still refused, only the announcement of a token gets through
 - (@GermanBluefox) Fixed: an announced access token now finishes the authentication of such a socket instead of only moving its expiration date. The connection carries on with the user of the token, so no reconnect and no second refresh is needed
 - (@GermanBluefox) Fixed: `authenticate` of a socket that is waiting for a token is answered when the token arrives, instead of being answered with "authenticated" although the socket has no user
