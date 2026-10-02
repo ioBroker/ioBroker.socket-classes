@@ -46,6 +46,11 @@ export declare class SocketCommands {
         result?: any;
     }) => void) => void) | null;
     states: Record<string, ioBroker.State> | undefined;
+    /**
+     * Finish the authentication of a socket with an access token the client announced.
+     * Set by `SocketCommon`, which is the only one that knows how to calculate the ACL of a user.
+     */
+    authenticateSocket: ((socket: WebSocketClient, user: string, expiresAt: number, callback: (success: boolean) => void) => void) | null;
     constructor(adapter: ioBroker.Adapter, updateSession?: (socket: WebSocketClient) => boolean, context?: SocketDataContext);
     /**
      * Convert errors into strings and then call cb

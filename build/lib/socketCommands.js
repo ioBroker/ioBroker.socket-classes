@@ -74,6 +74,11 @@ class SocketCommands {
     adapterName;
     _sendToHost;
     states;
+    /**
+     * Finish the authentication of a socket with an access token the client announced.
+     * Set by `SocketCommon`, which is the only one that knows how to calculate the ACL of a user.
+     */
+    authenticateSocket = null;
     constructor(adapter, updateSession, context) {
         this.adapter = adapter;
         this.#updateSession = updateSession || (() => true);
@@ -743,6 +748,14 @@ class SocketCommands {
          * @param callback Callback `(isUserAuthenticated: boolean, isAuthenticationUsed: boolean) => void`
          */
         this.commands.authenticate = (socket, callback) => {
+            // Authentication is in use and the access token of this socket was not accepted. The client
+            // was asked to bring a new one and is fetching it right now, so the answer waits for that
+            // instead of starting the GUI on a socket that may do nothing.
+            if (socket._secure && !socket._acl?.user) {
+                this.adapter.log.debug(`${new Date().toISOString()} Request authenticate: waiting for the announced access token`);
+                socket._authPending = callback;
+                return;
+            }
             if (socket._acl?.user !== null) {
                 this.adapter.log.debug(`${new Date().toISOString()} Request authenticate [${socket._acl?.user}]`);
                 if (typeof callback === 'function') {
@@ -786,6 +799,13 @@ class SocketCommands {
                         }
                         if (socket.conn.request.query?.token) {
                             socket.conn.request.query.token = accessToken;
+                        }
+                        // The socket was opened with a token the server did not accept, so it has no user
+                        // yet. The announced token finishes the authentication, and the connection carries
+                        // on instead of being thrown away and opened again with the next refresh token.
+                        if (!socket._acl?.user && this.authenticateSocket) {
+                            this.authenticateSocket(socket, token.user, token.aExp, success => callback(success ? null : 'Cannot authenticate the socket', success));
+                            return;
                         }
                         socket._sessionExpiresAt = token.aExp;
                         socket.emit('tokenInfo', { expiresAt: token.aExp });

@@ -372,7 +372,13 @@ describe('SocketAdmin', () => {
             ok(emitted.some(args => args[0] === SocketCommon.COMMAND_RE_AUTHENTICATE));
             strictEqual(disconnected, false);
             strictEqual(calls.calculatePermissions, undefined);
-            strictEqual(handlers.getVersion, undefined, 'no commands must be accepted');
+
+            // The socket stays open, so it keeps its handlers: the client has to be able to announce
+            // the token it is fetching right now. Everything else is refused by the empty ACL.
+            strictEqual(typeof handlers.updateTokenExpiration, 'function');
+            deepStrictEqual(socket._acl, { user: '', groups: [] });
+            const [error] = await call(handlers, 'getObject', 'system.config');
+            ok(error, `a command without permission must fail: ${error}`);
         });
 
         it('refreshes an expired access token of a connected client', async () => {

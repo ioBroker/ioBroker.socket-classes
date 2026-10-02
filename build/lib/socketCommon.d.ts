@@ -134,6 +134,26 @@ export declare class SocketCommon {
             user?: string;
         }) => void) => void;
     }, socketOptions?: SocketIoOptions): void;
+    /**
+     * True while a socket waits for an access token: authentication is in use, but the token the socket
+     * was opened with was not accepted, so it has no user yet.
+     *
+     * @param socket Socket instance
+     */
+    static isAuthenticationPending(socket: WebSocketClient): boolean;
+    /**
+     * Give a socket the user of an access token that was announced with `updateTokenExpiration`.
+     *
+     * A socket whose token was not accepted at the connect stays open without a user. Instead of making
+     * the client throw the connection away and open a new one with the refreshed token - which costs a
+     * refresh token and several seconds - the announced token finishes the authentication here.
+     *
+     * @param socket Socket instance
+     * @param user Name of the user the access token belongs to, without the `system.user.` prefix
+     * @param expiresAt When the announced access token expires
+     * @param callback Called with true if the socket now has a user
+     */
+    authenticateSocket(socket: WebSocketClient, user: string, expiresAt: number, callback: (success: boolean) => void): void;
     _initSocket(socket: WebSocketClient, cb?: (customHandler?: boolean) => void): void;
     unsubscribeSocket(socket: WebSocketClient, type?: SocketSubscribeTypes): void;
     _unsubscribeAll(): void;

@@ -206,7 +206,8 @@ describe('SocketCommon __getUserFromSocket', () => {
         const result = await getUser(common, socket);
         strictEqual(result.err, 'Cannot detect user');
         strictEqual(socket._acl.user, '', 'the user of the socket must be reset');
-        deepStrictEqual(emittedNames(emitted), [SocketCommon.COMMAND_RE_AUTHENTICATE]);
+        // The caller asks the client to re-authenticate, so that it happens exactly once
+        deepStrictEqual(emittedNames(emitted), []);
     });
 
     it('resolves the user of a legacy session id', async () => {
@@ -241,7 +242,7 @@ describe('SocketCommon __getUserFromSocket', () => {
         const result = await getUser(common, socket);
         strictEqual(result.err, 'Cannot detect user');
         strictEqual(socket._acl.user, '');
-        ok(emittedNames(emitted).includes(SocketCommon.COMMAND_RE_AUTHENTICATE));
+        deepStrictEqual(emittedNames(emitted), [], 'the caller tells the client, not this method');
     });
 
     it('authenticates with Basic auth, the password may contain ":"', async () => {
@@ -625,9 +626,49 @@ describe('SocketCommon _initSocket', () => {
         common._initSocket(socket, () => cbCalled++);
 
         strictEqual(calls.disconnect.length, 0);
-        ok(emittedNames(emitted).includes(SocketCommon.COMMAND_RE_AUTHENTICATE));
         strictEqual(cbCalled, 1);
-        strictEqual(socket._acl, undefined);
+        // Exactly once: the lookup leaves it to the caller
+        deepStrictEqual(emittedNames(emitted).filter(name => name === SocketCommon.COMMAND_RE_AUTHENTICATE).length, 1);
+        // An empty ACL, so every command that needs a permission is refused
+        deepStrictEqual(socket._acl, { user: '', groups: [] });
+    });
+
+    it('keeps an unauthenticated ws client able to announce a new access token', () => {
+        // The socket stays open, so it has to stay reachable: without the handlers the client waits
+        // for an answer that cannot come and runs into its own timeout (ioBroker.admin#3641 follow-up)
+        const common = createCommon({ auth: true, noBasicAuth: true });
+        const { socket, handlers } = createSocket();
+
+        common._initSocket(socket, () => {});
+
+        strictEqual(typeof handlers.updateTokenExpiration, 'function', 'the rescue command must arrive');
+        strictEqual(typeof handlers.authenticate, 'function');
+        ok(SocketCommon.isAuthenticationPending(socket), 'the socket waits for a token');
+    });
+
+    it('authenticateSocket gives the socket the user of an announced token', async () => {
+        const adapter = createAdapter();
+        const common = createCommon({ auth: true, noBasicAuth: true }, adapter);
+        const { socket, emitted } = createSocket();
+        common._initSocket(socket, () => {});
+
+        // the client asks and has to wait, as its token is on the way
+        let authAnswer = null;
+        common.commands.getCommandHandler('authenticate')(socket, (isOk, isUsed) => (authAnswer = [isOk, isUsed]));
+        strictEqual(authAnswer, null, 'the answer waits for the token');
+
+        const expiresAt = Date.now() + 3_600_000;
+        const success = await new Promise(resolve => common.authenticateSocket(socket, 'admin', expiresAt, resolve));
+
+        strictEqual(success, true);
+        strictEqual(socket._acl.user, 'system.user.admin');
+        strictEqual(socket._sessionExpiresAt, expiresAt);
+        deepStrictEqual(authAnswer, [true, true], 'the waiting authenticate is answered');
+        ok(
+            emitted.some(e => e.name === 'tokenInfo'),
+            'the client learns when the token expires',
+        );
+        ok(!SocketCommon.isAuthenticationPending(socket));
     });
 
     it('closes an unauthenticated client via close() if the transport has no disconnect()', () => {

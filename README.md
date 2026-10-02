@@ -1043,6 +1043,13 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+- (@GermanBluefox) Fixed: a websocket whose access token was not accepted stayed open without a single command handler. The client was asked to re-authenticate, fetched a new token within milliseconds and announced it with `updateTokenExpiration` - the one command that is exempt from the session check exactly for this - but nobody was listening. The client waited for an answer that could not come until its own three second timeout closed the connection, burnt its single-use refresh token for nothing and had to start over, which is why the GUI took seconds to come up with authentication enabled and sometimes did not come up at all. The handlers are installed now, with an empty ACL: every command that needs a permission is still refused, only the announcement of a token gets through
+- (@GermanBluefox) Fixed: an announced access token now finishes the authentication of such a socket instead of only moving its expiration date. The connection carries on with the user of the token, so no reconnect and no second refresh is needed
+- (@GermanBluefox) Fixed: `authenticate` of a socket that is waiting for a token is answered when the token arrives, instead of being answered with "authenticated" although the socket has no user
+- (@GermanBluefox) Fixed: `reauthenticate` was sent twice for the same connection, so a client started two token refreshes and used up two refresh tokens
+- (@GermanBluefox) Changed: that a socket is not authenticated is logged at `debug` instead of `silly`, so the case is visible without raising the level of the whole adapter
+
 ### 2.6.1 (2026-10-01)
 - (@GermanBluefox) `getCompactRepository` is answered from the objects admin holds in memory instead of asking the host. The host answers `getRepository` with the whole merged repository - several megabytes through the message box for the two fields per adapter that the GUI uses - and every start of the admin GUI waited seconds for it (measured on a fast machine with three active repositories: 3140 ms, now 38 ms, with a byte-identical answer). A host without an object cache, or an active repository that was never downloaded, still goes through the host
 - (@GermanBluefox) The host is still asked for the repository, but ten seconds later and at most once an hour, and nobody waits for the answer: the statistics, the check for a new Docker image and for OS updates, the blocklist and the automatic adapter upgrade hang on that command and nothing else triggers them

@@ -207,7 +207,7 @@ export class SocketCommon {
                     if (socket._acl) {
                         socket._acl.user = '';
                     }
-                    socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
+                    // The caller tells the client, so that it is asked exactly once
                     callback('Cannot detect user');
                 } else {
                     callback(null, obj.user ? `system.user.${obj.user}` : '', obj.aExp);
@@ -224,7 +224,7 @@ export class SocketCommon {
                     if (socket._acl) {
                         socket._acl.user = '';
                     }
-                    socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
+                    // The caller tells the client, so that it is asked exactly once
                     callback('Cannot detect user');
                 } else {
                     callback(
@@ -520,8 +520,62 @@ export class SocketCommon {
         this.#updateConnectedInfo();
     }
 
+    /**
+     * True while a socket waits for an access token: authentication is in use, but the token the socket
+     * was opened with was not accepted, so it has no user yet.
+     *
+     * @param socket Socket instance
+     */
+    static isAuthenticationPending(socket: WebSocketClient): boolean {
+        return !!socket._secure && !socket._acl?.user;
+    }
+
+    /**
+     * Give a socket the user of an access token that was announced with `updateTokenExpiration`.
+     *
+     * A socket whose token was not accepted at the connect stays open without a user. Instead of making
+     * the client throw the connection away and open a new one with the refreshed token - which costs a
+     * refresh token and several seconds - the announced token finishes the authentication here.
+     *
+     * @param socket Socket instance
+     * @param user Name of the user the access token belongs to, without the `system.user.` prefix
+     * @param expiresAt When the announced access token expires
+     * @param callback Called with true if the socket now has a user
+     */
+    authenticateSocket(
+        socket: WebSocketClient,
+        user: string,
+        expiresAt: number,
+        callback: (success: boolean) => void,
+    ): void {
+        const userId = user.startsWith('system.user.') ? user : `system.user.${user}`;
+        const address = this.__getClientAddress(socket);
+
+        void this.adapter.calculatePermissions(
+            userId,
+            SocketCommands.COMMANDS_PERMISSIONS as CommandsPermissionsObject,
+            (acl: SocketACL): void => {
+                socket._secure = true;
+                socket._acl = SocketCommon._mergeACLs(address.address, acl, this.settings.whiteListSettings);
+                socket._sessionExpiresAt = expiresAt;
+                this.adapter.log.debug(`Socket of ${userId} authenticated with the announced access token`);
+
+                if (socket._authPending) {
+                    socket._authPending(!!socket._acl?.user, true);
+                    delete socket._authPending;
+                }
+
+                socket.emit('tokenInfo', { expiresAt });
+                callback(true);
+            },
+        );
+    }
+
     _initSocket(socket: WebSocketClient, cb?: (customHandler?: boolean) => void): void {
         this.commands!.disableEventThreshold();
+        // The commands need a way back here: only this class knows how to calculate the ACL of a user
+        this.commands!.authenticateSocket ||= (socket, user, expiresAt, callback) =>
+            this.authenticateSocket(socket, user, expiresAt, callback);
         const address = this.__getClientAddress(socket);
 
         if (!socket._acl) {
@@ -529,14 +583,24 @@ export class SocketCommon {
                 this.__getUserFromSocket(socket, (err, user, expirationTime) => {
                     if (err || !user) {
                         socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
-                        this.adapter.log.silly(`socket.io [init] ${err || 'No user found in cookies'}`);
-                        // ws does not require disconnect
+                        this.adapter.log.debug(
+                            `Socket from ${address.address} is not authenticated: ${err || 'no user found in cookies'}`,
+                        );
                         if (!this.noDisconnect) {
                             this.#disconnectSocket(socket);
+                            cb?.();
+                            return;
                         }
-                        if (cb) {
-                            cb();
-                        }
+
+                        // A websocket is not disconnected, it stays open and the client is asked to bring a
+                        // new access token. For that it needs somebody to listen: without the handlers below
+                        // the socket is open but deaf, `updateTokenExpiration` never arrives, and the client
+                        // waits for an answer that cannot come until its own timeout closes the connection.
+                        // The empty ACL makes every command that needs a permission fail, so the socket can
+                        // do nothing but announce a token until `authenticateSocket` gives it a real user.
+                        socket._secure = true;
+                        socket._acl = { user: '', groups: [] };
+                        this._socketEvents(socket, address.address, cb);
                     } else {
                         socket._secure = true;
                         socket._sessionExpiresAt = expirationTime;
@@ -790,7 +854,10 @@ export class SocketCommon {
                     accessToken = socket.conn.request.query.token as string;
                 }
 
-                if (accessToken) {
+                if (accessToken && !SocketCommon.isAuthenticationPending(socket)) {
+                    // `_initSocket` has already looked the token up. Checking it a second time would only
+                    // send a second `reauthenticate` and answer the waiting `authenticate` with "no", which
+                    // would start the client before its new token arrived.
                     socket._secure = true;
                     this.store?.get(`a:${accessToken}`, (err, token: any): void => {
                         const tokenData = token as InternalStorageToken;
