@@ -3,6 +3,16 @@ var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SocketCommands = exports.COMMANDS_PERMISSIONS = void 0;
 const adapter_core_1 = require("@iobroker/adapter-core"); // Get common adapter utils
+/**
+ * The events that are waiting for the database to say whether their socket may see them.
+ *
+ * Kept per connection and per event, and only ever the **latest** one: while the first event of an id
+ * waits for its answer, a newer value of the same state would otherwise overtake it and the client
+ * would end up with the older one. What is kept is how to deliver it - the event goes through
+ * `publish`/`publishFile` again, so a subscription that was given up in the meantime still counts. It
+ * lives in a `WeakMap`, so a connection that goes away takes its waiting events with it.
+ */
+const pendingEvents = new WeakMap();
 exports.COMMANDS_PERMISSIONS = {
     getObject: { type: 'object', operation: 'read' },
     getObjects: { type: 'object', operation: 'list' },
@@ -71,6 +81,21 @@ class SocketCommands {
     subscribes = {};
     #logEnabled = false;
     #clientSubscribes = {};
+    /**
+     * What each user may read, by object id. Filled while the events flow, emptied where an object -
+     * or the rights themselves - change. Per user, because every browser tab of one person would
+     * otherwise ask the same question again.
+     */
+    #readable = new Map();
+    /** Questions that are with the database right now, so the same id is asked only once at a time */
+    #deciding = new Map();
+    /**
+     * Counts how often the decisions were thrown away. An answer that was asked for before the last
+     * change arrives too late to be trusted and is dropped instead of being remembered.
+     */
+    #readableGeneration = 0;
+    /** Whether this instance watches the objects for the sake of its own decisions - see `#rememberDecision` */
+    #watchingObjects = false;
     #updateSession;
     adapterName;
     _sendToHost;
@@ -260,10 +285,234 @@ class SocketCommands {
         }
         return true;
     }
+    /**
+     * Whether this connection belongs to somebody who may see everything.
+     *
+     * The administrator group is the whole point of the administrator group, and with authentication
+     * switched off every connection is the configured default user - usually exactly that one. So this
+     * is the answer for almost every connection there is, and it costs a look at an ACL that the
+     * socket layer calculated when the connection was opened.
+     *
+     * @param socket the connection in question
+     */
+    static #seesEverything(socket) {
+        const acl = socket?._acl;
+        return acl?.user === 'system.user.admin' || !!acl?.groups?.includes('system.group.administrator');
+    }
+    /**
+     * Whether the user of this connection may read `id`, as far as it is already known.
+     *
+     * `undefined` means "not decided yet" - the caller has to let `#decideReadable` ask the database
+     * and come back. Decisions are kept per user, not per connection: three browser tabs of the same
+     * person ask once.
+     *
+     * @param socket the connection the event would go to
+     * @param question what the event is about
+     */
+    #mayRead(socket, question) {
+        const user = socket?._acl?.user;
+        if (!user) {
+            // a connection without a user has no rights at all, not even to be told that `id` exists
+            return false;
+        }
+        if (_a.#seesEverything(socket)) {
+            return true;
+        }
+        return this.#readable.get(user)?.get(_a.#questionKey(question));
+    }
+    /** What one question is remembered under: the kind, the id, and for a file its name */
+    static #questionKey(question) {
+        return question.fileName
+            ? `${question.type}####${question.id}####${question.fileName}`
+            : `${question.type}####${question.id}`;
+    }
+    /**
+     * Ask the database whether the user may read `id`, and remember the answer.
+     *
+     * The database owns this decision - the ACL of the object, its owner, the groups of the user and
+     * the default ACL of the system all go into it, and a second implementation here would drift away
+     * from it sooner or later. Everybody who is waiting for the same id is answered together.
+     *
+     * @param socket the connection the event would go to
+     * @param question what the event is about
+     * @param andThen what to do once it is decided, with the decision
+     */
+    #decideReadable(socket, question, andThen) {
+        // a connection without a user never gets this far: `#mayRead` refuses it outright
+        const user = socket._acl.user;
+        const questionKey = _a.#questionKey(question);
+        const key = `${user}####${questionKey}`;
+        const waiting = this.#deciding.get(key);
+        if (waiting) {
+            waiting.push(andThen);
+            return;
+        }
+        this.#deciding.set(key, [andThen]);
+        const generation = this.#readableGeneration;
+        const answer = (allowed) => {
+            if (generation === this.#readableGeneration) {
+                this.#rememberDecision(user, questionKey, allowed);
+            }
+            // an answer that is too old to be remembered still answers the events that waited for it
+            const callbacks = this.#deciding.get(key) || [];
+            this.#deciding.delete(key);
+            for (const callback of callbacks) {
+                callback(allowed);
+            }
+        };
+        const mayRead = this.adapter.mayRead;
+        if (mayRead) {
+            /*
+             * The controller answers this itself from js-controller 8.0 on, and it is the only place
+             * that knows the whole truth: the ACL of a state rather than of its object, the mode of a
+             * single file rather than of the adapter it belongs to.
+             */
+            mayRead.call(this.adapter, { ...question, user }).then(answer, (e) => {
+                this.adapter.log.warn(`Cannot check what "${user}" may read of "${question.id}": ${e.message}`);
+                answer(false);
+            });
+            return;
+        }
+        /*
+         * An older controller cannot be asked, so the object has to stand in for all three. It is
+         * coarser - the right on the object instead of the one on the state, the adapter instead of
+         * the single file - but it errs the same way: only a refusal of the database counts as "no".
+         * That an object does not exist is not a refusal, and `mayRead` of a newer controller says the
+         * same, because such a state can be read by anybody.
+         */
+        // the callback form also returns a promise, which nobody here waits for
+        void this.adapter.getForeignObject(question.id, { user }, (error) => answer(!error));
+    }
+    /**
+     * Keep one decision, and make sure the object changes that would invalidate it arrive here.
+     *
+     * Nothing of this is needed as long as everybody who is connected sees everything anyway, which is
+     * the normal case - so the subscription is taken out where the first decision is made and not
+     * before. The events themselves reach `publish` the way every other object change does.
+     *
+     * @param user whose decision it is
+     * @param questionKey what was asked - the kind, the id and for a file its name
+     * @param allowed what was decided
+     */
+    #rememberDecision(user, questionKey, allowed) {
+        let decisions = this.#readable.get(user);
+        if (!decisions) {
+            decisions = new Map();
+            this.#readable.set(user, decisions);
+        }
+        decisions.set(questionKey, allowed);
+        if (!this.#watchingObjects) {
+            this.#watchingObjects = true;
+            // the ACL of an object can change at any time, and without this the decision above would
+            // be kept until the connection goes away
+            this.adapter
+                .subscribeForeignObjectsAsync('*')
+                .catch(e => this.adapter.log.warn(`Cannot watch the objects for the permissions of the clients: ${e.message}`));
+        }
+    }
+    /** Forget what was decided about `id`, because the object - and with it its ACL - changed. */
+    #forgetReadable(id) {
+        this.#readableGeneration++;
+        if (id.startsWith('system.user.') || id.startsWith('system.group.') || id === 'system.config') {
+            // the rights themselves moved, so nothing that was decided with them still counts
+            this.#readable.clear();
+            return;
+        }
+        for (const decisions of this.#readable.values()) {
+            // everything that was decided about this id, whatever was asked about it
+            for (const questionKey of decisions.keys()) {
+                if (questionKey.endsWith(`####${id}`) || questionKey.includes(`####${id}####`)) {
+                    decisions.delete(questionKey);
+                }
+            }
+        }
+    }
+    /**
+     * Hold one event until it is decided whether its connection may see it.
+     *
+     * Only the latest event of the same kind and id waits; a newer one replaces it, so nothing can
+     * overtake it. The question is asked once - every further event of that id joins the one that is
+     * already open.
+     *
+     * @param socket the connection the event would go to
+     * @param question what the decision is about
+     * @param key what identifies this event - its kind and what it is about
+     * @param deliver how to send it once it is decided
+     */
+    #holdUntilDecided(socket, question, key, deliver) {
+        let waiting = pendingEvents.get(socket);
+        if (!waiting) {
+            waiting = new Map();
+            pendingEvents.set(socket, waiting);
+        }
+        const first = !waiting.has(key);
+        waiting.set(key, deliver);
+        if (first) {
+            this.#decideReadable(socket, question, allowed => this.#flushPending(socket, key, allowed));
+        }
+    }
+    /**
+     * Send the event that waited for a decision, if it may go out after all.
+     *
+     * What is sent is whatever arrived last while the question was open - a client that subscribes to
+     * a state wants its value, not the one it had a moment ago. It goes through `publish`/`publishFile`
+     * again: the subscription may have been given up in the meantime, and the decision is in memory
+     * now, so it cannot come back here.
+     *
+     * @param socket the connection that waited
+     * @param key what identifies the event
+     * @param allowed what was decided
+     */
+    #flushPending(socket, key, allowed) {
+        const waiting = pendingEvents.get(socket);
+        const deliver = waiting?.get(key);
+        if (!deliver || !waiting) {
+            return;
+        }
+        waiting.delete(key);
+        if (allowed) {
+            deliver();
+        }
+    }
+    /**
+     * Give one event to one connection, if it is subscribed to it and may see it.
+     *
+     * Returns whether the event is on its way to this client: `true` where it was sent, and also
+     * where it is waiting for the database to decide whether this user may read the object - the
+     * answer to that is not worth holding up every other connection for. `false` means the client is
+     * not subscribed to it, or may not see it.
+     *
+     * @param socket the connection
+     * @param type what kind of event it is
+     * @param id the object it is about
+     * @param obj the state or object as it is sent to the client
+     */
     publish(socket, type, id, obj) {
+        if (type === 'objectChange') {
+            // the ACL of the object travelled with it, so what was decided about it is out of date
+            this.#forgetReadable(id);
+        }
         if (socket?.subscribe?.[type] && this.#updateSession(socket)) {
             return !!socket.subscribe[type].find(sub => {
                 if (sub.regex.test(id)) {
+                    /*
+                     * Who may know that this exists? A subscription says which ids a client is
+                     * interested in, never which ids it may see - `subscribe` only asks whether the
+                     * user may read states at all, so whoever subscribed to `*` was told about every
+                     * state of the system, the ACL of the single objects notwithstanding.
+                     */
+                    const question = { type: type === 'objectChange' ? 'object' : 'state', id };
+                    const allowed = this.#mayRead(socket, question);
+                    if (allowed === false) {
+                        return false;
+                    }
+                    if (allowed === undefined) {
+                        // the first event of an id for this user waits for the answer instead of
+                        // being guessed at
+                        this.#holdUntilDecided(socket, question, `${type}####${id}`, () => this.publish(socket, type, id, obj));
+                        // on its way: either it goes out in a moment, or the user may not see it
+                        return true;
+                    }
                     // replace language
                     if (this.context.language &&
                         id === 'system.config' &&
@@ -277,11 +526,36 @@ class SocketCommands {
         }
         return false;
     }
+    /**
+     * Give one file event to one connection, if it is subscribed to it and may see it.
+     *
+     * The decision is taken on the meta object the files belong to - `vis.0` for every file of vis -
+     * which is one question per adapter and user instead of one per file, and it still works where the
+     * file the event is about has just been deleted. Per-file owners and modes, which `chownFile` and
+     * `chmodFile` can set, are not looked at; that needs the same canonical check from the controller
+     * that the state events want.
+     *
+     * The answer means the same as in {@link publish}: `true` where the event is on its way.
+     *
+     * @param socket the connection
+     * @param id the adapter the file belongs to, e.g. `vis.0`
+     * @param fileName the path of the file inside it
+     * @param size how big it is now, or null where it is gone
+     */
     publishFile(socket, id, fileName, size) {
         if (socket?.subscribe?.fileChange && this.#updateSession(socket)) {
             const key = `${id}####${fileName}`;
             return !!socket.subscribe.fileChange.find(sub => {
                 if (sub.regex.test(key)) {
+                    const question = { type: 'file', id, fileName };
+                    const allowed = this.#mayRead(socket, question);
+                    if (allowed === false) {
+                        return false;
+                    }
+                    if (allowed === undefined) {
+                        this.#holdUntilDecided(socket, question, `fileChange####${key}`, () => this.publishFile(socket, id, fileName, size));
+                        return true;
+                    }
                     socket.emit('fileChange', id, fileName, size);
                     return true;
                 }
@@ -295,9 +569,10 @@ class SocketCommands {
      * Objects, states and files have always been read and written with `{ user }` so the database
      * applies the ACLs of the logged-in user. A message had no such channel: the receiving instance saw
      * `from` and nothing else, so every adapter reachable over `sendTo` had to act with its own rights,
-     * and could not tell one caller from another. The user travels with the message now, for the
-     * controller versions that support it - older ones ignore the option, so nothing breaks, but a
-     * receiver must treat `obj.user` as optional (`adapter.supportsFeature('ADAPTER_MESSAGE_USER_CONTEXT')`).
+     * and could not tell one caller from another. The user travels with the message now: js-controller
+     * 7.2.5 and newer put it into the message as `obj.user`, older ones ignore the option, so nothing
+     * breaks. A receiver treats the field as optional - where nobody was named there is nothing to
+     * check against, which is how every message looked before.
      *
      * @param socket the socket the command came in on
      */
@@ -1015,8 +1290,8 @@ class SocketCommands {
                 }
                 else {
                     try {
-                        // the 5th parameter exists from the controller version that reports
-                        // `ADAPTER_MESSAGE_USER_CONTEXT`; an older one ignores the extra argument
+                        // the 5th parameter exists from js-controller 7.2.5 on; an older one
+                        // ignores the extra argument
                         const sendToHost = this.adapter.sendToHost;
                         sendToHost.call(this.adapter, host, command, message, callback, _a.sendOptionsOf(socket));
                     }

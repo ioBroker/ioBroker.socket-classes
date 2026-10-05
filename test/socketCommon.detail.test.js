@@ -20,7 +20,15 @@ class DisconnectingSocketCommon extends WsSocketCommon {
 
 function createAdapter(overrides) {
     const logs = { silly: [], debug: [], info: [], warn: [], error: [] };
-    const calls = { getSession: [], setSession: [], checkPassword: [], setState: [], calculatePermissions: [] };
+    const calls = {
+        getSession: [],
+        setSession: [],
+        checkPassword: [],
+        setState: [],
+        calculatePermissions: [],
+        getForeignObject: [],
+        subscribeForeignObjects: [],
+    };
     const adapter = Object.assign(
         {
             name: 'test',
@@ -35,6 +43,16 @@ function createAdapter(overrides) {
                 error: text => logs.error.push(text),
             },
             sessions: {},
+            // the ACL filter of `publish` asks the database whether the user may read the object,
+            // and watches the objects so that it learns when an ACL changes
+            getForeignObject(id, _options, cb) {
+                calls.getForeignObject.push(id);
+                cb(null, { _id: id, type: 'state', common: {}, native: {} });
+            },
+            subscribeForeignObjectsAsync(pattern) {
+                calls.subscribeForeignObjects.push(pattern);
+                return Promise.resolve();
+            },
             getSession(id, cb) {
                 calls.getSession.push(id);
                 cb(adapter.sessions[id]);
@@ -870,7 +888,8 @@ describe('SocketCommon sockets list helpers', () => {
     });
 
     it('delegates checkPermissions, publish, publishFile, unsubscribeSocket and addCommandHandler to the commands', () => {
-        const common = new WsSocketCommon({}, createAdapter());
+        const adapter = createAdapter();
+        const common = new WsSocketCommon({}, adapter);
         common.commands = new SocketCommands(common.adapter);
         const { socket, emitted } = createSocket({ acl: { user: 'system.user.guest', state: { read: false } } });
 
@@ -885,9 +904,19 @@ describe('SocketCommon sockets list helpers', () => {
             stateChange: [{ pattern: 'a.*', regex: /^a\./ }],
             fileChange: [{ pattern: 'x', regex: /^vis\.0####/ }],
         };
+        /*
+         * For a user who is not an administrator the first event of an id waits for the database to
+         * say whether it may be seen - it counts as on its way, and the objects are watched from
+         * then on so that the answer does not outlive the ACL it was given for.
+         */
         strictEqual(common.publish(socket, 'stateChange', 'a.b', { val: 1 }), true);
+        deepStrictEqual(adapter.calls.getForeignObject, ['a.b']);
+        deepStrictEqual(adapter.calls.subscribeForeignObjects, ['*']);
+        // the second one is decided from memory and goes out without asking again
+        strictEqual(common.publish(socket, 'stateChange', 'a.b', { val: 2 }), true);
+        deepStrictEqual(adapter.calls.getForeignObject, ['a.b']);
         strictEqual(common.publishFile(socket, 'vis.0', 'main/a.json', 10), true);
-        deepStrictEqual(emittedNames(emitted), ['stateChange', 'fileChange']);
+        deepStrictEqual(emittedNames(emitted), ['stateChange', 'stateChange', 'fileChange']);
 
         const handler = () => {};
         common.addCommandHandler('custom', handler);

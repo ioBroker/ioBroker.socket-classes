@@ -2111,3 +2111,189 @@ describe('SocketCommands user context', () => {
         deepStrictEqual(seen[0][4], { user: USER });
     });
 });
+
+describe('SocketCommands publish ACL filter', () => {
+    /** A socket that is subscribed to `a.*` state changes */
+    function subscribedSocket(acl) {
+        const { socket, emitted } = (() => {
+            const s = createSocket(acl);
+            return { socket: s, emitted: s.emitted };
+        })();
+        socket.subscribe = { stateChange: [{ pattern: 'a.*', regex: /^a\./ }] };
+        return { socket, emitted };
+    }
+
+    /**
+     * An adapter whose answer to "may this user read it" is under the control of the test.
+     *
+     * With `mayRead` it answers the way a js-controller 8 does, without it the filter has to fall
+     * back to reading the object - which is what an older controller leaves it with.
+     */
+    function createAclAdapter(answer, withMayRead) {
+        const asked = [];
+        const watched = [];
+        const questions = [];
+        return {
+            asked,
+            watched,
+            questions,
+            adapter: createAdapter({
+                ...(withMayRead
+                    ? {
+                          mayRead: question => {
+                              questions.push(question);
+                              return Promise.resolve(answer === true);
+                          },
+                      }
+                    : {}),
+                getForeignObject: (id, options, cb) => {
+                    asked.push({ id, user: options?.user, cb });
+                    if (answer !== 'later') {
+                        cb(answer ? null : 'permissionError', answer ? { _id: id, type: 'state' } : undefined);
+                    }
+                },
+                subscribeForeignObjectsAsync: pattern => {
+                    watched.push(pattern);
+                    return Promise.resolve();
+                },
+            }),
+        };
+    }
+
+    it('asks nothing for an administrator and sends at once', async () => {
+        const { adapter, asked } = createAclAdapter(true);
+        const commands = createCommands(adapter, () => true);
+        const { socket, emitted } = subscribedSocket();
+
+        strictEqual(commands.publish(socket, 'stateChange', 'a.b', { val: 1 }), true);
+
+        deepStrictEqual(emitted.map(args => args[0]), ['stateChange']);
+        strictEqual(asked.length, 0);
+    });
+
+    it('keeps an event away from a user who may not read the object', async () => {
+        const { adapter, asked } = createAclAdapter(false);
+        const commands = createCommands(adapter, () => true);
+        const { socket, emitted } = subscribedSocket(createAcl({ state: ['read'] }));
+
+        commands.publish(socket, 'stateChange', 'a.b', { val: 1 });
+        await tick();
+
+        strictEqual(emitted.length, 0, 'nothing was sent');
+        strictEqual(asked.length, 1);
+        strictEqual(asked[0].user, USER);
+
+        // and it is not asked a second time
+        strictEqual(commands.publish(socket, 'stateChange', 'a.b', { val: 2 }), false);
+        strictEqual(asked.length, 1);
+    });
+
+    it('sends the newest value of an id that waited for the answer', async () => {
+        const { adapter, asked } = createAclAdapter('later');
+        const commands = createCommands(adapter, () => true);
+        const { socket, emitted } = subscribedSocket(createAcl({ state: ['read'] }));
+
+        strictEqual(commands.publish(socket, 'stateChange', 'a.b', { val: 1 }), true);
+        strictEqual(commands.publish(socket, 'stateChange', 'a.b', { val: 2 }), true);
+        strictEqual(asked.length, 1, 'the same id is asked once, however many events arrive');
+
+        // the database answers now
+        asked[0].cb(null, { _id: 'a.b', type: 'state' });
+        await tick();
+
+        deepStrictEqual(emitted.map(args => args[0]), ['stateChange']);
+        deepStrictEqual(emitted[0][2], { val: 2 }, 'the older value did not overtake the newer one');
+    });
+
+    it('keeps a file event away from a user who may not read the adapter it belongs to', async () => {
+        const { adapter, asked } = createAclAdapter(false);
+        const commands = createCommands(adapter, () => true);
+        const { socket, emitted } = subscribedSocket(createAcl({ file: ['read'] }));
+        socket.subscribe.fileChange = [{ pattern: 'vis.0####*', regex: /^vis\.0####/ }];
+
+        commands.publishFile(socket, 'vis.0', 'main/vis-views.json', 120);
+        await tick();
+
+        strictEqual(emitted.length, 0, 'nothing was sent');
+        deepStrictEqual(
+            asked.map(entry => entry.id),
+            ['vis.0'],
+            'the question is about the adapter, not about the single file',
+        );
+    });
+
+    it('asks for every file, because the answer is about that file', async () => {
+        const { adapter, asked } = createAclAdapter(true);
+        const commands = createCommands(adapter, () => true);
+        const { socket, emitted } = subscribedSocket(createAcl({ file: ['read'] }));
+        socket.subscribe.fileChange = [{ pattern: 'vis.0####*', regex: /^vis\.0####/ }];
+
+        commands.publishFile(socket, 'vis.0', 'main/a.json', 1);
+        await tick();
+        // a file that is gone is still an event, and it is decided the same way
+        commands.publishFile(socket, 'vis.0', 'main/b.json', null);
+        await tick();
+
+        deepStrictEqual(
+            emitted.map(args => [args[0], args[2]]),
+            [
+                ['fileChange', 'main/a.json'],
+                ['fileChange', 'main/b.json'],
+            ],
+        );
+        strictEqual(asked.length, 2, 'one question per file');
+    });
+
+    it('asks the controller where it can answer, and about the right thing', async () => {
+        const { adapter, asked, questions } = createAclAdapter(true, true);
+        const commands = createCommands(adapter, () => true);
+        const { socket, emitted } = subscribedSocket(createAcl({ state: ['read'], file: ['read'] }));
+        socket.subscribe.fileChange = [{ pattern: 'vis.0####*', regex: /^vis\.0####/ }];
+
+        commands.publish(socket, 'stateChange', 'a.b', { val: 1 });
+        await tick();
+        commands.publishFile(socket, 'vis.0', 'main/a.json', 1);
+        await tick();
+
+        deepStrictEqual(questions, [
+            { type: 'state', id: 'a.b', user: USER },
+            { type: 'file', id: 'vis.0', fileName: 'main/a.json', user: USER },
+        ]);
+        strictEqual(asked.length, 0, 'the object was not read as a stand-in for the question');
+        strictEqual(emitted.length, 2);
+    });
+
+    it('reads the object instead where the controller is too old for the question', async () => {
+        const { adapter, asked, questions } = createAclAdapter(true, false);
+        const commands = createCommands(adapter, () => true);
+        const { socket, emitted } = subscribedSocket(createAcl({ state: ['read'] }));
+
+        commands.publish(socket, 'stateChange', 'a.b', { val: 1 });
+        await tick();
+
+        strictEqual(questions.length, 0);
+        deepStrictEqual(
+            asked.map(entry => entry.id),
+            ['a.b'],
+        );
+        strictEqual(emitted.length, 1);
+    });
+
+    it('watches the objects and forgets a decision when one changes', async () => {
+        const { adapter, asked, watched } = createAclAdapter(true);
+        const commands = createCommands(adapter, () => true);
+        const { socket } = subscribedSocket(createAcl({ state: ['read'] }));
+
+        commands.publish(socket, 'stateChange', 'a.b', { val: 1 });
+        await tick();
+        strictEqual(asked.length, 1);
+        deepStrictEqual(watched, ['*'], 'the objects are watched from the first decision on');
+
+        // the object - and with it its ACL - changed, so the decision is worth nothing
+        commands.publish(socket, 'objectChange', 'a.b', { _id: 'a.b', type: 'state', common: {}, acl: {} });
+        commands.publish(socket, 'stateChange', 'a.b', { val: 2 });
+        await tick();
+
+        strictEqual(asked.length, 2, 'it was asked again');
+    });
+});

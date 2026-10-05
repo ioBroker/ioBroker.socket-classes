@@ -3,9 +3,9 @@ import { type PermissionCommands, type SocketSubscribeTypes, type SocketOperatio
 /**
  * The options of an outbound message, as far as this package needs them.
  *
- * `timeout` has always been there. `user` is read by the controllers that report
- * `ADAPTER_MESSAGE_USER_CONTEXT` and silently ignored by older ones, and it is not in the older
- * `@iobroker/types` this package builds against - hence the own declaration.
+ * `timeout` has always been there. `user` is read by js-controller 7.2.5 and newer and silently
+ * ignored by older ones, and it is not in the older `@iobroker/types` this package builds against -
+ * hence the own declaration.
  */
 interface MessageSendOptions {
     /** Reject/err-callback if no answer arrives in time (single targets only) */
@@ -74,7 +74,36 @@ export declare class SocketCommands {
      */
     static _fixCallback(callback: SocketCallback | null | undefined, error: string | Error | null | undefined, ...args: any[]): void;
     _checkPermissions(socket: WebSocketClient, command: PermissionCommands, callback: ((error: string | null, ...args: any[]) => void) | undefined, ...args: any[]): boolean;
+    /**
+     * Give one event to one connection, if it is subscribed to it and may see it.
+     *
+     * Returns whether the event is on its way to this client: `true` where it was sent, and also
+     * where it is waiting for the database to decide whether this user may read the object - the
+     * answer to that is not worth holding up every other connection for. `false` means the client is
+     * not subscribed to it, or may not see it.
+     *
+     * @param socket the connection
+     * @param type what kind of event it is
+     * @param id the object it is about
+     * @param obj the state or object as it is sent to the client
+     */
     publish(socket: WebSocketClient, type: SocketSubscribeTypes, id: string, obj: ioBroker.Object | ioBroker.State | null | undefined): boolean;
+    /**
+     * Give one file event to one connection, if it is subscribed to it and may see it.
+     *
+     * The decision is taken on the meta object the files belong to - `vis.0` for every file of vis -
+     * which is one question per adapter and user instead of one per file, and it still works where the
+     * file the event is about has just been deleted. Per-file owners and modes, which `chownFile` and
+     * `chmodFile` can set, are not looked at; that needs the same canonical check from the controller
+     * that the state events want.
+     *
+     * The answer means the same as in {@link publish}: `true` where the event is on its way.
+     *
+     * @param socket the connection
+     * @param id the adapter the file belongs to, e.g. `vis.0`
+     * @param fileName the path of the file inside it
+     * @param size how big it is now, or null where it is gone
+     */
     publishFile(socket: WebSocketClient, id: string, fileName: string, size: number | null): boolean;
     /**
      * The send options for a message triggered by this socket: the user it is sent on behalf of.
@@ -82,9 +111,10 @@ export declare class SocketCommands {
      * Objects, states and files have always been read and written with `{ user }` so the database
      * applies the ACLs of the logged-in user. A message had no such channel: the receiving instance saw
      * `from` and nothing else, so every adapter reachable over `sendTo` had to act with its own rights,
-     * and could not tell one caller from another. The user travels with the message now, for the
-     * controller versions that support it - older ones ignore the option, so nothing breaks, but a
-     * receiver must treat `obj.user` as optional (`adapter.supportsFeature('ADAPTER_MESSAGE_USER_CONTEXT')`).
+     * and could not tell one caller from another. The user travels with the message now: js-controller
+     * 7.2.5 and newer put it into the message as `obj.user`, older ones ignore the option, so nothing
+     * breaks. A receiver treats the field as optional - where nobody was named there is nothing to
+     * check against, which is how every message looked before.
      *
      * @param socket the socket the command came in on
      */
