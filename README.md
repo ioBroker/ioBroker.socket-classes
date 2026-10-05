@@ -1043,7 +1043,7 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 2.7.0 (2026-10-05)
 - (@GermanBluefox) Added: every command that sends a message now names the user of the connection - `sendTo`, `sendToHost`, `cmdExec`, `clientSubscribe`, `clientUnsubscribe` and the "nobody subscribed" notice. Objects, states and files have always been read and written with `{ user }` so the database applies the ACLs of the logged-in user; a message had no such channel, so the receiving instance saw `from` and nothing else and had to act with its own rights - a GUI user who may use `sendTo` could have an adapter do things their own ACL forbids. It travels as a send option, which a js-controller that reports `ADAPTER_MESSAGE_USER_CONTEXT` passes on to the message as `obj.user`; an older one ignores it, so nothing breaks, and a receiving adapter has to treat the field as optional
 
 ### 2.6.2 (2026-10-02)
