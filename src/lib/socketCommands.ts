@@ -11,6 +11,20 @@ import {
     type InternalStorageToken,
 } from '../types';
 
+/**
+ * The options of an outbound message, as far as this package needs them.
+ *
+ * `timeout` has always been there. `user` is read by the controllers that report
+ * `ADAPTER_MESSAGE_USER_CONTEXT` and silently ignored by older ones, and it is not in the older
+ * `@iobroker/types` this package builds against - hence the own declaration.
+ */
+interface MessageSendOptions {
+    /** Reject/err-callback if no answer arrives in time (single targets only) */
+    timeout?: number;
+    /** The user the message is sent on behalf of */
+    user?: `system.user.${string}`;
+}
+
 export const COMMANDS_PERMISSIONS: Record<
     PermissionCommands,
     { type: 'object' | 'state' | 'users' | 'other' | 'file' | ''; operation: SocketOperation }
@@ -419,6 +433,23 @@ export class SocketCommands {
         return false;
     }
 
+    /**
+     * The send options for a message triggered by this socket: the user it is sent on behalf of.
+     *
+     * Objects, states and files have always been read and written with `{ user }` so the database
+     * applies the ACLs of the logged-in user. A message had no such channel: the receiving instance saw
+     * `from` and nothing else, so every adapter reachable over `sendTo` had to act with its own rights,
+     * and could not tell one caller from another. The user travels with the message now, for the
+     * controller versions that support it - older ones ignore the option, so nothing breaks, but a
+     * receiver must treat `obj.user` as optional (`adapter.supportsFeature('ADAPTER_MESSAGE_USER_CONTEXT')`).
+     *
+     * @param socket the socket the command came in on
+     */
+    protected static sendOptionsOf(socket: WebSocketClient): MessageSendOptions | undefined {
+        const user = socket?._acl?.user;
+        return user ? { user } : undefined;
+    }
+
     publishInstanceMessage(socket: WebSocketClient, sourceInstance: string, messageType: string, data: any): boolean {
         if (this.#clientSubscribes[socket.id]?.[sourceInstance]?.includes(messageType)) {
             socket.emit('im', messageType, sourceInstance, data);
@@ -426,11 +457,13 @@ export class SocketCommands {
         }
 
         // inform instance about missing subscription
-        this.adapter.sendTo(sourceInstance, 'clientSubscribeError', {
-            type: messageType,
-            sid: socket.id,
-            reason: 'no one subscribed',
-        });
+        this.adapter.sendTo(
+            sourceInstance,
+            'clientSubscribeError',
+            { type: messageType, sid: socket.id, reason: 'no one subscribed' },
+            undefined,
+            SocketCommands.sendOptionsOf(socket),
+        );
         return false;
     }
 
@@ -690,7 +723,7 @@ export class SocketCommands {
             return;
         }
         // inform all instances about disconnected socket, also if the socket has never subscribed to anything
-        this.#informAboutDisconnect(socket.id);
+        this.#informAboutDisconnect(socket);
 
         if (!socket.subscribe) {
             return;
@@ -1161,6 +1194,7 @@ export class SocketCommands {
                         command,
                         message,
                         res => typeof callback === 'function' && setImmediate(() => callback(res)),
+                        SocketCommands.sendOptionsOf(socket),
                     );
                 } catch (error) {
                     if (typeof callback === 'function') {
@@ -1281,7 +1315,23 @@ export class SocketCommands {
                     this._sendToHost(host, command, message, callback);
                 } else {
                     try {
-                        this.adapter.sendToHost(host, command, message, callback as ioBroker.MessageCallback);
+                        // the 5th parameter exists from the controller version that reports
+                        // `ADAPTER_MESSAGE_USER_CONTEXT`; an older one ignores the extra argument
+                        const sendToHost = this.adapter.sendToHost as (
+                            host: string,
+                            command: string,
+                            message: any,
+                            callback?: ioBroker.MessageCallback,
+                            options?: MessageSendOptions,
+                        ) => void;
+                        sendToHost.call(
+                            this.adapter,
+                            host,
+                            command,
+                            message,
+                            callback as ioBroker.MessageCallback,
+                            SocketCommands.sendOptionsOf(socket),
+                        );
                     } catch (error) {
                         if (callback) {
                             callback({ error });
@@ -2710,8 +2760,12 @@ export class SocketCommands {
                 this.#clientSubscribes[sid][targetInstance].push(messageType);
             }
             // inform instance about new subscription
-            this.adapter.sendTo(targetInstance, 'clientSubscribe', { type: messageType, sid, data }, result =>
-                SocketCommands._fixCallback(callback, null, result),
+            this.adapter.sendTo(
+                targetInstance,
+                'clientSubscribe',
+                { type: messageType, sid, data },
+                result => SocketCommands._fixCallback(callback, null, result),
+                SocketCommands.sendOptionsOf(socket),
             );
         };
 
@@ -2745,11 +2799,13 @@ export class SocketCommands {
                 if (pos !== -1) {
                     this.#clientSubscribes[sid][targetInstance].splice(pos, 1);
                     // inform instance about unsubscription
-                    this.adapter.sendTo(targetInstance, 'clientUnsubscribe', {
-                        type: [messageType],
-                        sid,
-                        reason: 'client',
-                    });
+                    this.adapter.sendTo(
+                        targetInstance,
+                        'clientUnsubscribe',
+                        { type: [messageType], sid, reason: 'client' },
+                        undefined,
+                        SocketCommands.sendOptionsOf(socket),
+                    );
                     SocketCommands._fixCallback(callback, null, true);
                     return;
                 }
@@ -2799,15 +2855,32 @@ export class SocketCommands {
         this._initCommandsFiles();
     }
 
-    #informAboutDisconnect(socketId: string): void {
+    /**
+     * Tell every instance this socket had subscribed to that it is gone.
+     *
+     * Carries the user of the connection like the explicit `clientUnsubscribe` does: an instance that
+     * keeps something per user - a recording, a session, a pending request - learns whose it was,
+     * instead of only which socket id disappeared.
+     *
+     * @param socket the socket that went away
+     */
+    #informAboutDisconnect(socket: WebSocketClient): void {
+        const socketId = socket.id;
         // say to all instances that this socket was disconnected
         if (this.#clientSubscribes[socketId]) {
+            const options = SocketCommands.sendOptionsOf(socket);
             Object.keys(this.#clientSubscribes[socketId]).forEach(targetInstance => {
-                this.adapter.sendTo(targetInstance, 'clientUnsubscribe', {
-                    type: this.#clientSubscribes[socketId][targetInstance],
-                    sid: socketId,
-                    reason: 'disconnect',
-                });
+                this.adapter.sendTo(
+                    targetInstance,
+                    'clientUnsubscribe',
+                    {
+                        type: this.#clientSubscribes[socketId][targetInstance],
+                        sid: socketId,
+                        reason: 'disconnect',
+                    },
+                    undefined,
+                    options,
+                );
             });
             delete this.#clientSubscribes[socketId];
         }

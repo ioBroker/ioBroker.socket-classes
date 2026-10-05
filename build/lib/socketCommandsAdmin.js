@@ -1067,7 +1067,11 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
                 // remember socket for this ID.
                 this.cmdSessions[id] = { socket };
                 try {
-                    this.adapter.sendToHost(host, 'cmdExec', { data: cmd, id, files: files || undefined });
+                    // The most privileged command of them all: the host runs an ioBroker CLI command
+                    // with it. Who asked for it travels with the message, so the host and its log can
+                    // name the user instead of only the instance that relayed the request.
+                    const sendToHost = this.adapter.sendToHost;
+                    sendToHost.call(this.adapter, host, 'cmdExec', { data: cmd, id, files: files || undefined }, undefined, socketCommands_1.SocketCommands.sendOptionsOf(socket));
                     socketCommands_1.SocketCommands._fixCallback(callback, null);
                 }
                 catch (error) {

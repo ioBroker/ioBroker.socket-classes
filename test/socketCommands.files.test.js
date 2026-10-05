@@ -38,7 +38,9 @@ function createAdapter(overrides) {
         name =>
         (...args) => {
             calls.push({ name, args });
-            const cb = args[args.length - 1];
+            // the callback is not necessarily the last argument: `sendTo`/`sendToHost` take send
+            // options after it, so take the last argument that is a function
+            const cb = [...args].reverse().find(a => typeof a === 'function');
             if (typeof cb === 'function') {
                 cb(null);
             }

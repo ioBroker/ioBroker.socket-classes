@@ -609,6 +609,9 @@ describe('SocketCommands', () => {
                 'system.adapter.cameras.0',
                 'clientSubscribeError',
                 { type: 'cam1', sid: 'socket1', reason: 'no one subscribed' },
+                // no callback, and the user the socket is authenticated as
+                undefined,
+                { user: 'system.user.admin' },
             ]);
             strictEqual(socket.emitted.length, 0);
         });
@@ -632,6 +635,9 @@ describe('SocketCommands', () => {
                 'system.adapter.cameras.0',
                 'clientUnsubscribe',
                 { type: ['cam1'], sid: 'socket1', reason: 'client' },
+                // no callback, and the user the socket is authenticated as
+                undefined,
+                { user: 'system.user.admin' },
             ]);
             strictEqual(commands.publishInstanceMessage(socket, 'system.adapter.cameras.0', 'cam1', 1), false);
         });
@@ -667,9 +673,23 @@ describe('SocketCommands', () => {
             socket.subscribe = {};
             commands.unsubscribeSocket(socket);
             const informs = adapter.calls.sendTo.filter(c => c[1] === 'clientUnsubscribe');
+            // no callback, and the user the disconnected socket was authenticated as
+            const user = { user: 'system.user.admin' };
             deepStrictEqual(informs, [
-                ['system.adapter.cameras.0', 'clientUnsubscribe', { type: ['cam1', 'cam2'], sid: 'socket1', reason: 'disconnect' }],
-                ['system.adapter.echarts.0', 'clientUnsubscribe', { type: ['chart'], sid: 'socket1', reason: 'disconnect' }],
+                [
+                    'system.adapter.cameras.0',
+                    'clientUnsubscribe',
+                    { type: ['cam1', 'cam2'], sid: 'socket1', reason: 'disconnect' },
+                    undefined,
+                    user,
+                ],
+                [
+                    'system.adapter.echarts.0',
+                    'clientUnsubscribe',
+                    { type: ['chart'], sid: 'socket1', reason: 'disconnect' },
+                    undefined,
+                    user,
+                ],
             ]);
             // subscriptions are gone
             strictEqual(commands.publishInstanceMessage(socket, 'system.adapter.cameras.0', 'cam1', 1), false);
@@ -2019,5 +2039,75 @@ describe('SocketCommands', () => {
                 SocketCommands.ERROR_PERMISSION,
             ]);
         });
+    });
+});
+
+describe('SocketCommands user context', () => {
+    /** Capture the arguments of one adapter method without the recording mock reversing them */
+    function captureAdapter(method) {
+        const seen = [];
+        const adapter = createAdapter({
+            [method]: (...args) => {
+                seen.push(args);
+                const cb = args.find(a => typeof a === 'function');
+                cb?.({ accepted: true });
+            },
+        });
+        return { adapter, seen };
+    }
+
+    it('sendTo names the user of the socket', async () => {
+        const { adapter, seen } = captureAdapter('sendTo');
+        const commands = createCommands(adapter);
+
+        await call(commands, 'sendTo', createSocket(createAcl({ other: ['sendto'] })), 'history.0', 'cmd', { a: 1 });
+
+        deepStrictEqual(seen[0][0], 'history.0');
+        deepStrictEqual(seen[0][4], { user: USER });
+    });
+
+    it('sendTo sends no options when the socket has no user', async () => {
+        const { adapter, seen } = captureAdapter('sendTo');
+        const commands = createCommands(adapter);
+        const acl = createAcl({ other: ['sendto'] });
+        acl.user = '';
+
+        await call(commands, 'sendTo', createSocket(acl), 'history.0', 'cmd', { a: 1 });
+
+        strictEqual(seen[0][4], undefined);
+    });
+
+    it('clientSubscribe names the user of the socket', async () => {
+        const { adapter, seen } = captureAdapter('sendTo');
+        const commands = createCommands(adapter);
+
+        await call(
+            commands,
+            'clientSubscribe',
+            createSocket(createAcl({ other: ['sendto'] })),
+            'cameras.0',
+            'startRecording',
+            { width: 640 },
+        );
+
+        strictEqual(seen[0][1], 'clientSubscribe');
+        deepStrictEqual(seen[0][4], { user: USER });
+    });
+
+    it('sendToHost names the user of the socket', async () => {
+        const { adapter, seen } = captureAdapter('sendToHost');
+        const commands = createCommands(adapter);
+
+        await call(
+            commands,
+            'sendToHost',
+            createSocket(createAcl({ other: ['sendto'] })),
+            'system.host.test',
+            'getRepository',
+            {},
+        );
+
+        strictEqual(seen[0][1], 'getRepository');
+        deepStrictEqual(seen[0][4], { user: USER });
     });
 });

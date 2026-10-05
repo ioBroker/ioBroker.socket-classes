@@ -861,6 +861,16 @@ describe('SocketCommandsAdmin', () => {
             strictEqual(commands.sendCommand({ command: 'cmdStdout', message: { id: 123, data: 'x' } }), true);
         });
 
+        it('names the user the command is executed for', async () => {
+            const { commands, calls } = create();
+            const { socket } = createSocket();
+
+            await call(commands, 'cmdExec', socket, 'system.host.first', 7, 'ls -la');
+
+            // the host gets the user of the connection, not only the instance that relayed it
+            deepStrictEqual(calls.sendToHost[0][4], { user: socket._acl.user });
+        });
+
         it('sends files along with the command', async () => {
             const { commands, calls } = create();
             const { socket } = createSocket();

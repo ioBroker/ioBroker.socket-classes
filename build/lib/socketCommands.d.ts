@@ -1,5 +1,18 @@
 import type { Socket as WebSocketClient } from '@iobroker/ws-server';
 import { type PermissionCommands, type SocketSubscribeTypes, type SocketOperation, type SocketCallback } from '../types';
+/**
+ * The options of an outbound message, as far as this package needs them.
+ *
+ * `timeout` has always been there. `user` is read by the controllers that report
+ * `ADAPTER_MESSAGE_USER_CONTEXT` and silently ignored by older ones, and it is not in the older
+ * `@iobroker/types` this package builds against - hence the own declaration.
+ */
+interface MessageSendOptions {
+    /** Reject/err-callback if no answer arrives in time (single targets only) */
+    timeout?: number;
+    /** The user the message is sent on behalf of */
+    user?: `system.user.${string}`;
+}
 export declare const COMMANDS_PERMISSIONS: Record<PermissionCommands, {
     type: 'object' | 'state' | 'users' | 'other' | 'file' | '';
     operation: SocketOperation;
@@ -63,6 +76,19 @@ export declare class SocketCommands {
     _checkPermissions(socket: WebSocketClient, command: PermissionCommands, callback: ((error: string | null, ...args: any[]) => void) | undefined, ...args: any[]): boolean;
     publish(socket: WebSocketClient, type: SocketSubscribeTypes, id: string, obj: ioBroker.Object | ioBroker.State | null | undefined): boolean;
     publishFile(socket: WebSocketClient, id: string, fileName: string, size: number | null): boolean;
+    /**
+     * The send options for a message triggered by this socket: the user it is sent on behalf of.
+     *
+     * Objects, states and files have always been read and written with `{ user }` so the database
+     * applies the ACLs of the logged-in user. A message had no such channel: the receiving instance saw
+     * `from` and nothing else, so every adapter reachable over `sendTo` had to act with its own rights,
+     * and could not tell one caller from another. The user travels with the message now, for the
+     * controller versions that support it - older ones ignore the option, so nothing breaks, but a
+     * receiver must treat `obj.user` as optional (`adapter.supportsFeature('ADAPTER_MESSAGE_USER_CONTEXT')`).
+     *
+     * @param socket the socket the command came in on
+     */
+    protected static sendOptionsOf(socket: WebSocketClient): MessageSendOptions | undefined;
     publishInstanceMessage(socket: WebSocketClient, sourceInstance: string, messageType: string, data: any): boolean;
     _showSubscribes(socket: WebSocketClient, type: SocketSubscribeTypes): void;
     isLogEnabled(): boolean;
@@ -90,3 +116,4 @@ export declare class SocketCommands {
     disableEventThreshold(): void;
     destroy(): void;
 }
+export {};
