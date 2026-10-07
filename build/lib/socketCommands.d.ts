@@ -91,11 +91,11 @@ export declare class SocketCommands {
     /**
      * Give one file event to one connection, if it is subscribed to it and may see it.
      *
-     * The decision is taken on the meta object the files belong to - `vis.0` for every file of vis -
-     * which is one question per adapter and user instead of one per file, and it still works where the
-     * file the event is about has just been deleted. Per-file owners and modes, which `chownFile` and
-     * `chmodFile` can set, are not looked at; that needs the same canonical check from the controller
-     * that the state events want.
+     * The decision is taken per file and user. Where the controller has `mayRead`, it answers for the
+     * single file, with its own owner and mode as `chownFile` and `chmodFile` set them. An older
+     * controller cannot be asked about a file, so the meta object the files belong to - `vis.0` for
+     * every file of vis - stands in for it: still one question per file, but every one of them about
+     * the adapter. That also works where the file the event is about has just been deleted.
      *
      * The answer means the same as in {@link publish}: `true` where the event is on its way.
      *

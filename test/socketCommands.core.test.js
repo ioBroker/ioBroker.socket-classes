@@ -2296,4 +2296,220 @@ describe('SocketCommands publish ACL filter', () => {
 
         strictEqual(asked.length, 2, 'it was asked again');
     });
+
+    it('filters a subscription without wildcards the same way as one with them', async () => {
+        const questions = [];
+        const adapter = createAdapter({
+            // the user may read `a.open`, but not `a.secret`
+            mayRead: question => {
+                questions.push(question);
+                return Promise.resolve(question.id !== 'a.secret');
+            },
+        });
+        const commands = createCommands(adapter, () => true);
+        const socket = createSocket(createAcl({ state: ['read'] }));
+
+        // `subscribe` only asks whether states may be read at all, so both are accepted
+        deepStrictEqual(await call(commands, 'subscribe', socket, 'a.secret'), [null]);
+        deepStrictEqual(await call(commands, 'subscribe', socket, 'a.open'), [null]);
+
+        strictEqual(commands.publish(socket, 'stateChange', 'a.secret', { val: 1 }), true);
+        strictEqual(commands.publish(socket, 'stateChange', 'a.open', { val: 2 }), true);
+        await tick();
+
+        deepStrictEqual(
+            socket.emitted.map(args => [args[0], args[1]]),
+            [['stateChange', 'a.open']],
+            'the value of the state the user may not read was not sent',
+        );
+        deepStrictEqual(
+            questions.map(question => question.id),
+            ['a.secret', 'a.open'],
+        );
+
+        // and from now on it is refused from memory
+        strictEqual(commands.publish(socket, 'stateChange', 'a.secret', { val: 3 }), false);
+        strictEqual(questions.length, 2);
+        strictEqual(socket.emitted.length, 1);
+    });
+
+    it('keeps an object change away from a user who may not read that object', async () => {
+        const { adapter, questions } = createAclAdapter(false, true);
+        const commands = createCommands(adapter, () => true);
+        const socket = createSocket(createAcl({ object: ['read'] }));
+        socket.subscribe = { objectChange: [{ pattern: 'a.*', regex: /^a\./ }] };
+
+        commands.publish(socket, 'objectChange', 'a.b', { _id: 'a.b', type: 'state', common: {}, native: {} });
+        await tick();
+
+        strictEqual(socket.emitted.length, 0, 'nothing was sent');
+        deepStrictEqual(questions, [{ type: 'object', id: 'a.b', user: USER }]);
+    });
+
+    it('forgets every decision when a group changes', async () => {
+        const { adapter, asked } = createAclAdapter(true);
+        const commands = createCommands(adapter, () => true);
+        const { socket } = subscribedSocket(createAcl({ state: ['read'] }));
+
+        commands.publish(socket, 'stateChange', 'a.b', { val: 1 });
+        commands.publish(socket, 'stateChange', 'a.c', { val: 1 });
+        await tick();
+        strictEqual(asked.length, 2);
+
+        // the members of a group - and with them the rights of the user - may have changed
+        commands.publish(socket, 'objectChange', 'system.group.user', {
+            _id: 'system.group.user',
+            type: 'group',
+            common: { members: [] },
+            native: {},
+        });
+        commands.publish(socket, 'stateChange', 'a.b', { val: 2 });
+        commands.publish(socket, 'stateChange', 'a.c', { val: 2 });
+        await tick();
+
+        deepStrictEqual(
+            asked.map(entry => entry.id),
+            ['a.b', 'a.c', 'a.b', 'a.c'],
+        );
+    });
+
+    it('does not remember an answer that was asked for before the object changed', async () => {
+        const { adapter, asked } = createAclAdapter('later');
+        const commands = createCommands(adapter, () => true);
+        const { socket, emitted } = subscribedSocket(createAcl({ state: ['read'] }));
+
+        commands.publish(socket, 'stateChange', 'a.b', { val: 1 });
+        strictEqual(asked.length, 1);
+
+        // the ACL changes while the question is with the database
+        commands.publish(socket, 'objectChange', 'a.b', { _id: 'a.b', type: 'state', common: {}, acl: {} });
+        asked[0].cb(null, { _id: 'a.b', type: 'state' });
+        await tick();
+
+        strictEqual(emitted.length, 0, 'the outdated answer did not let the event through');
+        strictEqual(asked.length, 2, 'it was asked again, with the new ACL');
+
+        asked[1].cb(null, { _id: 'a.b', type: 'state' });
+        await tick();
+        deepStrictEqual(emitted.map(args => args[2]), [{ val: 1 }]);
+
+        // this answer is current, so it is remembered
+        commands.publish(socket, 'stateChange', 'a.b', { val: 2 });
+        strictEqual(asked.length, 2);
+        strictEqual(emitted.length, 2);
+    });
+
+    it('keeps watching the objects when a client gives up its subscription to all of them', async () => {
+        const { adapter, watched } = createAclAdapter(true);
+        const commands = createCommands(adapter, () => true);
+        const { socket } = subscribedSocket(createAcl({ state: ['read'] }));
+        const client = createSocket(createAcl({ object: ['read'] }));
+
+        // a decision is made, so the objects are watched
+        commands.publish(socket, 'stateChange', 'a.b', { val: 1 });
+        await tick();
+        deepStrictEqual(watched, ['*']);
+
+        // a client subscribes to all objects and gives them up again
+        commands.subscribe(client, 'objectChange', '*');
+        deepStrictEqual(watched, ['*'], 'the database is not asked a second time for the same pattern');
+        commands.unsubscribe(client, 'objectChange', '*');
+
+        strictEqual(adapter.calls.unsubscribeForeignObjectsAsync, undefined, 'the watch is still there');
+    });
+
+    it('keeps watching the objects when the client that subscribed to all of them first leaves', async () => {
+        const { adapter, watched } = createAclAdapter(true);
+        const commands = createCommands(adapter, () => true);
+        const { socket } = subscribedSocket(createAcl({ state: ['read'] }));
+        const client = createSocket(createAcl({ object: ['read'] }));
+
+        commands.subscribe(client, 'objectChange', '*');
+        strictEqual(watched.length, 1);
+
+        // the decision joins the subscription that is already there
+        commands.publish(socket, 'stateChange', 'a.b', { val: 1 });
+        await tick();
+        strictEqual(watched.length, 1);
+
+        // the client leaves - with all of its subscriptions
+        commands.unsubscribeSocket(client);
+        strictEqual(adapter.calls.unsubscribeForeignObjectsAsync, undefined, 'the watch is still there');
+    });
+
+    it('drops an event on an outdated "no", but does not remember it', async () => {
+        const { adapter, asked } = createAclAdapter('later');
+        const commands = createCommands(adapter, () => true);
+        const { socket, emitted } = subscribedSocket(createAcl({ state: ['read'] }));
+
+        commands.publish(socket, 'stateChange', 'a.b', { val: 1 });
+
+        // the ACL changes while the question is with the database, and the old answer is "no"
+        commands.publish(socket, 'objectChange', 'a.b', { _id: 'a.b', type: 'state', common: {}, acl: {} });
+        asked[0].cb('permissionError');
+        await tick();
+
+        strictEqual(emitted.length, 0, 'the event that waited was dropped');
+        strictEqual(asked.length, 1, 'a refusal is not asked again for the event that waited');
+
+        // the next event does not trust the outdated "no" either
+        strictEqual(commands.publish(socket, 'stateChange', 'a.b', { val: 2 }), true);
+        strictEqual(asked.length, 2);
+        asked[1].cb(null, { _id: 'a.b', type: 'state' });
+        await tick();
+        deepStrictEqual(emitted.map(args => args[2]), [{ val: 2 }]);
+    });
+
+    it('asks the controller about every single file, each with its own answer', async () => {
+        const questions = [];
+        const adapter = createAdapter({
+            // `main/secret.json` was taken away from the user with `chmodFile`
+            mayRead: question => {
+                questions.push(question);
+                return Promise.resolve(question.fileName !== 'main/secret.json');
+            },
+        });
+        const commands = createCommands(adapter, () => true);
+        const socket = createSocket(createAcl({ file: ['read'] }));
+        socket.subscribe = { fileChange: [{ pattern: 'vis.0####*', regex: /^vis\.0####/ }] };
+
+        commands.publishFile(socket, 'vis.0', 'main/secret.json', 10);
+        commands.publishFile(socket, 'vis.0', 'main/open.json', 20);
+        await tick();
+
+        deepStrictEqual(questions, [
+            { type: 'file', id: 'vis.0', fileName: 'main/secret.json', user: USER },
+            { type: 'file', id: 'vis.0', fileName: 'main/open.json', user: USER },
+        ]);
+        deepStrictEqual(
+            socket.emitted.map(args => [args[0], args[1], args[2]]),
+            [['fileChange', 'vis.0', 'main/open.json']],
+        );
+
+        // both answers are remembered per file
+        strictEqual(commands.publishFile(socket, 'vis.0', 'main/secret.json', 11), false);
+        strictEqual(commands.publishFile(socket, 'vis.0', 'main/open.json', 21), true);
+        strictEqual(questions.length, 2);
+        strictEqual(socket.emitted.length, 2);
+    });
+
+    it('forgets the decisions about the files of an adapter when its object changes', async () => {
+        const { adapter, asked } = createAclAdapter(true);
+        const commands = createCommands(adapter, () => true);
+        const socket = createSocket(createAcl({ file: ['read'] }));
+        socket.subscribe = { fileChange: [{ pattern: 'vis.0####*', regex: /^vis\.0####/ }] };
+
+        commands.publishFile(socket, 'vis.0', 'main/a.json', 1);
+        await tick();
+        strictEqual(asked.length, 1);
+
+        commands.publish(socket, 'objectChange', 'vis.0', { _id: 'vis.0', type: 'meta', common: {}, native: {} });
+        commands.publishFile(socket, 'vis.0', 'main/a.json', 2);
+        await tick();
+
+        deepStrictEqual(
+            asked.map(entry => entry.id),
+            ['vis.0', 'vis.0'],
+        );
+    });
 });

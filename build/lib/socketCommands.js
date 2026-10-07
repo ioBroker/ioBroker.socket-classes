@@ -353,7 +353,11 @@ class SocketCommands {
             if (generation === this.#readableGeneration) {
                 this.#rememberDecision(user, questionKey, allowed);
             }
-            // an answer that is too old to be remembered still answers the events that waited for it
+            /*
+             * An answer that is too old to be remembered still answers the events that waited for it:
+             * a "no" drops them, a "yes" sends them back through `publish`, which - with nothing in
+             * memory - asks again under the rights as they are now.
+             */
             const callbacks = this.#deciding.get(key) || [];
             this.#deciding.delete(key);
             for (const callback of callbacks) {
@@ -403,11 +407,22 @@ class SocketCommands {
         decisions.set(questionKey, allowed);
         if (!this.#watchingObjects) {
             this.#watchingObjects = true;
-            // the ACL of an object can change at any time, and without this the decision above would
-            // be kept until the connection goes away
-            this.adapter
-                .subscribeForeignObjectsAsync('*')
-                .catch(e => this.adapter.log.warn(`Cannot watch the objects for the permissions of the clients: ${e.message}`));
+            /*
+             * The ACL of an object can change at any time, and without this the decision above would
+             * be kept until the connection goes away. The watch counts as one more subscriber of `*`:
+             * a client that subscribed to all objects and gives them up again would otherwise take
+             * the subscription of the database away from under it.
+             */
+            this.subscribes.objectChange ||= {};
+            if (this.subscribes.objectChange['*'] === undefined) {
+                this.subscribes.objectChange['*'] = 1;
+                this.adapter
+                    .subscribeForeignObjectsAsync('*')
+                    .catch(e => this.adapter.log.warn(`Cannot watch the objects for the permissions of the clients: ${e.message}`));
+            }
+            else {
+                this.subscribes.objectChange['*']++;
+            }
         }
     }
     /** Forget what was decided about `id`, because the object - and with it its ACL - changed. */
@@ -456,8 +471,9 @@ class SocketCommands {
      *
      * What is sent is whatever arrived last while the question was open - a client that subscribes to
      * a state wants its value, not the one it had a moment ago. It goes through `publish`/`publishFile`
-     * again: the subscription may have been given up in the meantime, and the decision is in memory
-     * now, so it cannot come back here.
+     * again: the subscription may have been given up in the meantime. Usually the decision is in memory
+     * by then and the event goes out; only where the object changed while the question was open was
+     * the answer not remembered, and the event waits once more for a fresh one.
      *
      * @param socket the connection that waited
      * @param key what identifies the event
@@ -529,11 +545,11 @@ class SocketCommands {
     /**
      * Give one file event to one connection, if it is subscribed to it and may see it.
      *
-     * The decision is taken on the meta object the files belong to - `vis.0` for every file of vis -
-     * which is one question per adapter and user instead of one per file, and it still works where the
-     * file the event is about has just been deleted. Per-file owners and modes, which `chownFile` and
-     * `chmodFile` can set, are not looked at; that needs the same canonical check from the controller
-     * that the state events want.
+     * The decision is taken per file and user. Where the controller has `mayRead`, it answers for the
+     * single file, with its own owner and mode as `chownFile` and `chmodFile` set them. An older
+     * controller cannot be asked about a file, so the meta object the files belong to - `vis.0` for
+     * every file of vis - stands in for it: still one question per file, but every one of them about
+     * the adapter. That also works where the file the event is about has just been deleted.
      *
      * The answer means the same as in {@link publish}: `true` where the event is on its way.
      *
