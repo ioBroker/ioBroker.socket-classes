@@ -108,6 +108,23 @@ export interface RepoAdapterObject extends ioBroker.AdapterCommon {
     allowAdapterReadme?: boolean;
     allowAdapterRating?: boolean;
 }
+/** Options of the command `getReducedRepository` */
+export interface ReducedRepositoryOptions {
+    /** The repositories to merge, like `common.activeRepo` of `system.config`, which is the default */
+    repo?: string | string[];
+    /** Download the repositories anew first. Only the host can do that, so it is asked then */
+    update?: boolean;
+    /**
+     * Language of the GUI: the translated texts keep only this language and English, the fallback of
+     * the GUI. All languages are kept without it
+     */
+    lang?: ioBroker.Languages;
+    /**
+     * Only these entries, all of them with their `news` - e.g. for the readme of one adapter, which
+     * shows the changes also of an adapter that is not installed
+     */
+    adapters?: string[];
+}
 export interface ObjectsCount {
     /** Number of all objects */
     total: number;

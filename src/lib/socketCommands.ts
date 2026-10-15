@@ -145,7 +145,9 @@ export type SupportedFeature =
     | 'INSTANCE_MESSAGES'
     | 'PARTIAL_OBJECT_TREE'
     /** The command `getObjectsCount` counts the objects instead of the client reading them all */
-    | 'OBJECTS_COUNT';
+    | 'OBJECTS_COUNT'
+    /** The command `getReducedRepository` delivers the repository without what the GUI does not show */
+    | 'REDUCED_REPOSITORY';
 
 export interface SocketDataContext {
     language?: ioBroker.Languages;
@@ -1431,6 +1433,8 @@ export class SocketCommands {
                 // only the admin variant of these commands has it, and a client that asks must not
                 // send a command that nobody answers - it would sit there until its timeout
                 SocketCommands._fixCallback(callback, null, !!this.commands.getObjectsCount);
+            } else if (feature === 'REDUCED_REPOSITORY') {
+                SocketCommands._fixCallback(callback, null, !!this.commands.getReducedRepository);
             } else {
                 SocketCommands._fixCallback(callback, null, this.adapter.supportsFeature(feature));
             }

@@ -526,6 +526,7 @@ Unsubscribe from file changes in ioBroker DB
 * [`getCompactInstalled`](#getcompactinstalled_a)
 * [`getCompactSystemRepositories`](#getcompactsystemrepositories_a)
 * [`getCompactRepository`](#getcompactrepository_a)
+* [`getReducedRepository`](#getreducedrepository_a)
 * [`getCompactHosts`](#getcompacthosts_a)
 * [`delState`](#delstate_a)
 * [`getStates`](#getstates_a)
@@ -769,6 +770,17 @@ several megabytes of repository through the message box for two fields per adapt
 made every start of the GUI wait seconds for it.
 * `host` *string*: - Host name, e.g., `system.host.raspberrypi`
 * `callback` *(result: Record<string, {version: string; icon?: string}>) => void) => void*: - Callback function `(error: string | null, results?: Record<string, { version: string; icon?: string }>) => void`
+
+#### <a name="getreducedrepository_a"></a>`getReducedRepository(host, options, callback)`
+Get the repository with what the GUI shows of it.
+The whole repository is several megabytes, most of it the `news` of every version in every
+language. They are delivered only for the adapters installed on any host and for the
+controller, as only an update shows them; with `lang` all translated texts keep only that
+language and English. Answered from the objects admin holds in memory where possible.
+Announced as the feature `REDUCED_REPOSITORY`.
+* `host` *string*: - Host to ask if the objects in memory cannot answer, e.g., `system.host.raspberrypi`
+* `options` *ReducedRepositoryOptions | null | undefined*: - `{ repo?: string | string[]; update?: boolean; lang?: ioBroker.Languages; adapters?: string[] }`
+* `callback` *(error: string | null | Error | undefined, repository?: Record<string, RepoAdapterObject>) => void*: - Callback function `(error: string | null, repository?: Record<string, RepoAdapterObject>) => void`
 
 #### <a name="getcompacthosts_a"></a>`getCompactHosts(callback)`
 Get all hosts in a compact form to save bandwidth.
@@ -1043,6 +1055,9 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+- (@GermanBluefox) Added: command `getReducedRepository` - the repository without unneeded news and languages
+
 ### 2.7.1 (2026-10-07)
 - (@GermanBluefox) Added: an event only reaches a connection whose user may read what it is about. A subscription says which ids a client is interested in, never which ids it may see - `subscribe` asks whether the user may read states *at all*, so whoever subscribed to `*` was told about every state of the system, the ACL of the single objects notwithstanding, and the same went for objects and for files. The fan-out asks that question now, for state, object and file events alike. Members of the administrator group are not restricted, as everywhere else, and with authentication switched off every connection is the configured default user - so for most installations nothing changes at all. **Where restricted users exist, they will see less than before: that is the point, but it is the kind of change that comes back as "my user stopped getting updates".** The database decides, not this package: `mayRead` of js-controller 8.0 and newer is asked where it exists, which knows the ACL of a state rather than that of its object and the mode of a single file rather than that of the adapter; an older controller is asked for the object instead, which is coarser but refuses in the same direction. One question per user and thing, remembered until the object - or the rights themselves - change, and the objects are watched from the first decision on, so an installation whose connections are all administrators never asks anything
 - (@GermanBluefox) Changed: `publish` and `publishFile` answer `true` where the event is on its way to the client, which now includes the moment it waits for the decision described above; `false` means the client is not subscribed to it, or may not see it. Only the first event of a thing ever waits, and only the newest one of it, so nothing can overtake it

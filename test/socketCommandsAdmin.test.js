@@ -146,6 +146,7 @@ describe('SocketCommandsAdmin', () => {
                 'getCompactInstalled',
                 'getCompactSystemRepositories',
                 'getCompactRepository',
+                'getReducedRepository',
                 'getCompactHosts',
                 'getAllObjects',
                 'getObjects',
@@ -1756,6 +1757,145 @@ describe('SocketCommandsAdmin', () => {
             deepStrictEqual(result, {});
         });
 
+        describe('getReducedRepository', () => {
+            const news = { '2.0.0': { en: 'new', de: 'neu', ru: 'новый' }, '1.0.0': { en: 'first', de: 'erste' } };
+            const repository = () => ({
+                _repoInfo: { stable: true },
+                'hm-rpc': {
+                    name: 'hm-rpc',
+                    version: '2.0.0',
+                    desc: { en: 'Homematic', de: 'Homematic DE', fr: 'Homematic FR' },
+                    titleLang: { en: 'HM', de: 'HM DE', it: 'HM IT' },
+                    news,
+                    messages: [
+                        {
+                            title: { en: 't', de: 'T', es: 'tt' },
+                            text: { en: 'x', de: 'X', pl: 'xx' },
+                            level: 'warn',
+                            condition: { operand: 'and', rules: [] },
+                        },
+                    ],
+                },
+                vis: { name: 'vis', version: '1.0.0', desc: 'plain', news },
+                flex: { name: 'flex', version: '0.1.0', news },
+                'js-controller': { name: 'js-controller', version: '7.0.0', controller: true, news },
+            });
+            const objectsWith = json => ({
+                'system.config': { _id: 'system.config', type: 'config', common: { activeRepo: ['stable'] } },
+                'system.repositories': {
+                    _id: 'system.repositories',
+                    type: 'config',
+                    native: { repositories: { stable: { link: 'http://x', json } } },
+                },
+                'system.adapter.hm-rpc': { _id: 'system.adapter.hm-rpc', type: 'adapter', common: {} },
+                'system.adapter.hm-rpc.0': { _id: 'system.adapter.hm-rpc.0', type: 'instance', common: {} },
+                // installed on a host without its object system.adapter.flex; the host name has a dot
+                'system.host.pi.local.adapter.flex': { _id: 'system.host.pi.local.adapter.flex', type: 'adapter' },
+            });
+
+            it('keeps the news only of installed adapters and of the controller', async () => {
+                const json = repository();
+                const { commands, calls } = create({}, objectsWith(json));
+
+                const [error, result] = await call(commands, 'getReducedRepository', createSocket().socket, 'h', {});
+
+                strictEqual(error, null);
+                deepStrictEqual(result['hm-rpc'].news, news);
+                strictEqual(result.vis.news, undefined);
+                deepStrictEqual(result.flex.news, news);
+                deepStrictEqual(result['js-controller'].news, news);
+                deepStrictEqual(result._repoInfo, { stable: true });
+                // without a language, all of them stay
+                deepStrictEqual(result['hm-rpc'].desc, json['hm-rpc'].desc);
+                // answered from the objects, not by the host
+                strictEqual(calls.sendToHost, undefined);
+                // the objects in memory are left as they were
+                deepStrictEqual(json, repository());
+            });
+
+            it('keeps of translated texts only the language of the GUI and English', async () => {
+                const { commands } = create({}, objectsWith(repository()));
+
+                const [, result] = await call(commands, 'getReducedRepository', createSocket().socket, 'h', {
+                    lang: 'de',
+                });
+
+                deepStrictEqual(result['hm-rpc'].desc, { en: 'Homematic', de: 'Homematic DE' });
+                deepStrictEqual(result['hm-rpc'].titleLang, { en: 'HM', de: 'HM DE' });
+                deepStrictEqual(result['hm-rpc'].news, {
+                    '2.0.0': { en: 'new', de: 'neu' },
+                    '1.0.0': { en: 'first', de: 'erste' },
+                });
+                deepStrictEqual(result['hm-rpc'].messages[0].title, { en: 't', de: 'T' });
+                deepStrictEqual(result['hm-rpc'].messages[0].text, { en: 'x', de: 'X' });
+                strictEqual(result['hm-rpc'].messages[0].level, 'warn');
+                strictEqual(result.vis.desc, 'plain');
+            });
+
+            it('delivers only the requested adapters, with their news', async () => {
+                const { commands } = create({}, objectsWith(repository()));
+
+                const [, result] = await call(commands, 'getReducedRepository', createSocket().socket, 'h', {
+                    adapters: ['vis', 'unknown'],
+                });
+
+                deepStrictEqual(Object.keys(result), ['vis']);
+                deepStrictEqual(result.vis.news, news);
+            });
+
+            it('asks the host to download the repositories and reduces its answer', async () => {
+                const { commands, calls } = create(
+                    { sendToHost: (host, command, message, cb) => cb(repository()) },
+                    objectsWith(repository()),
+                );
+
+                const [error, result] = await call(commands, 'getReducedRepository', createSocket().socket, 'h', {
+                    repo: ['stable'],
+                    update: true,
+                });
+
+                strictEqual(error, null);
+                deepStrictEqual(calls.sendToHost[0].slice(0, 3), [
+                    'h',
+                    'getRepository',
+                    { repo: ['stable'], update: true },
+                ]);
+                strictEqual(result.vis.news, undefined);
+                deepStrictEqual(result['hm-rpc'].news, news);
+            });
+
+            it('asks the host if a repository was never downloaded', async () => {
+                const { commands, calls } = create(
+                    { sendToHost: (host, command, message, cb) => cb(repository()) },
+                    objectsWith(null),
+                );
+
+                const [, result] = await call(commands, 'getReducedRepository', createSocket().socket, 'h', null);
+
+                strictEqual(calls.sendToHost[0][1], 'getRepository');
+                strictEqual(result.vis.version, '1.0.0');
+            });
+
+            it('requires the "other.sendto" right', async () => {
+                const { commands, calls } = create({}, objectsWith(repository()));
+                const [error] = await call(commands, 'getReducedRepository', createSocket(userAcl()).socket, 'h', {});
+                strictEqual(error, ERROR_PERMISSION);
+                strictEqual(calls.sendToHost, undefined);
+            });
+
+            it('is announced as feature REDUCED_REPOSITORY', async () => {
+                const { commands } = create();
+                const [error, supported] = await call(
+                    commands,
+                    'checkFeatureSupported',
+                    createSocket().socket,
+                    'REDUCED_REPOSITORY',
+                );
+                strictEqual(error, null);
+                strictEqual(supported, true);
+            });
+        });
+
         it('getCompactSystemRepositories reduces the repository content to _repoInfo', async () => {
             const repositories = {
                 common: { name: 'System repositories' },
@@ -1779,6 +1919,65 @@ describe('SocketCommandsAdmin', () => {
             deepStrictEqual(result.native.repositories.stable.json, { _repoInfo: { stable: true } });
             strictEqual(result.native.repositories.beta.json, null);
             strictEqual(calls.getForeignObject[0][0], 'system.repositories');
+        });
+
+        describe('getCompactSystemRepositories from the objects in memory', () => {
+            const systemRepositories = () => ({
+                _id: 'system.repositories',
+                type: 'config',
+                common: { name: 'System repositories' },
+                acl: { owner: 'system.user.admin', ownerGroup: 'system.group.administrator', object: 0x600 },
+                native: {
+                    repositories: {
+                        stable: {
+                            link: 'http://download.iobroker.net/sources-dist.json',
+                            hash: 'abc',
+                            json: { _repoInfo: { stable: true }, 'hm-rpc': { version: '1.0.0' } },
+                        },
+                        beta: { link: 'http://x', json: null },
+                    },
+                },
+            });
+
+            it('answers without reading the database and leaves the cached object as it is', async () => {
+                const cached = systemRepositories();
+                const { commands, calls } = create({}, { 'system.repositories': cached });
+
+                const [error, result] = await call(commands, 'getCompactSystemRepositories', createSocket().socket);
+
+                strictEqual(error, null);
+                deepStrictEqual(result.native.repositories.stable, {
+                    link: 'http://download.iobroker.net/sources-dist.json',
+                    hash: 'abc',
+                    json: { _repoInfo: { stable: true } },
+                });
+                strictEqual(result.native.repositories.beta.json, null);
+                deepStrictEqual(result.common, { name: 'System repositories' });
+                strictEqual(calls.getForeignObject, undefined);
+                deepStrictEqual(cached, systemRepositories());
+            });
+
+            it('refuses a user whom the ACL of the object does not allow to read it', async () => {
+                const { commands } = create({}, { 'system.repositories': systemRepositories() });
+                const { socket } = createSocket(userAcl({ object: { read: true } }));
+
+                const [error, result] = await call(commands, 'getCompactSystemRepositories', socket);
+
+                strictEqual(error, ERROR_PERMISSION);
+                strictEqual(result, undefined);
+            });
+
+            it('answers a user whom the ACL of the object allows to read it', async () => {
+                const obj = systemRepositories();
+                obj.acl.object = 0x644;
+                const { commands } = create({}, { 'system.repositories': obj });
+                const { socket } = createSocket(userAcl({ object: { read: true } }));
+
+                const [error, result] = await call(commands, 'getCompactSystemRepositories', socket);
+
+                strictEqual(error, null);
+                deepStrictEqual(result.native.repositories.stable.json, { _repoInfo: { stable: true } });
+            });
         });
 
         it('getCompactHosts delivers only the main attributes of hosts', async () => {

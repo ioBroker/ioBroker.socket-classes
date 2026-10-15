@@ -50,6 +50,106 @@ function toCompactRepository(source, result = {}) {
     }
     return result;
 }
+/**
+ * Reduces `system.repositories` to what the GUI shows of it: of the content of every repository only
+ * `_repoInfo`.
+ *
+ * A new object is built and `obj` is left as it is: it can be the object that admin keeps in memory.
+ *
+ * @param obj the object `system.repositories`
+ */
+function toCompactSystemRepositories(obj) {
+    const repositories = {};
+    for (const [name, repo] of Object.entries(obj.native?.repositories || {})) {
+        if (repo && typeof repo === 'object' && repo.json) {
+            repositories[name] = { ...repo, json: { _repoInfo: repo.json._repoInfo } };
+        }
+        else {
+            repositories[name] = repo;
+        }
+    }
+    return {
+        ...obj,
+        native: { ...obj.native, repositories },
+    };
+}
+/**
+ * Keeps of a translated text only the given language and English. A plain string stays as it is.
+ *
+ * @param text translated text or string
+ * @param lang language to keep besides English
+ */
+function reduceTranslation(text, lang) {
+    if (!text || typeof text !== 'object' || Array.isArray(text)) {
+        return text;
+    }
+    const translated = text;
+    const result = {};
+    if (translated.en !== undefined) {
+        result.en = translated.en;
+    }
+    if (translated[lang] !== undefined) {
+        result[lang] = translated[lang];
+    }
+    return result;
+}
+/**
+ * Reduces a repository to what the GUI shows.
+ *
+ * `news` holds the changes of every version in up to eleven languages and is most of a repository:
+ * 8.9 of 10.7 MB, measured on "Beta (latest)". The GUI shows it only for an update, so it is kept for
+ * the entries in `withNews` only. With `lang` the translated texts keep only that language and English.
+ *
+ * Nothing in `source` is changed: it can be the object that admin keeps in memory.
+ *
+ * @param source merged repository
+ * @param withNews tells whether the `news` of an entry are kept
+ * @param lang language of the GUI
+ * @param only names of the entries to deliver, all of them if not given
+ */
+function toReducedRepository(source, withNews, lang, only) {
+    const result = {};
+    for (const name of only || Object.keys(source)) {
+        const entry = source[name];
+        if (!entry || typeof entry !== 'object') {
+            continue;
+        }
+        const reduced = { ...entry };
+        if (!withNews(name, entry)) {
+            delete reduced.news;
+        }
+        else if (lang && entry.news) {
+            reduced.news = {};
+            for (const [version, text] of Object.entries(entry.news)) {
+                reduced.news[version] = reduceTranslation(text, lang);
+            }
+        }
+        if (lang) {
+            if (entry.desc) {
+                reduced.desc = reduceTranslation(entry.desc, lang);
+            }
+            if (entry.titleLang) {
+                reduced.titleLang = reduceTranslation(entry.titleLang, lang);
+            }
+            // shown when installing and when updating, so they are kept for every entry
+            if (Array.isArray(entry.messages)) {
+                reduced.messages = entry.messages.map(message => {
+                    const reducedMessage = {
+                        ...message,
+                        title: reduceTranslation(message.title, lang),
+                        text: reduceTranslation(message.text, lang),
+                    };
+                    if (message.linkText) {
+                        reducedMessage.linkText = reduceTranslation(message.linkText, lang);
+                    }
+                    return reducedMessage;
+                });
+            }
+        }
+        result[name] = reduced;
+    }
+    return result;
+}
 class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
     static ALLOW_CACHE = [
         'getRepository',
@@ -294,6 +394,92 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
             toCompactRepository(repo.json, result);
         }
         return result;
+    }
+    /**
+     * Merges the repositories from the objects that admin keeps in memory, as the host does it: in
+     * the given order, a later repository replacing an entry of an earlier one.
+     *
+     * @param repo the repositories to merge, the active ones if not given
+     * @returns the merged repository, or null if only the host can answer - see `#compactRepositoryFromObjects`
+     */
+    #repositoryFromObjects(repo) {
+        if (!this.objects) {
+            return null;
+        }
+        const systemConfig = this.objects['system.config'];
+        const systemRepos = this.objects['system.repositories'];
+        if (!systemConfig?.common || !systemRepos?.native?.repositories) {
+            return null;
+        }
+        const wanted = repo || systemConfig.common.activeRepo;
+        const names = Array.isArray(wanted) ? wanted : wanted ? [wanted] : [];
+        if (!names.length) {
+            return null;
+        }
+        const result = {};
+        for (const name of names) {
+            const entry = systemRepos.native.repositories[name];
+            if (!entry || typeof entry === 'string' || !entry.json) {
+                return null;
+            }
+            Object.assign(result, entry.json);
+        }
+        return result;
+    }
+    /**
+     * Names of the adapters that are installed on any host: the GUI shows `news` only for them.
+     *
+     * An adapter is taken as installed if it has its object `system.adapter.<name>` or one of the
+     * objects `system.host.<host>.adapter.<name>`. Neither is complete on its own: an adapter that was
+     * only put into `node_modules` can lack the first, and the controller writes the second only for
+     * what it found when it started. Only the host knows for sure, so the GUI asks for the news of an
+     * installed adapter that is missing here.
+     */
+    async #installedAdapters() {
+        const names = new Set();
+        const add = (id, obj) => {
+            const match = id.match(/^system\.(?:host\..+\.)?adapter\.([^.]+)$/);
+            if (match && obj?.type === 'adapter') {
+                names.add(match[1]);
+            }
+        };
+        if (this.objects) {
+            for (const id of Object.keys(this.objects)) {
+                add(id, this.objects[id]);
+            }
+        }
+        else {
+            const doc = await this.adapter.getObjectViewAsync('system', 'adapter', {
+                startkey: 'system.',
+                endkey: 'system.\u9999',
+            });
+            doc?.rows.forEach(row => add(row.id, row.value));
+        }
+        return names;
+    }
+    /**
+     * The repository as the GUI needs it, see `getReducedRepository`.
+     *
+     * @param host host to ask if the objects in memory cannot answer, e.g. `system.host.raspberrypi`
+     * @param options what to read and how to reduce it
+     */
+    async #reducedRepository(host, options) {
+        let source = options.update ? null : this.#repositoryFromObjects(options.repo);
+        if (source) {
+            // the GUI has what it needs, only the side effects of asking the host are still wanted
+            this.#triggerRepositorySideEffects(host);
+        }
+        else {
+            source = await new Promise(resolve => this._sendToHost(host, 'getRepository', { repo: options.repo, update: !!options.update }, data => resolve(data && typeof data === 'object' && !data.error
+                ? data
+                : {})));
+        }
+        if (options.adapters) {
+            return toReducedRepository(source, () => true, options.lang, options.adapters);
+        }
+        const installed = await this.#installedAdapters();
+        // the controller keeps its news for the update dialog of the hosts
+        return toReducedRepository(source, (name, entry) => installed.has(name) || !!entry.controller, options.lang);
     }
     /**
      * Asks the host for the repository without waiting for the answer, at most once an hour and only
@@ -1450,19 +1636,22 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
          */
         this.commands.getCompactSystemRepositories = (socket, callback) => {
             if (this._checkPermissions(socket, 'getObject', callback)) {
-                void this.adapter.getForeignObject('system.repositories', { user: socket._acl?.user }, (error, obj) => {
-                    if (obj?.native?.repositories) {
-                        Object.keys(obj.native.repositories).forEach(name => {
-                            if (obj.native.repositories[name].json) {
-                                // limit information to _repoInfo
-                                obj.native.repositories[name].json = {
-                                    _repoInfo: obj.native.repositories[name].json._repoInfo,
-                                };
-                            }
-                        });
+                // Reading it from the database parses the whole content of every repository - 23 MB on
+                // an installation with the beta repository, almost a second in which admin answers
+                // nothing else - for one small attribute per repository
+                const cached = this.objects?.['system.repositories'];
+                if (cached) {
+                    if (socket._acl &&
+                        !_a.#isAdmin(socket) &&
+                        !_a.#checkObject(cached, socket._acl, ACL_READ)) {
+                        socketCommands_1.SocketCommands._fixCallback(callback, socketCommands_1.SocketCommands.ERROR_PERMISSION);
                     }
-                    socketCommands_1.SocketCommands._fixCallback(callback, error, obj);
-                });
+                    else {
+                        socketCommands_1.SocketCommands._fixCallback(callback, null, toCompactSystemRepositories(cached));
+                    }
+                    return;
+                }
+                void this.adapter.getForeignObject('system.repositories', { user: socket._acl?.user }, (error, obj) => socketCommands_1.SocketCommands._fixCallback(callback, error, obj ? toCompactSystemRepositories(obj) : obj));
             }
         };
         /**
@@ -1488,6 +1677,28 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
                     return;
                 }
                 this.#askHostForRepository(host, callback);
+            }
+        };
+        /**
+         * #DOCUMENTATION admin
+         * Get the repository with what the GUI shows of it.
+         *
+         * The whole repository is several megabytes, most of it the `news` of every version in every
+         * language. They are delivered only for the adapters installed on any host and for the
+         * controller, as only an update shows them; with `lang` all translated texts keep only that
+         * language and English. Answered from the objects admin holds in memory where possible.
+         * Announced as the feature `REDUCED_REPOSITORY`.
+         *
+         * @param socket - WebSocket client instance
+         * @param host - Host to ask if the objects in memory cannot answer, e.g., `system.host.raspberrypi`
+         * @param options - `{ repo?: string | string[]; update?: boolean; lang?: ioBroker.Languages; adapters?: string[] }`
+         * @param callback - Callback function `(error: string | null, repository?: Record<string, RepoAdapterObject>) => void`
+         */
+        this.commands.getReducedRepository = (socket, host, options, callback) => {
+            if (this._checkPermissions(socket, 'sendToHost', callback)) {
+                this.#reducedRepository(host, options || {})
+                    .then(repository => socketCommands_1.SocketCommands._fixCallback(callback, null, repository))
+                    .catch(error => socketCommands_1.SocketCommands._fixCallback(callback, error));
             }
         };
         /**

@@ -1173,6 +1173,9 @@ class SocketCommands {
                 // send a command that nobody answers - it would sit there until its timeout
                 _a._fixCallback(callback, null, !!this.commands.getObjectsCount);
             }
+            else if (feature === 'REDUCED_REPOSITORY') {
+                _a._fixCallback(callback, null, !!this.commands.getReducedRepository);
+            }
             else {
                 _a._fixCallback(callback, null, this.adapter.supportsFeature(feature));
             }

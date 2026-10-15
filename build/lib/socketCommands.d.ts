@@ -34,7 +34,9 @@ export type Ratings = {
 };
 export type SupportedFeature = 'ALIAS' | 'ALIAS_SEPARATE_READ_WRITE_ID' | 'ADAPTER_GETPORT_BIND' | 'ADAPTER_DEL_OBJECT_RECURSIVE' | 'ADAPTER_SET_OBJECT_SETS_DEFAULT_VALUE' | 'ADAPTER_AUTO_DECRYPT_NATIVE' | 'PLUGINS' | 'CONTROLLER_NPM_AUTO_REBUILD' | 'CONTROLLER_READWRITE_BASE_SETTINGS' | 'CONTROLLER_MULTI_REPO' | 'CONTROLLER_LICENSE_MANAGER' | 'CONTROLLER_OS_PACKAGE_UPGRADE' | 'DEL_INSTANCE_CUSTOM' | 'CUSTOM_FULL_VIEW' | 'ADAPTER_GET_OBJECTS_BY_ARRAY' | 'CONTROLLER_UI_UPGRADE' | 'ADAPTER_WEBSERVER_UPGRADE' | 'INSTANCE_MESSAGES' | 'PARTIAL_OBJECT_TREE'
 /** The command `getObjectsCount` counts the objects instead of the client reading them all */
- | 'OBJECTS_COUNT';
+ | 'OBJECTS_COUNT'
+/** The command `getReducedRepository` delivers the repository without what the GUI does not show */
+ | 'REDUCED_REPOSITORY';
 export interface SocketDataContext {
     language?: ioBroker.Languages;
     ratings: Ratings | null;
