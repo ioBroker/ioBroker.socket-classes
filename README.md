@@ -1055,6 +1055,10 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+- (@GermanBluefox) Changed: `getCompactSystemRepositories` is answered from the objects in memory
+- (@GermanBluefox) Fixed: the outdated lock file that stopped the release of 2.8.0
+
 ### 2.8.0 (2026-10-15)
 - (@GermanBluefox) Added: command `getReducedRepository` - the repository without unneeded news and languages
 
