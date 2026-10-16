@@ -1055,7 +1055,7 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 2.9.0 (2026-10-16)
 - (@GermanBluefox) Changed: `getReducedRepository` with `update` takes the downloaded repositories from the objects in memory
 - (@GermanBluefox) Fixed: `getRepositoryCompact` is only sent to the own host, as another host can run an older controller
 
