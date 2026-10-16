@@ -160,6 +160,8 @@ export class SocketAdmin extends SocketCommon {
     }
 
     objectChange(id: string, obj: ioBroker.Object | null | undefined): void {
+        this.adminCommands.objectChanged(id);
+
         const sockets = this.getSocketsList();
         if (sockets) {
             if (Array.isArray(sockets)) {

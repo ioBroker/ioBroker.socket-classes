@@ -569,6 +569,17 @@ describe('SocketAdmin', () => {
             strictEqual(matching.emitted[0][2].common.language, 'de');
         });
 
+        it('objectChange tells the commands which object has changed', () => {
+            const { admin } = create();
+            const changed = [];
+            admin.commands.objectChanged = id => changed.push(id);
+
+            admin.objectChange('system.repositories', { _id: 'system.repositories' });
+            admin.objectChange('a.0.b', null);
+
+            deepStrictEqual(changed, ['system.repositories', 'a.0.b']);
+        });
+
         it('fileChange sends the file change to sockets subscribed for this file', () => {
             const { admin, server } = createStarted();
             const matching = subscribedSocket('fileChange', 'vis.0####main/*', /^vis\.0####main\/.*$/);

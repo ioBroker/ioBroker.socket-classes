@@ -110,6 +110,7 @@ class SocketAdmin extends socketCommon_1.SocketCommon {
         }
     }
     objectChange(id, obj) {
+        this.adminCommands.objectChanged(id);
         const sockets = this.getSocketsList();
         if (sockets) {
             if (Array.isArray(sockets)) {

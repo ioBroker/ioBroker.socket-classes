@@ -1,6 +1,7 @@
 const { deepStrictEqual, ok, strictEqual } = require('assert');
 const { mkdirSync, rmSync, writeFileSync } = require('fs');
 const { join, normalize } = require('path');
+const { mock } = require('node:test');
 const axios = require('axios');
 const { SocketCommands, SocketCommandsAdmin } = require('../build/index');
 
@@ -1751,6 +1752,27 @@ describe('SocketCommandsAdmin', () => {
             strictEqual(calls.sendToHost[0][1], 'getRepository');
         });
 
+        it('getCompactRepository asks the own controller for the compact form if it knows it', async () => {
+            const { commands, calls } = create({
+                host: 'first',
+                supportsFeature: feature => feature === 'CONTROLLER_REPOSITORY_COMPACT',
+                sendToHost: (host, command, message, cb) => cb({ 'hm-rpc': { version: '1.0.0' } }),
+            });
+
+            const [own] = await call(commands, 'getCompactRepository', createSocket().socket, 'system.host.first');
+            await call(commands, 'getCompactRepository', createSocket().socket, 'system.host.second');
+
+            deepStrictEqual(own, { 'hm-rpc': { version: '1.0.0' } });
+            // another host can run an older controller, which would not answer at all
+            deepStrictEqual(
+                calls.sendToHost.map(args => args.slice(0, 2)),
+                [
+                    ['system.host.first', 'getRepositoryCompact'],
+                    ['system.host.second', 'getRepository'],
+                ],
+            );
+        });
+
         it('getCompactRepository delivers an empty object if the host has no repository', async () => {
             const { commands } = create({ sendToHost: (host, command, message, cb) => cb(null) });
             const [result] = await call(commands, 'getCompactRepository', createSocket().socket, 'h');
@@ -1843,7 +1865,7 @@ describe('SocketCommandsAdmin', () => {
                 deepStrictEqual(result.vis.news, news);
             });
 
-            it('asks the host to download the repositories and reduces its answer', async () => {
+            it('asks an older controller to download the repositories and reduces its answer', async () => {
                 const { commands, calls } = create(
                     { sendToHost: (host, command, message, cb) => cb(repository()) },
                     objectsWith(repository()),
@@ -1862,6 +1884,154 @@ describe('SocketCommandsAdmin', () => {
                 ]);
                 strictEqual(result.vis.news, undefined);
                 deepStrictEqual(result['hm-rpc'].news, news);
+            });
+
+            describe('downloading with a controller that knows getRepositoryCompact', () => {
+                const compactController = feature => feature === 'CONTROLLER_REPOSITORY_COMPACT';
+                const downloaded = () => {
+                    const json = repository();
+                    json.vis.version = '1.1.0';
+                    return objectsWith(json)['system.repositories'];
+                };
+                const nextTurn = () => new Promise(resolve => setImmediate(resolve));
+
+                it('takes the downloaded repositories from the objects in memory', async () => {
+                    const objects = objectsWith(repository());
+                    const { commands, calls } = create(
+                        {
+                            host: 'h',
+                            supportsFeature: compactController,
+                            sendToHost: (host, command, message, cb) => {
+                                cb({ vis: { version: '1.1.0' } });
+                                // the object takes its own way and comes after the answer
+                                setTimeout(() => {
+                                    objects['system.repositories'] = downloaded();
+                                    commands.objectChanged('system.repositories');
+                                }, 20);
+                            },
+                        },
+                        objects,
+                    );
+
+                    const [error, result] = await call(commands, 'getReducedRepository', createSocket().socket, 'h', {
+                        repo: ['stable'],
+                        update: true,
+                    });
+
+                    strictEqual(error, null);
+                    deepStrictEqual(
+                        calls.sendToHost.map(args => args.slice(0, 3)),
+                        [['h', 'getRepositoryCompact', { repo: ['stable'], update: true }]],
+                    );
+                    strictEqual(result.vis.version, '1.1.0');
+                    strictEqual(result.vis.news, undefined);
+                    deepStrictEqual(result['hm-rpc'].news, news);
+                    strictEqual(calls.getForeignObjectAsync, undefined);
+                });
+
+                it('does not wait if the object came before the answer', async () => {
+                    const objects = objectsWith(repository());
+                    const { commands } = create(
+                        {
+                            host: 'h',
+                            supportsFeature: compactController,
+                            sendToHost: (host, command, message, cb) => {
+                                objects['system.repositories'] = downloaded();
+                                cb({});
+                            },
+                        },
+                        objects,
+                    );
+
+                    const [, result] = await call(commands, 'getReducedRepository', createSocket().socket, 'h', {
+                        update: true,
+                    });
+
+                    strictEqual(result.vis.version, '1.1.0');
+                });
+
+                it('reads the object from the database if it does not come in time', async () => {
+                    const { commands, calls, logs } = create(
+                        {
+                            host: 'h',
+                            supportsFeature: compactController,
+                            sendToHost: (host, command, message, cb) => cb({}),
+                            getForeignObjectAsync: () => Promise.resolve(downloaded()),
+                        },
+                        objectsWith(repository()),
+                    );
+
+                    mock.timers.enable({ apis: ['setTimeout'] });
+                    try {
+                        const answer = call(commands, 'getReducedRepository', createSocket().socket, 'h', {
+                            update: true,
+                        });
+                        // the answer of the host is delivered with setImmediate, the waiting starts after it
+                        await nextTurn();
+                        await nextTurn();
+                        strictEqual(calls.getForeignObjectAsync, undefined, 'must wait for the object first');
+                        mock.timers.tick(10_000);
+
+                        const [error, result] = await answer;
+
+                        strictEqual(error, null);
+                        strictEqual(calls.getForeignObjectAsync[0][0], 'system.repositories');
+                        strictEqual(result.vis.version, '1.1.0');
+                        ok(logs.debug.some(text => text.includes('system.repositories')));
+                    } finally {
+                        mock.timers.reset();
+                    }
+                });
+
+                it('asks another host with getRepository, as its controller can be older', async () => {
+                    const { commands, calls } = create(
+                        {
+                            host: 'own',
+                            supportsFeature: compactController,
+                            sendToHost: (host, command, message, cb) => cb(repository()),
+                        },
+                        objectsWith(repository()),
+                    );
+
+                    await call(commands, 'getReducedRepository', createSocket().socket, 'system.host.h', {
+                        update: true,
+                    });
+
+                    deepStrictEqual(
+                        calls.sendToHost.map(args => args[1]),
+                        ['getRepository'],
+                    );
+                });
+
+                it('asks the host for the content if a repository could not be downloaded', async () => {
+                    const objects = objectsWith(null);
+                    const { commands, calls } = create(
+                        {
+                            host: 'h',
+                            supportsFeature: compactController,
+                            sendToHost: (host, command, message, cb) => {
+                                if (command === 'getRepositoryCompact') {
+                                    // written, but still without content
+                                    objects['system.repositories'] = objectsWith(null)['system.repositories'];
+                                    cb({});
+                                } else {
+                                    cb(repository());
+                                }
+                            },
+                        },
+                        objects,
+                    );
+
+                    const [, result] = await call(commands, 'getReducedRepository', createSocket().socket, 'h', {
+                        update: true,
+                    });
+
+                    deepStrictEqual(
+                        calls.sendToHost.map(args => args[1]),
+                        ['getRepositoryCompact', 'getRepository'],
+                    );
+                    strictEqual(result.vis.version, '1.0.0');
+                });
             });
 
             it('asks the host if a repository was never downloaded', async () => {

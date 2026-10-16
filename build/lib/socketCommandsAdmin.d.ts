@@ -147,8 +147,16 @@ export declare class SocketCommandsAdmin extends SocketCommands {
     private readonly lastRepoSideEffects;
     /** Pending requests of the above, per host */
     private readonly repoSideEffectTimers;
+    /** Called on the next change of `system.repositories` in the objects in memory, with their timeouts */
+    private readonly repoObjectWaiters;
     constructor(adapter: ioBroker.Adapter, updateSession?: (socket: WebSocketClient) => boolean, context?: SocketDataContext, objects?: Record<string, ioBroker.Object>, states?: Record<string, ioBroker.State>);
     start(onThresholdChanged: ((on: boolean) => void) | null): void;
+    /**
+     * Tells that an object has changed in the objects in memory - after it was replaced there.
+     *
+     * @param id ID of the changed object
+     */
+    objectChanged(id: string): void;
     /**
      * Read a file with ratings from server
      *

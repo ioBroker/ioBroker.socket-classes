@@ -167,6 +167,12 @@ const COUNT_TYPES_VIEW = "function(doc) { emit(doc.type || '', 0) }";
 const REPO_SIDE_EFFECT_INTERVAL = 3_600_000;
 /** How long that request waits, so it stays out of the way while the GUI is starting */
 const REPO_SIDE_EFFECT_DELAY = 10_000;
+/**
+ * How long to wait, once the host has downloaded the repositories, for `system.repositories` to
+ * arrive in the objects in memory. The host writes it before it answers, but the object takes its
+ * own way and is much bigger than the answer, so it usually comes a moment later.
+ */
+const REPO_UPDATE_WAIT = 10_000;
 
 /**
  * Reduces a repository to what the GUI needs: the version and the icon of every entry.
@@ -358,6 +364,8 @@ export class SocketCommandsAdmin extends SocketCommands {
     private readonly lastRepoSideEffects: Record<string, number> = {};
     /** Pending requests of the above, per host */
     private readonly repoSideEffectTimers: Record<string, NodeJS.Timeout> = {};
+    /** Called on the next change of `system.repositories` in the objects in memory, with their timeouts */
+    private readonly repoObjectWaiters = new Map<() => void, NodeJS.Timeout>();
 
     constructor(
         adapter: ioBroker.Adapter,
@@ -404,6 +412,18 @@ export class SocketCommandsAdmin extends SocketCommands {
         }, this.eventsThreshold.checkInterval);
 
         this.onThresholdChanged = onThresholdChanged;
+    }
+
+    /**
+     * Tells that an object has changed in the objects in memory - after it was replaced there.
+     *
+     * @param id ID of the changed object
+     */
+    objectChanged(id: string): void {
+        if (id === 'system.repositories') {
+            // every waiter removes itself
+            [...this.repoObjectWaiters.keys()].forEach(done => done());
+        }
     }
 
     /**
@@ -566,7 +586,7 @@ export class SocketCommandsAdmin extends SocketCommands {
         host: string,
         callback: (result: Record<string, { version: string; icon?: string }>) => void,
     ): void {
-        if (this.adapter.supportsFeature('CONTROLLER_REPOSITORY_COMPACT' as ioBroker.SupportedFeature)) {
+        if (this.#knowsRepositoryCompact(host)) {
             this._sendToHost(host, 'getRepositoryCompact', null, (data: any) =>
                 callback((data as Record<string, { version: string; icon?: string }>) || {}),
             );
@@ -575,6 +595,22 @@ export class SocketCommandsAdmin extends SocketCommands {
                 callback(toCompactRepository(data as Record<string, RepoAdapterObject>)),
             );
         }
+    }
+
+    /**
+     * Whether the host can be asked with `getRepositoryCompact`.
+     *
+     * Only the own controller tells its features. A controller that does not know the command
+     * ignores it without answering, and another host can run an older one, so it is asked as before.
+     *
+     * @param host host to ask, e.g. `system.host.raspberrypi`
+     */
+    #knowsRepositoryCompact(host: string): boolean {
+        const id = host.startsWith('system.host.') ? host : `system.host.${host}`;
+        return (
+            id === `system.host.${this.adapter.host}` &&
+            this.adapter.supportsFeature('CONTROLLER_REPOSITORY_COMPACT' as ioBroker.SupportedFeature)
+        );
     }
 
     /**
@@ -625,14 +661,19 @@ export class SocketCommandsAdmin extends SocketCommands {
      * the given order, a later repository replacing an entry of an earlier one.
      *
      * @param repo the repositories to merge, the active ones if not given
+     * @param systemRepos `system.repositories`, the one in memory if not given
      * @returns the merged repository, or null if only the host can answer - see `#compactRepositoryFromObjects`
      */
-    #repositoryFromObjects(repo?: string | string[]): Record<string, RepoAdapterObject> | null {
+    #repositoryFromObjects(
+        repo?: string | string[],
+        systemRepos: ioBroker.RepositoryObject | null | undefined = this.objects?.['system.repositories'] as
+            | ioBroker.RepositoryObject
+            | undefined,
+    ): Record<string, RepoAdapterObject> | null {
         if (!this.objects) {
             return null;
         }
         const systemConfig = this.objects['system.config'] as ioBroker.SystemConfigObject | undefined;
-        const systemRepos = this.objects['system.repositories'] as ioBroker.RepositoryObject | undefined;
         if (!systemConfig?.common || !systemRepos?.native?.repositories) {
             return null;
         }
@@ -687,6 +728,68 @@ export class SocketCommandsAdmin extends SocketCommands {
     }
 
     /**
+     * Lets the host download the repositories and takes the result from the objects in memory.
+     *
+     * Asked with `getRepository`, the host sends everything it downloaded through the message box -
+     * 11 MB with the beta repository - although it has just written all of it into
+     * `system.repositories`, which admin receives anyway to keep its objects up to date. Asked with
+     * `getRepositoryCompact`, it downloads and writes the same, but answers with a few kilobytes.
+     *
+     * @param host host to download the repositories, e.g. `system.host.raspberrypi`
+     * @param repo the repositories to download, the active ones if not given
+     * @returns the merged repository, or null if only the host can answer - because there are no
+     * objects in memory, the host may not know `getRepositoryCompact`, or a repository could not be
+     * downloaded
+     */
+    async #updatedRepositoryFromObjects(
+        host: string,
+        repo?: string | string[],
+    ): Promise<Record<string, RepoAdapterObject> | null> {
+        if (!this.objects || !this.#knowsRepositoryCompact(host)) {
+            return null;
+        }
+
+        // taken before asking, as the new object can arrive before the answer
+        const before = this.objects['system.repositories'];
+        await new Promise<void>(resolve =>
+            this._sendToHost(host, 'getRepositoryCompact', { repo, update: true }, () => resolve()),
+        );
+
+        if (await this.#repositoriesChanged(before)) {
+            return this.#repositoryFromObjects(repo);
+        }
+
+        // The host writes the object with every download, so it is late, or the host did not write it:
+        // because it failed to, or because a request without download was already running and was
+        // answered for both. Only the database tells which.
+        this.adapter.log.debug(`${host} did not update system.repositories in time, reading it from the database`);
+        const systemRepos = await this.adapter.getForeignObjectAsync('system.repositories');
+        return this.#repositoryFromObjects(repo, systemRepos);
+    }
+
+    /**
+     * Waits until `system.repositories` in the objects in memory is no longer the given one.
+     *
+     * @param before the object as it was
+     * @returns true if it changed, false if it did not within `REPO_UPDATE_WAIT`
+     */
+    #repositoriesChanged(before: ioBroker.Object | undefined): Promise<boolean> {
+        const changed = (): boolean => this.objects?.['system.repositories'] !== before;
+        if (changed()) {
+            return Promise.resolve(true);
+        }
+
+        return new Promise(resolve => {
+            const done = (): void => {
+                clearTimeout(this.repoObjectWaiters.get(done));
+                this.repoObjectWaiters.delete(done);
+                resolve(changed());
+            };
+            this.repoObjectWaiters.set(done, setTimeout(done, REPO_UPDATE_WAIT));
+        });
+    }
+
+    /**
      * The repository as the GUI needs it, see `getReducedRepository`.
      *
      * @param host host to ask if the objects in memory cannot answer, e.g. `system.host.raspberrypi`
@@ -696,11 +799,18 @@ export class SocketCommandsAdmin extends SocketCommands {
         host: string,
         options: ReducedRepositoryOptions,
     ): Promise<Record<string, RepoAdapterObject>> {
-        let source = options.update ? null : this.#repositoryFromObjects(options.repo);
-        if (source) {
-            // the GUI has what it needs, only the side effects of asking the host are still wanted
-            this.#triggerRepositorySideEffects(host);
+        let source: Record<string, RepoAdapterObject> | null;
+        if (options.update) {
+            source = await this.#updatedRepositoryFromObjects(host, options.repo);
         } else {
+            source = this.#repositoryFromObjects(options.repo);
+            if (source) {
+                // the GUI has what it needs, only the side effects of asking the host are still wanted
+                this.#triggerRepositorySideEffects(host);
+            }
+        }
+
+        if (!source) {
             source = await new Promise<Record<string, RepoAdapterObject>>(resolve =>
                 this._sendToHost(host, 'getRepository', { repo: options.repo, update: !!options.update }, data =>
                     resolve(
@@ -2603,6 +2713,9 @@ export class SocketCommandsAdmin extends SocketCommands {
             clearTimeout(this.repoSideEffectTimers[host]);
             delete this.repoSideEffectTimers[host];
         }
+
+        // nothing is going to change the objects any more
+        [...this.repoObjectWaiters.keys()].forEach(done => done());
 
         super.destroy();
     }

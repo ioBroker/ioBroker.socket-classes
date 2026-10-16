@@ -32,6 +32,12 @@ const REPO_SIDE_EFFECT_INTERVAL = 3_600_000;
 /** How long that request waits, so it stays out of the way while the GUI is starting */
 const REPO_SIDE_EFFECT_DELAY = 10_000;
 /**
+ * How long to wait, once the host has downloaded the repositories, for `system.repositories` to
+ * arrive in the objects in memory. The host writes it before it answers, but the object takes its
+ * own way and is much bigger than the answer, so it usually comes a moment later.
+ */
+const REPO_UPDATE_WAIT = 10_000;
+/**
  * Reduces a repository to what the GUI needs: the version and the icon of every entry.
  *
  * Reading into `result` lets the caller merge the active repositories in their order, the later one
@@ -176,6 +182,8 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
     lastRepoSideEffects = {};
     /** Pending requests of the above, per host */
     repoSideEffectTimers = {};
+    /** Called on the next change of `system.repositories` in the objects in memory, with their timeouts */
+    repoObjectWaiters = new Map();
     constructor(adapter, updateSession, context, objects, states) {
         super(adapter, updateSession, context);
         this.objects = objects;
@@ -211,6 +219,17 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
             }
         }, this.eventsThreshold.checkInterval);
         this.onThresholdChanged = onThresholdChanged;
+    }
+    /**
+     * Tells that an object has changed in the objects in memory - after it was replaced there.
+     *
+     * @param id ID of the changed object
+     */
+    objectChanged(id) {
+        if (id === 'system.repositories') {
+            // every waiter removes itself
+            [...this.repoObjectWaiters.keys()].forEach(done => done());
+        }
     }
     /**
      * Read a file with ratings from server
@@ -350,12 +369,25 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
      * @param callback answered with the compact repository
      */
     #askHostForRepository(host, callback) {
-        if (this.adapter.supportsFeature('CONTROLLER_REPOSITORY_COMPACT')) {
+        if (this.#knowsRepositoryCompact(host)) {
             this._sendToHost(host, 'getRepositoryCompact', null, (data) => callback(data || {}));
         }
         else {
             this._sendToHost(host, 'getRepository', null, (data) => callback(toCompactRepository(data)));
         }
+    }
+    /**
+     * Whether the host can be asked with `getRepositoryCompact`.
+     *
+     * Only the own controller tells its features. A controller that does not know the command
+     * ignores it without answering, and another host can run an older one, so it is asked as before.
+     *
+     * @param host host to ask, e.g. `system.host.raspberrypi`
+     */
+    #knowsRepositoryCompact(host) {
+        const id = host.startsWith('system.host.') ? host : `system.host.${host}`;
+        return (id === `system.host.${this.adapter.host}` &&
+            this.adapter.supportsFeature('CONTROLLER_REPOSITORY_COMPACT'));
     }
     /**
      * Builds the compact repository from the objects that admin keeps in memory.
@@ -400,14 +432,14 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
      * the given order, a later repository replacing an entry of an earlier one.
      *
      * @param repo the repositories to merge, the active ones if not given
+     * @param systemRepos `system.repositories`, the one in memory if not given
      * @returns the merged repository, or null if only the host can answer - see `#compactRepositoryFromObjects`
      */
-    #repositoryFromObjects(repo) {
+    #repositoryFromObjects(repo, systemRepos = this.objects?.['system.repositories']) {
         if (!this.objects) {
             return null;
         }
         const systemConfig = this.objects['system.config'];
-        const systemRepos = this.objects['system.repositories'];
         if (!systemConfig?.common || !systemRepos?.native?.repositories) {
             return null;
         }
@@ -458,18 +490,75 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
         return names;
     }
     /**
+     * Lets the host download the repositories and takes the result from the objects in memory.
+     *
+     * Asked with `getRepository`, the host sends everything it downloaded through the message box -
+     * 11 MB with the beta repository - although it has just written all of it into
+     * `system.repositories`, which admin receives anyway to keep its objects up to date. Asked with
+     * `getRepositoryCompact`, it downloads and writes the same, but answers with a few kilobytes.
+     *
+     * @param host host to download the repositories, e.g. `system.host.raspberrypi`
+     * @param repo the repositories to download, the active ones if not given
+     * @returns the merged repository, or null if only the host can answer - because there are no
+     * objects in memory, the host may not know `getRepositoryCompact`, or a repository could not be
+     * downloaded
+     */
+    async #updatedRepositoryFromObjects(host, repo) {
+        if (!this.objects || !this.#knowsRepositoryCompact(host)) {
+            return null;
+        }
+        // taken before asking, as the new object can arrive before the answer
+        const before = this.objects['system.repositories'];
+        await new Promise(resolve => this._sendToHost(host, 'getRepositoryCompact', { repo, update: true }, () => resolve()));
+        if (await this.#repositoriesChanged(before)) {
+            return this.#repositoryFromObjects(repo);
+        }
+        // The host writes the object with every download, so it is late, or the host did not write it:
+        // because it failed to, or because a request without download was already running and was
+        // answered for both. Only the database tells which.
+        this.adapter.log.debug(`${host} did not update system.repositories in time, reading it from the database`);
+        const systemRepos = await this.adapter.getForeignObjectAsync('system.repositories');
+        return this.#repositoryFromObjects(repo, systemRepos);
+    }
+    /**
+     * Waits until `system.repositories` in the objects in memory is no longer the given one.
+     *
+     * @param before the object as it was
+     * @returns true if it changed, false if it did not within `REPO_UPDATE_WAIT`
+     */
+    #repositoriesChanged(before) {
+        const changed = () => this.objects?.['system.repositories'] !== before;
+        if (changed()) {
+            return Promise.resolve(true);
+        }
+        return new Promise(resolve => {
+            const done = () => {
+                clearTimeout(this.repoObjectWaiters.get(done));
+                this.repoObjectWaiters.delete(done);
+                resolve(changed());
+            };
+            this.repoObjectWaiters.set(done, setTimeout(done, REPO_UPDATE_WAIT));
+        });
+    }
+    /**
      * The repository as the GUI needs it, see `getReducedRepository`.
      *
      * @param host host to ask if the objects in memory cannot answer, e.g. `system.host.raspberrypi`
      * @param options what to read and how to reduce it
      */
     async #reducedRepository(host, options) {
-        let source = options.update ? null : this.#repositoryFromObjects(options.repo);
-        if (source) {
-            // the GUI has what it needs, only the side effects of asking the host are still wanted
-            this.#triggerRepositorySideEffects(host);
+        let source;
+        if (options.update) {
+            source = await this.#updatedRepositoryFromObjects(host, options.repo);
         }
         else {
+            source = this.#repositoryFromObjects(options.repo);
+            if (source) {
+                // the GUI has what it needs, only the side effects of asking the host are still wanted
+                this.#triggerRepositorySideEffects(host);
+            }
+        }
+        if (!source) {
             source = await new Promise(resolve => this._sendToHost(host, 'getRepository', { repo: options.repo, update: !!options.update }, data => resolve(data && typeof data === 'object' && !data.error
                 ? data
                 : {})));
@@ -2003,6 +2092,8 @@ class SocketCommandsAdmin extends socketCommands_1.SocketCommands {
             clearTimeout(this.repoSideEffectTimers[host]);
             delete this.repoSideEffectTimers[host];
         }
+        // nothing is going to change the objects any more
+        [...this.repoObjectWaiters.keys()].forEach(done => done());
         super.destroy();
     }
 }
