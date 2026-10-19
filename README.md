@@ -126,6 +126,7 @@ function sendImage(camera, data) {
 * [`error`](#error_w)
 * [`log`](#log_w)
 * [`checkFeatureSupported`](#checkfeaturesupported_w)
+* [`checkFeatureSupportedByHost`](#checkfeaturesupportedbyhost_w)
 * [`getHistory`](#gethistory_w)
 * [`httpGet`](#httpget_w)
 * [`sendTo`](#sendto_w)
@@ -196,6 +197,12 @@ Write log entry into ioBroker log
 
 #### <a name="checkfeaturesupported_w"></a>`checkFeatureSupported(feature, callback)`
 Check if the same feature is supported by the current js-controller
+* `feature` *SupportedFeature*: feature name like `CONTROLLER_LICENSE_MANAGER`
+* `callback` *(error: string | Error | null | undefined, isSupported?: boolean) => void) => void*: callback `(error: string | Error | null | undefined, isSupported: boolean) => void`
+
+#### <a name="checkfeaturesupportedbyhost_w"></a>`checkFeatureSupportedByHost(host, feature, callback)`
+Check if the feature is supported by the specified host
+* `host` *string*: host name
 * `feature` *SupportedFeature*: feature name like `CONTROLLER_LICENSE_MANAGER`
 * `callback` *(error: string | Error | null | undefined, isSupported?: boolean) => void) => void*: callback `(error: string | Error | null | undefined, isSupported: boolean) => void`
 
@@ -493,6 +500,7 @@ Unsubscribe from file changes in ioBroker DB
 * [`error`](#error_a)
 * [`log`](#log_a)
 * [`checkFeatureSupported`](#checkfeaturesupported_a)
+* [`checkFeatureSupportedByHost`](#checkfeaturesupportedbyhost_a)
 * [`getHistory`](#gethistory_a)
 * [`httpGet`](#httpget_a)
 * [`sendTo`](#sendto_a)
@@ -593,6 +601,12 @@ Write log entry into ioBroker log
 
 #### <a name="checkfeaturesupported_a"></a>`checkFeatureSupported(feature, callback)`
 Check if the same feature is supported by the current js-controller
+* `feature` *SupportedFeature*: feature name like `CONTROLLER_LICENSE_MANAGER`
+* `callback` *(error: string | Error | null | undefined, isSupported?: boolean) => void) => void*: callback `(error: string | Error | null | undefined, isSupported: boolean) => void`
+
+#### <a name="checkfeaturesupportedbyhost_a"></a>`checkFeatureSupportedByHost(host, feature, callback)`
+Check if the feature is supported by the specified host
+* `host` *string*: host name
 * `feature` *SupportedFeature*: feature name like `CONTROLLER_LICENSE_MANAGER`
 * `callback` *(error: string | Error | null | undefined, isSupported?: boolean) => void) => void*: callback `(error: string | Error | null | undefined, isSupported: boolean) => void`
 
@@ -1055,6 +1069,10 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+
+### **WORK IN PROGRESS**
+- (@GermanBluefox) Added `checkFeatureSupportedByHost` command
+
 ### 2.9.0 (2026-10-16)
 - (@GermanBluefox) Changed: `getReducedRepository` with `update` takes the downloaded repositories from the objects in memory
 - (@GermanBluefox) Fixed: `getRepositoryCompact` is only sent to the own host, as another host can run an older controller

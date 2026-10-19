@@ -1182,6 +1182,49 @@ class SocketCommands {
         };
         /**
          * #DOCUMENTATION commands
+         * Check if the feature is supported by the specified host
+         *
+         * @param _socket Socket instance (not used)
+         * @param host host name
+         * @param feature feature name like `CONTROLLER_LICENSE_MANAGER`
+         * @param callback callback `(error: string | Error | null | undefined, isSupported: boolean) => void`
+         */
+        this.commands.checkFeatureSupportedByHost = (_socket, host, feature, callback) => {
+            let timeout = null;
+            try {
+                timeout = setTimeout(() => {
+                    timeout = null;
+                    _a._fixCallback(callback, 'Host does not support "checkFeatureSupported" or offline');
+                }, 3000);
+                this.adapter.sendToHost(host, 'checkFeatureSupported', feature, _response => {
+                    if (timeout) {
+                        clearTimeout(timeout);
+                        timeout = null;
+                        const response = _response;
+                        if (!response) {
+                            _a._fixCallback(callback, 'No response from host');
+                        }
+                        else if (response.error) {
+                            _a._fixCallback(callback, response.error);
+                        }
+                        else {
+                            _a._fixCallback(callback, null, !!response.result);
+                        }
+                    }
+                });
+            }
+            catch (error) {
+                if (timeout) {
+                    clearTimeout(timeout);
+                    timeout = null;
+                }
+                if (typeof callback === 'function') {
+                    setImmediate(() => _a._fixCallback(callback, error));
+                }
+            }
+        };
+        /**
+         * #DOCUMENTATION commands
          * Get the history data from the specific instance
          *
          * @param socket Socket instance

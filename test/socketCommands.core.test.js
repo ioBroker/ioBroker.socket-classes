@@ -157,6 +157,7 @@ describe('SocketCommands', () => {
                 'error',
                 'log',
                 'checkFeatureSupported',
+                'checkFeatureSupportedByHost',
                 'getHistory',
                 'authEnabled',
                 'logout',
@@ -1201,6 +1202,66 @@ describe('SocketCommands', () => {
             const commands = createCommands();
             deepStrictEqual(await call(commands, 'checkFeatureSupported', createSocket(), 'ALIAS'), [null, true]);
             deepStrictEqual(await call(commands, 'checkFeatureSupported', createSocket(), 'PLUGINS'), [null, false]);
+        });
+    });
+
+    describe('checkFeatureSupportedByHost', () => {
+        const hostAdapter = response =>
+            createAdapter({
+                sendToHost: (host, command, feature, cb) => {
+                    hostAdapter.lastCall = [host, command, feature];
+                    if (response !== undefined) {
+                        setImmediate(() => cb(response));
+                    }
+                },
+            });
+
+        it('asks the given host and returns its result', async () => {
+            const commands = createCommands(hostAdapter({ result: true }));
+            deepStrictEqual(
+                await call(commands, 'checkFeatureSupportedByHost', createSocket(), 'host1', 'ALIAS'),
+                [null, true],
+            );
+            deepStrictEqual(hostAdapter.lastCall, ['host1', 'checkFeatureSupported', 'ALIAS']);
+
+            const commandsFalse = createCommands(hostAdapter({ result: false }));
+            deepStrictEqual(
+                await call(commandsFalse, 'checkFeatureSupportedByHost', createSocket(), 'host1', 'PLUGINS'),
+                [null, false],
+            );
+        });
+
+        it('returns the error of the host', async () => {
+            const commands = createCommands(hostAdapter({ error: 'unknown feature' }));
+            deepStrictEqual(
+                await call(commands, 'checkFeatureSupportedByHost', createSocket(), 'host1', 'XYZ'),
+                ['unknown feature'],
+            );
+        });
+
+        it('returns an error on an empty response', async () => {
+            const commands = createCommands(hostAdapter(null));
+            const [err] = await call(commands, 'checkFeatureSupportedByHost', createSocket(), 'host1', 'ALIAS');
+            strictEqual(err, 'No response from host');
+        });
+
+        it('returns an error if the host does not answer', async function () {
+            this.timeout(5000);
+            const commands = createCommands(hostAdapter(undefined));
+            const [err] = await call(commands, 'checkFeatureSupportedByHost', createSocket(), 'host1', 'ALIAS');
+            strictEqual(err, 'Host does not support "checkFeatureSupported" or offline');
+        });
+
+        it('returns the error if sendToHost throws', async () => {
+            const commands = createCommands(
+                createAdapter({
+                    sendToHost: () => {
+                        throw new Error('broken');
+                    },
+                }),
+            );
+            const [err] = await call(commands, 'checkFeatureSupportedByHost', createSocket(), 'host1', 'ALIAS');
+            strictEqual(err, 'broken');
         });
     });
 
