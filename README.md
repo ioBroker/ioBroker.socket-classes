@@ -1069,8 +1069,7 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
-
-### **WORK IN PROGRESS**
+### 2.10.0 (2026-10-19)
 - (@GermanBluefox) Added `checkFeatureSupportedByHost` command
 
 ### 2.9.0 (2026-10-16)
