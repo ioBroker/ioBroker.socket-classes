@@ -1599,6 +1599,8 @@ export class SocketCommands {
             'checkLogging',
             'updateMultihost',
             'rebuildAdapter',
+            // hands out files from the data directories of the instances on the host
+            'readDiskFile',
         ];
 
         /**
@@ -1650,7 +1652,8 @@ export class SocketCommands {
                 | 'updateLicenses'
                 | 'upgradeOsPackages'
                 | 'restartController'
-                | 'sendToSentry',
+                | 'sendToSentry'
+                | 'readDiskFile',
             message: any,
             callback: (result: { error?: string; result?: any }) => void,
         ): void => {
