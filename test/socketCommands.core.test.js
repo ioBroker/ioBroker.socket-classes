@@ -293,6 +293,15 @@ describe('SocketCommands', () => {
             ok(adapter.logs.warn.some(text => text.includes('No rule for command: noSuchCommand')));
         });
 
+        it('allows everything for a member of the group administrator', () => {
+            const commands = createCommands();
+            const socket = createSocket({ ...createAcl(), groups: ['system.group.administrator'] });
+            for (const command of Object.keys(SocketCommands.COMMANDS_PERMISSIONS)) {
+                strictEqual(commands._checkPermissions(socket, command, () => {}), true, command);
+            }
+            strictEqual(commands._checkPermissions(socket, 'unknownCommand', () => {}), true);
+        });
+
         it('denies a socket without any ACL', () => {
             const commands = createCommands();
             strictEqual(commands._checkPermissions(createSocket(null), 'getState', () => {}), false);
@@ -1344,11 +1353,10 @@ describe('SocketCommands', () => {
             deepStrictEqual(await call(commands, 'getUserPermissions', createSocket(acl)), [null, acl]);
         });
 
-        it('getUserPermissions requires the object read permission', async () => {
+        it('getUserPermissions answers also a user without any right', async () => {
             const commands = createCommands();
-            deepStrictEqual(await call(commands, 'getUserPermissions', createSocket(createAcl())), [
-                SocketCommands.ERROR_PERMISSION,
-            ]);
+            const acl = createAcl();
+            deepStrictEqual(await call(commands, 'getUserPermissions', createSocket(acl)), [null, acl]);
         });
 
         it('getVersion returns the version and name of the adapter for any user', async () => {

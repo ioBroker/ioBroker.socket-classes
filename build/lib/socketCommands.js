@@ -65,7 +65,8 @@ exports.COMMANDS_PERMISSIONS = {
     authEnabled: { type: '', operation: '' },
     disconnect: { type: '', operation: '' },
     listPermissions: { type: '', operation: '' },
-    getUserPermissions: { type: 'object', operation: 'read' },
+    // everybody may know his own rights - a GUI needs them to show what the user may not do
+    getUserPermissions: { type: '', operation: '' },
 };
 const pattern2RegEx = adapter_core_1.commonTools.pattern2RegEx;
 let axiosGet = null;
@@ -219,7 +220,8 @@ class SocketCommands {
     }
     _checkPermissions(socket, command, callback, ...args) {
         const _command = command;
-        if (socket._acl?.user !== 'system.user.admin') {
+        // the controller gives the group administrator every right: nothing to look up for its members
+        if (!_a.#seesEverything(socket)) {
             // type: file, object, state, other
             // operation: create, read, write, list, delete, sendto, execute, sendToHost, readLogs
             if (_a.COMMANDS_PERMISSIONS[_command]) {
@@ -1308,6 +1310,8 @@ class SocketCommands {
             'checkLogging',
             'updateMultihost',
             'rebuildAdapter',
+            // hands out files from the data directories of the instances on the host
+            'readDiskFile',
         ];
         /**
          * #DOCUMENTATION commands

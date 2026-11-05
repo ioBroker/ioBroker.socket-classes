@@ -1000,11 +1000,12 @@ describe('SocketCommands misc commands', () => {
             strictEqual(result, acl);
         });
 
-        it('denies the ACL without object.read permission', async () => {
-            const { handlers } = setup(noRights());
+        it('returns the ACL also without any permission', async () => {
+            const acl = noRights();
+            const { handlers } = setup(acl);
             const [err, result] = await call(handlers, 'getUserPermissions');
-            strictEqual(err, SocketCommands.ERROR_PERMISSION);
-            strictEqual(result, undefined);
+            strictEqual(err, null);
+            strictEqual(result, acl);
         });
 
         it('lists the permissions of all commands for everybody', async () => {

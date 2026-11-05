@@ -111,7 +111,8 @@ export const COMMANDS_PERMISSIONS: Record<
     authEnabled: { type: '', operation: '' },
     disconnect: { type: '', operation: '' },
     listPermissions: { type: '', operation: '' },
-    getUserPermissions: { type: 'object', operation: 'read' },
+    // everybody may know his own rights - a GUI needs them to show what the user may not do
+    getUserPermissions: { type: '', operation: '' },
 };
 
 const pattern2RegEx = commonTools.pattern2RegEx;
@@ -355,7 +356,8 @@ export class SocketCommands {
         ...args: any[]
     ): boolean {
         const _command: string = command;
-        if (socket._acl?.user !== 'system.user.admin') {
+        // the controller gives the group administrator every right: nothing to look up for its members
+        if (!SocketCommands.#seesEverything(socket)) {
             // type: file, object, state, other
             // operation: create, read, write, list, delete, sendto, execute, sendToHost, readLogs
             if (SocketCommands.COMMANDS_PERMISSIONS[_command]) {
