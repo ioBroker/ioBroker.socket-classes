@@ -102,10 +102,26 @@ export class SocketCommon {
     static SESSION_GRACE_MS = 60_000;
     /** A socket with an expired token is asked to refresh it at most once in this interval */
     static REAUTHENTICATE_INTERVAL_MS = 5_000;
+    /**
+     * How long a socket whose session is over stays open after its first command or event was refused.
+     * Everything it asks for is refused in that time, and it is still asked for a new token. Then it is
+     * closed: a client that answers the pings but never brings a token - e.g. a page in an iframe with an
+     * old client library - kept such a dead connection open for hours, and every event of the system
+     * wrote a warning into the log (ioBroker.admin#3110). When it connects again, the browser sends the
+     * access token cookie as it is now, which the admin page has renewed in the meantime.
+     */
+    static EXPIRED_SESSION_CLOSE_MS = 60_000;
 
     protected server: SocketIO | null = null;
-    /** When each socket was last asked to refresh its expired token (only during the grace period) */
+    /** When each socket was last asked to refresh its expired token */
     #reauthenticateRequested = new WeakMap<object, number>();
+    /**
+     * Sockets whose session is over: when that session expired, and since when the socket is refused.
+     * A socket that gets a new token and lets it expire again is a new case.
+     */
+    #sessionOver = new WeakMap<object, { expiredAt: number; refusedSince: number }>();
+    /** Sockets that are being closed because their session is over */
+    #closingExpired = new WeakSet<object>();
     private serverMode: boolean = false;
     protected settings: SocketSettings;
     protected readonly adapter: ioBroker.Adapter;
@@ -321,8 +337,7 @@ export class SocketCommon {
             if (socket._sessionExpiresAt < now) {
                 if (socket._sessionExpiresAt + SocketCommon.SESSION_GRACE_MS < now) {
                     // The client had the whole grace period to bring a new token and did not
-                    this.adapter.log.warn('REAUTHENTICATE!');
-                    socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
+                    this.#refuseExpiredSession(socket, socket._sessionExpiresAt, now);
                     return false;
                 }
 
@@ -330,11 +345,8 @@ export class SocketCommon {
                 // refresh the token now, as its own timer is obviously late. A client that holds a refresh
                 // token answers with `updateTokenExpiration` and nobody notices; a client without one is
                 // sent to the login page by this event, as before.
-                const requested = this.#reauthenticateRequested.get(socket);
-                if (!requested || now - requested > SocketCommon.REAUTHENTICATE_INTERVAL_MS) {
-                    this.#reauthenticateRequested.set(socket, now);
+                if (this.#askForNewToken(socket, now)) {
                     this.adapter.log.debug('Access token expired, asking the client to refresh it');
-                    socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
                 }
             }
 
@@ -345,9 +357,10 @@ export class SocketCommon {
         const sessionId = socket._sessionID;
 
         if (sessionId) {
-            if (socket._lastActivity && now - socket._lastActivity > (this.settings.ttl || 3600) * 1000) {
-                this.adapter.log.warn('REAUTHENTICATE!');
-                socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
+            const ttlMs = (this.settings.ttl || 3600) * 1000;
+            if (socket._lastActivity && now - socket._lastActivity > ttlMs) {
+                // `_lastActivity` is not moved on any more, so the session stays over
+                this.#refuseExpiredSession(socket, socket._lastActivity + ttlMs, now);
                 return false;
             }
             socket._lastActivity = now;
@@ -365,6 +378,103 @@ export class SocketCommon {
             }, 60_000);
         }
         return true;
+    }
+
+    /**
+     * Ask the client to bring a new access token, but not more often than every
+     * {@link SocketCommon.REAUTHENTICATE_INTERVAL_MS}: the question is asked by every event the socket
+     * gets, and a busy system has several of them per second.
+     *
+     * @param socket Socket instance
+     * @param now The current time
+     * @returns true if the client was asked now
+     */
+    #askForNewToken(socket: WebSocketClient, now: number): boolean {
+        const requested = this.#reauthenticateRequested.get(socket);
+        if (requested && now - requested <= SocketCommon.REAUTHENTICATE_INTERVAL_MS) {
+            return false;
+        }
+        this.#reauthenticateRequested.set(socket, now);
+        socket.emit(SocketCommon.COMMAND_RE_AUTHENTICATE);
+        return true;
+    }
+
+    /**
+     * A command or event of a socket whose session is over is refused.
+     *
+     * This happens for every event of the system the client has subscribed to, so it must not leave a
+     * trace each time: one warning per socket, and the client is asked for a new token at most every
+     * {@link SocketCommon.REAUTHENTICATE_INTERVAL_MS}. Without a new token the socket is closed after
+     * {@link SocketCommon.EXPIRED_SESSION_CLOSE_MS}.
+     *
+     * @param socket Socket instance
+     * @param expiredAt When the session expired
+     * @param now The current time
+     */
+    #refuseExpiredSession(socket: WebSocketClient, expiredAt: number, now: number): void {
+        if (this.#closingExpired.has(socket)) {
+            // on its way out, nothing more to say
+            return;
+        }
+
+        let over = this.#sessionOver.get(socket);
+        if (over?.expiredAt !== expiredAt) {
+            // The time to bring a new token counts from now on, not from the end of the grace period:
+            // when nothing happened on the socket for a while, the client has not been asked yet
+            over = { expiredAt, refusedSince: now };
+            this.#sessionOver.set(socket, over);
+            this.adapter.log.warn(
+                `REAUTHENTICATE! The session of ${this.#describeSocket(socket)} expired ${SocketCommon.#since(expiredAt, now)} ago and the client did not renew it. Its requests are refused, and the connection will be closed in ${Math.round(SocketCommon.EXPIRED_SESSION_CLOSE_MS / 1000)} seconds if no new access token arrives`,
+            );
+        }
+
+        if (now - over.refusedSince >= SocketCommon.EXPIRED_SESSION_CLOSE_MS) {
+            this.#closingExpired.add(socket);
+            this.adapter.log.info(
+                `Closing the connection of ${this.#describeSocket(socket)}: no new access token arrived`,
+            );
+            // Not at once: this runs while an event is handed to all sockets, and closing a socket
+            // removes it from the list that is being walked through
+            setImmediate(() => this.#disconnectSocket(socket));
+            return;
+        }
+
+        if (this.#askForNewToken(socket, now)) {
+            this.adapter.log.debug(`Session of ${this.#describeSocket(socket)} is over, asking for a new access token`);
+        }
+    }
+
+    /**
+     * Who is behind a socket, for the log: user, address and the name the client gave itself.
+     *
+     * @param socket Socket instance
+     */
+    #describeSocket(socket: WebSocketClient): string {
+        let address: string | undefined;
+        try {
+            address = this.__getClientAddress(socket)?.address;
+        } catch {
+            // the transport does not tell
+        }
+        return `${socket._acl?.user || 'unknown user'}${address ? ` from ${address}` : ''}${socket._name ? ` (${socket._name})` : ''}`;
+    }
+
+    /**
+     * How long ago something happened, for the log
+     *
+     * @param ts When it happened
+     * @param now The current time
+     */
+    static #since(ts: number, now: number): string {
+        const seconds = Math.max(0, Math.round((now - ts) / 1000));
+        if (seconds < 120) {
+            return `${seconds} seconds`;
+        }
+        const minutes = Math.round(seconds / 60);
+        if (minutes < 120) {
+            return `${minutes} minutes`;
+        }
+        return `${Math.round(minutes / 60)} hours`;
     }
 
     __getSessionID(_socket: WebSocketClient): string | null {
@@ -968,7 +1078,8 @@ export class SocketCommon {
         // those that are not allowed to subscribe to it.
         // this could be an object or array: an array is ioBroker, an object is socket.io
         for (const socket of Array.isArray(sockets) ? sockets : Object.values(sockets)) {
-            if (socket.subscribe?.log?.length) {
+            // A client whose session is over gets no log either, the same as with states and objects
+            if (socket.subscribe?.log?.length && this.__updateSession(socket)) {
                 socket.emit('log', obj);
             }
         }

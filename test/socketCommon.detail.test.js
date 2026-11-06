@@ -389,6 +389,132 @@ describe('SocketCommon __updateSession', () => {
         strictEqual(b.emitted.length, 1);
     });
 
+    /** Run `fn` with Date.now() returning `start + offset`, as `at(offset)` sets it */
+    function withClock(fn) {
+        const realNow = Date.now;
+        const start = realNow();
+        const at = offset => (Date.now = () => start + offset);
+        try {
+            return fn(at, start);
+        } finally {
+            Date.now = realNow;
+        }
+    }
+
+    function expiredSocket(common, options) {
+        const result = createSocket({ acl: { user: 'system.user.admin' }, address: '192.168.1.5', ...options });
+        result.socket._name = 'admin';
+        result.socket._sessionExpiresAt = Date.now() - SocketCommon.SESSION_GRACE_MS - 1_000;
+        return result;
+    }
+
+    // Regression ioBroker.admin#3110: every event for a socket whose grace period was over wrote
+    // "REAUTHENTICATE!" into the log, thousands of times an hour, and the socket was never closed
+    it('warns only once about a session that is over and asks for a new token only every interval', () => {
+        const adapter = createAdapter();
+        const common = new WsSocketCommon({ auth: true }, adapter);
+
+        withClock(at => {
+            at(0);
+            const { socket, emitted } = expiredSocket(common);
+            for (let i = 0; i < 100; i++) {
+                strictEqual(common.__updateSession(socket), false);
+            }
+            strictEqual(adapter.logs.warn.length, 1);
+            ok(adapter.logs.warn[0].includes('system.user.admin'), adapter.logs.warn[0]);
+            ok(adapter.logs.warn[0].includes('192.168.1.5'), adapter.logs.warn[0]);
+            ok(adapter.logs.warn[0].includes('(admin)'), adapter.logs.warn[0]);
+            strictEqual(emitted.length, 1);
+
+            at(SocketCommon.REAUTHENTICATE_INTERVAL_MS + 100);
+            strictEqual(common.__updateSession(socket), false);
+            strictEqual(emitted.length, 2, 'asks again after the interval');
+            strictEqual(adapter.logs.warn.length, 1, 'but does not warn again');
+        });
+    });
+
+    it('closes a socket that brought no new token within the close time after the first refusal', async () => {
+        const adapter = createAdapter();
+        const common = new WsSocketCommon({ auth: true }, adapter);
+        const { socket, emitted, calls } = expiredSocket(common);
+
+        withClock(at => {
+            // the session expired long ago, but the client is asked first and gets its time
+            socket._sessionExpiresAt -= 3_600_000;
+            at(0);
+            common.__updateSession(socket);
+            at(SocketCommon.EXPIRED_SESSION_CLOSE_MS - 100);
+            common.__updateSession(socket);
+            at(SocketCommon.EXPIRED_SESSION_CLOSE_MS);
+            strictEqual(common.__updateSession(socket), false);
+            const emittedBefore = emitted.length;
+            // further events of the closing socket stay quiet
+            common.__updateSession(socket);
+            common.__updateSession(socket);
+            strictEqual(emitted.length, emittedBefore);
+        });
+
+        strictEqual(calls.disconnect.length, 0, 'closes after the current event, not during it');
+        await new Promise(resolve => setImmediate(resolve));
+        deepStrictEqual(calls.disconnect, [true]);
+        strictEqual(adapter.logs.warn.length, 1);
+        strictEqual(adapter.logs.info.filter(text => text.startsWith('Closing the connection')).length, 1);
+    });
+
+    it('does not close a socket that brought a new token in time', async () => {
+        const adapter = createAdapter();
+        const common = new WsSocketCommon({ auth: true }, adapter);
+        const { socket, calls } = expiredSocket(common);
+
+        withClock(at => {
+            at(0);
+            strictEqual(common.__updateSession(socket), false);
+            // `updateTokenExpiration` arrived
+            socket._sessionExpiresAt = Date.now() + 3_600_000;
+            at(SocketCommon.EXPIRED_SESSION_CLOSE_MS + 1_000);
+            strictEqual(common.__updateSession(socket), true);
+        });
+
+        await new Promise(resolve => setImmediate(resolve));
+        strictEqual(calls.disconnect.length, 0);
+    });
+
+    it('warns again when a renewed token has expired as well', () => {
+        const adapter = createAdapter();
+        const common = new WsSocketCommon({ auth: true }, adapter);
+        const { socket } = expiredSocket(common);
+
+        common.__updateSession(socket);
+        socket._sessionExpiresAt -= 1_000;
+        common.__updateSession(socket);
+        strictEqual(adapter.logs.warn.length, 2);
+    });
+
+    it('legacy session: refuses an idle session, warns once and asks only every interval', () => {
+        const adapter = createAdapter();
+        const common = new WsSocketCommon({ ttl: 100 }, adapter);
+        const { socket, emitted } = createSocket({ acl: { user: 'system.user.admin' } });
+        socket._sessionID = 'sess1';
+        socket._lastActivity = Date.now() - 101_000;
+
+        for (let i = 0; i < 10; i++) {
+            strictEqual(common.__updateSession(socket), false);
+        }
+        strictEqual(adapter.logs.warn.length, 1);
+        deepStrictEqual(emittedNames(emitted), [SocketCommon.COMMAND_RE_AUTHENTICATE]);
+    });
+
+    it('describes a socket without user, address and name', () => {
+        const adapter = createAdapter();
+        const common = new WsSocketCommon({ auth: true }, adapter);
+        // neither connection nor ws: __getClientAddress throws
+        const socket = { id: 'x', conn: { request: {} }, emit: () => {} };
+        socket._sessionExpiresAt = Date.now() - SocketCommon.SESSION_GRACE_MS - 1_000;
+
+        strictEqual(common.__updateSession(socket), false);
+        ok(adapter.logs.warn[0].includes('unknown user'), adapter.logs.warn[0]);
+    });
+
     it('legacy session: updates the last activity and prolongs the session after 60 seconds', async () => {
         const adapter = createAdapter();
         adapter.sessions.sess1 = { passport: { user: 'admin' } };
@@ -837,6 +963,22 @@ describe('SocketCommon sockets list helpers', () => {
         common.sendLog(message);
         deepStrictEqual(a.emitted, [{ name: 'log', args: [message] }]);
         strictEqual(b.emitted.length, 0);
+    });
+
+    it('sendLog does not send the log to a socket whose session is over', () => {
+        const a = createSocket({ id: 'a' });
+        const expired = createSocket({ id: 'expired' });
+        a.socket.subscribe = { log: [{ pattern: '*' }] };
+        expired.socket.subscribe = { log: [{ pattern: '*' }] };
+        expired.socket._sessionExpiresAt = Date.now() - SocketCommon.SESSION_GRACE_MS - 1_000;
+        const { common } = createWithSockets([a.socket, expired.socket]);
+
+        const message = { message: 'hello', severity: 'info' };
+        common.sendLog(message);
+        common.sendLog(message);
+        strictEqual(a.emitted.length, 2);
+        deepStrictEqual(emittedNames(expired.emitted), [SocketCommon.COMMAND_RE_AUTHENTICATE]);
+        strictEqual(common.adapter.logs.warn.length, 1);
     });
 
     it('sendLog works with the socket.io object structure and without server', () => {

@@ -686,44 +686,40 @@ export class SocketCommands {
             this.#forgetReadable(id);
         }
 
-        if (socket?.subscribe?.[type] && this.#updateSession(socket)) {
-            return !!socket.subscribe[type].find(sub => {
-                if (sub.regex.test(id)) {
-                    /*
-                     * Who may know that this exists? A subscription says which ids a client is
-                     * interested in, never which ids it may see - `subscribe` only asks whether the
-                     * user may read states at all, so whoever subscribed to `*` was told about every
-                     * state of the system, the ACL of the single objects notwithstanding.
-                     */
-                    const question: ReadQuestion = { type: type === 'objectChange' ? 'object' : 'state', id };
-                    const allowed = this.#mayRead(socket, question);
-                    if (allowed === false) {
-                        return false;
-                    }
-                    if (allowed === undefined) {
-                        // the first event of an id for this user waits for the answer instead of
-                        // being guessed at
-                        this.#holdUntilDecided(socket, question, `${type}####${id}`, () =>
-                            this.publish(socket, type, id, obj),
-                        );
-                        // on its way: either it goes out in a moment, or the user may not see it
-                        return true;
-                    }
-                    // replace language
-                    if (
-                        this.context.language &&
-                        id === 'system.config' &&
-                        (obj as ioBroker.SystemConfigObject | null | undefined)?.common
-                    ) {
-                        (obj as ioBroker.SystemConfigObject).common.language = this.context.language;
-                    }
-                    socket.emit(type, id, obj);
-                    return true;
-                }
-            });
+        // Only an event the client has subscribed to concerns its session. The session was checked for
+        // every event of the system before, so an expired one complained about each of them.
+        if (!socket?.subscribe?.[type]?.some(sub => sub.regex.test(id)) || !this.#updateSession(socket)) {
+            return false;
         }
 
-        return false;
+        /*
+         * Who may know that this exists? A subscription says which ids a client is
+         * interested in, never which ids it may see - `subscribe` only asks whether the
+         * user may read states at all, so whoever subscribed to `*` was told about every
+         * state of the system, the ACL of the single objects notwithstanding.
+         */
+        const question: ReadQuestion = { type: type === 'objectChange' ? 'object' : 'state', id };
+        const allowed = this.#mayRead(socket, question);
+        if (allowed === false) {
+            return false;
+        }
+        if (allowed === undefined) {
+            // the first event of an id for this user waits for the answer instead of
+            // being guessed at
+            this.#holdUntilDecided(socket, question, `${type}####${id}`, () => this.publish(socket, type, id, obj));
+            // on its way: either it goes out in a moment, or the user may not see it
+            return true;
+        }
+        // replace language
+        if (
+            this.context.language &&
+            id === 'system.config' &&
+            (obj as ioBroker.SystemConfigObject | null | undefined)?.common
+        ) {
+            (obj as ioBroker.SystemConfigObject).common.language = this.context.language;
+        }
+        socket.emit(type, id, obj);
+        return true;
     }
 
     /**
@@ -743,28 +739,25 @@ export class SocketCommands {
      * @param size how big it is now, or null where it is gone
      */
     publishFile(socket: WebSocketClient, id: string, fileName: string, size: number | null): boolean {
-        if (socket?.subscribe?.fileChange && this.#updateSession(socket)) {
-            const key = `${id}####${fileName}`;
-            return !!socket.subscribe.fileChange.find(sub => {
-                if (sub.regex.test(key)) {
-                    const question: ReadQuestion = { type: 'file', id, fileName };
-                    const allowed = this.#mayRead(socket, question);
-                    if (allowed === false) {
-                        return false;
-                    }
-                    if (allowed === undefined) {
-                        this.#holdUntilDecided(socket, question, `fileChange####${key}`, () =>
-                            this.publishFile(socket, id, fileName, size),
-                        );
-                        return true;
-                    }
-                    socket.emit('fileChange', id, fileName, size);
-                    return true;
-                }
-            });
+        const key = `${id}####${fileName}`;
+        // as in `publish`: only a file the client has subscribed to concerns its session
+        if (!socket?.subscribe?.fileChange?.some(sub => sub.regex.test(key)) || !this.#updateSession(socket)) {
+            return false;
         }
 
-        return false;
+        const question: ReadQuestion = { type: 'file', id, fileName };
+        const allowed = this.#mayRead(socket, question);
+        if (allowed === false) {
+            return false;
+        }
+        if (allowed === undefined) {
+            this.#holdUntilDecided(socket, question, `fileChange####${key}`, () =>
+                this.publishFile(socket, id, fileName, size),
+            );
+            return true;
+        }
+        socket.emit('fileChange', id, fileName, size);
+        return true;
     }
 
     /**

@@ -542,6 +542,41 @@ describe('SocketAdmin', () => {
             deepStrictEqual(expired.emitted, [[SocketCommon.COMMAND_RE_AUTHENTICATE]]);
         });
 
+        // Regression ioBroker.admin#3110: the session was checked for every event of the system, so a socket
+        // whose session was over wrote a warning for each state change, subscribed to or not
+        it('checks the session only for events the socket has subscribed to and warns only once', () => {
+            const { admin, server, logs } = createStarted();
+            const expired = subscribedSocket('stateChange', 'a.*', /^a\./);
+            expired.socket._sessionExpiresAt = Date.now() - SocketCommon.SESSION_GRACE_MS - 1000;
+            server.sockets.sockets.push(expired.socket);
+
+            for (let i = 0; i < 50; i++) {
+                admin.stateChange(`b.0.value${i}`, { val: i });
+            }
+            deepStrictEqual(expired.emitted, []);
+            strictEqual(logs.warn.length, 0);
+
+            for (let i = 0; i < 50; i++) {
+                admin.stateChange(`a.0.value${i}`, { val: i });
+            }
+            deepStrictEqual(expired.emitted, [[SocketCommon.COMMAND_RE_AUTHENTICATE]]);
+            strictEqual(logs.warn.length, 1);
+        });
+
+        it('fileChange checks the session only for files the socket has subscribed to', () => {
+            const { admin, server, logs } = createStarted();
+            const expired = subscribedSocket('fileChange', 'vis.0####main/*', /^vis\.0####main\/.*$/);
+            expired.socket._sessionExpiresAt = Date.now() - SocketCommon.SESSION_GRACE_MS - 1000;
+            server.sockets.sockets.push(expired.socket);
+
+            admin.fileChange('vis.0', 'other/vis-views.json', 1);
+            deepStrictEqual(expired.emitted, []);
+
+            admin.fileChange('vis.0', 'main/vis-views.json', 1);
+            deepStrictEqual(expired.emitted, [[SocketCommon.COMMAND_RE_AUTHENTICATE]]);
+            strictEqual(logs.warn.length, 1);
+        });
+
         it('objectChange sends the object to sockets with a matching subscription', () => {
             const { admin, server } = createStarted();
             const matching = subscribedSocket('objectChange', 'system.adapter.*', /^system\.adapter\./);

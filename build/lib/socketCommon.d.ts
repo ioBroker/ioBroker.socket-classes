@@ -84,6 +84,15 @@ export declare class SocketCommon {
     static SESSION_GRACE_MS: number;
     /** A socket with an expired token is asked to refresh it at most once in this interval */
     static REAUTHENTICATE_INTERVAL_MS: number;
+    /**
+     * How long a socket whose session is over stays open after its first command or event was refused.
+     * Everything it asks for is refused in that time, and it is still asked for a new token. Then it is
+     * closed: a client that answers the pings but never brings a token - e.g. a page in an iframe with an
+     * old client library - kept such a dead connection open for hours, and every event of the system
+     * wrote a warning into the log (ioBroker.admin#3110). When it connects again, the browser sends the
+     * access token cookie as it is now, which the admin page has renewed in the meantime.
+     */
+    static EXPIRED_SESSION_CLOSE_MS: number;
     protected server: SocketIO | null;
     private serverMode;
     protected settings: SocketSettings;

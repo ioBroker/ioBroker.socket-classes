@@ -1069,6 +1069,12 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+- (@GermanBluefox) Fixed: "REAUTHENTICATE!" log flood, now one warning per socket (ioBroker.admin#3110)
+- (@GermanBluefox) Expired sockets are closed after one minute without a new token
+- (@GermanBluefox) Events check the session only if the client subscribed to them
+- (@GermanBluefox) No log messages for expired sockets
+
 ### 2.10.1 (2026-11-05)
 - (@GermanBluefox) The host command `readDiskFile` (js-controller 8.0, reads files from the data directories of the instances on a host) is now protected: a web client needs the `cmdExec` permission for it
 - (@GermanBluefox) `getUserPermissions` needs no permission anymore
