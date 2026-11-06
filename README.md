@@ -1069,7 +1069,7 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 2.10.2 (2026-11-06)
 - (@GermanBluefox) Fixed: "REAUTHENTICATE!" log flood, now one warning per socket (ioBroker.admin#3110)
 - (@GermanBluefox) Expired sockets are closed after one minute without a new token
 - (@GermanBluefox) Events check the session only if the client subscribed to them
