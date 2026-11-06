@@ -226,7 +226,7 @@ Send the message to specific instance
 
 #### <a name="sendtohost_w"></a>`sendToHost(host, command, message, callback)`
 Send a message to the specific host.
-Host can answer to the following commands: `cmdExec, getRepository, getInstalled, getInstalledAdapter, getVersion, getDiagData, getLocationOnDisk, getDevList, getLogs, getHostInfo, delLogs, readDirAsZip, writeDirAsZip, readObjectsAsZip, writeObjectsAsZip, checkLogging, updateMultihost`.
+Host can answer to the following commands: `cmdExec, getRepository, getInstalled, getInstalledAdapter, getVersion, getDiagData, getLocationOnDisk, getDevList, getLogs, getHostInfo, delLogs, readDirAsZip, writeDirAsZip, readObjectsAsZip, writeObjectsAsZip, checkLogging, updateMultihost, readDiskDir`.
 * `host` *string*: Host name. With or without 'system.host.' prefix
 * `command` * 'shell' | 'cmdExec' | 'getRepository' | 'getInstalled' | 'getInstalledAdapter' | 'getVersion' | 'getDiagData' | 'getLocationOnDisk' | 'getDevList' | 'getLogs' | 'getLogFile' | 'getLogFiles' | 'getHostInfo' | 'getHostInfoShort' | 'delLogs' | 'readDirAsZip' | 'writeDirAsZip' | 'readObjectsAsZip' | 'writeObjectsAsZip' | 'checkLogging' | 'updateMultihost' | 'upgradeController' | 'upgradeAdapterWithWebserver' | 'getInterfaces' | 'upload' | 'rebuildAdapter' | 'readBaseSettings' | 'writeBaseSettings' | 'addNotification' | 'clearNotifications' | 'getNotifications' | 'updateLicenses' | 'upgradeOsPackages' | 'restartController' | 'sendToSentry' | 'readDiskFile'*: Host command
 * `message` *any*: the message is command-specific
@@ -630,7 +630,7 @@ Send the message to specific instance
 
 #### <a name="sendtohost_a"></a>`sendToHost(host, command, message, callback)`
 Send a message to the specific host.
-Host can answer to the following commands: `cmdExec, getRepository, getInstalled, getInstalledAdapter, getVersion, getDiagData, getLocationOnDisk, getDevList, getLogs, getHostInfo, delLogs, readDirAsZip, writeDirAsZip, readObjectsAsZip, writeObjectsAsZip, checkLogging, updateMultihost`.
+Host can answer to the following commands: `cmdExec, getRepository, getInstalled, getInstalledAdapter, getVersion, getDiagData, getLocationOnDisk, getDevList, getLogs, getHostInfo, delLogs, readDirAsZip, writeDirAsZip, readObjectsAsZip, writeObjectsAsZip, checkLogging, updateMultihost, readDiskDir`.
 * `host` *string*: Host name. With or without 'system.host.' prefix
 * `command` * 'shell' | 'cmdExec' | 'getRepository' | 'getInstalled' | 'getInstalledAdapter' | 'getVersion' | 'getDiagData' | 'getLocationOnDisk' | 'getDevList' | 'getLogs' | 'getLogFile' | 'getLogFiles' | 'getHostInfo' | 'getHostInfoShort' | 'delLogs' | 'readDirAsZip' | 'writeDirAsZip' | 'readObjectsAsZip' | 'writeObjectsAsZip' | 'checkLogging' | 'updateMultihost' | 'upgradeController' | 'upgradeAdapterWithWebserver' | 'getInterfaces' | 'upload' | 'rebuildAdapter' | 'readBaseSettings' | 'writeBaseSettings' | 'addNotification' | 'clearNotifications' | 'getNotifications' | 'updateLicenses' | 'upgradeOsPackages' | 'restartController' | 'sendToSentry' | 'readDiskFile'*: Host command
 * `message` *any*: the message is command-specific
@@ -1069,6 +1069,9 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+- (@GermanBluefox) The host command `readDiskDir` (lists directories on the disk of the host) is protected: it needs the permission for `cmdExec`
+
 ### 2.10.2 (2026-11-06)
 - (@GermanBluefox) Fixed: "REAUTHENTICATE!" log flood, now one warning per socket (ioBroker.admin#3110)
 - (@GermanBluefox) Expired sockets are closed after one minute without a new token

@@ -1596,12 +1596,14 @@ export class SocketCommands {
             'rebuildAdapter',
             // hands out files from the data directories of the instances on the host
             'readDiskFile',
+            // lists the directories on the disk of the host, everything the user of ioBroker may read
+            'readDiskDir',
         ];
 
         /**
          * #DOCUMENTATION commands
          * Send a message to the specific host.
-         * Host can answer to the following commands: `cmdExec, getRepository, getInstalled, getInstalledAdapter, getVersion, getDiagData, getLocationOnDisk, getDevList, getLogs, getHostInfo, delLogs, readDirAsZip, writeDirAsZip, readObjectsAsZip, writeObjectsAsZip, checkLogging, updateMultihost`.
+         * Host can answer to the following commands: `cmdExec, getRepository, getInstalled, getInstalledAdapter, getVersion, getDiagData, getLocationOnDisk, getDevList, getLogs, getHostInfo, delLogs, readDirAsZip, writeDirAsZip, readObjectsAsZip, writeObjectsAsZip, checkLogging, updateMultihost, readDiskDir`.
          *
          * @param socket Socket instance
          * @param host Host name. With or without 'system.host.' prefix
@@ -1648,7 +1650,8 @@ export class SocketCommands {
                 | 'upgradeOsPackages'
                 | 'restartController'
                 | 'sendToSentry'
-                | 'readDiskFile',
+                | 'readDiskFile'
+                | 'readDiskDir',
             message: any,
             callback: (result: { error?: string; result?: any }) => void,
         ): void => {
