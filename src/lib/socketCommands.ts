@@ -1594,8 +1594,9 @@ export class SocketCommands {
             'checkLogging',
             'updateMultihost',
             'rebuildAdapter',
-            // hands out files from the data directories of the instances on the host
+            // hands out and deletes files in the data directories of the instances on the host (iobdisk:// URLs)
             'readDiskFile',
+            'deleteDiskFile',
             // lists the directories on the disk of the host, everything the user of ioBroker may read
             'readDiskDir',
         ];
@@ -1651,6 +1652,7 @@ export class SocketCommands {
                 | 'restartController'
                 | 'sendToSentry'
                 | 'readDiskFile'
+                | 'deleteDiskFile'
                 | 'readDiskDir',
             message: any,
             callback: (result: { error?: string; result?: any }) => void,
