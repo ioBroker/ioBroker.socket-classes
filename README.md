@@ -1069,7 +1069,7 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 2.10.3 (2026-11-07)
 - (@GermanBluefox) The host command `readDiskDir` (lists directories on the disk of the host) is protected: it needs the permission for `cmdExec`
 - (@GermanBluefox) The host command `deleteDiskFile` (js-controller 8.0, deletes a file in the data directory of an instance, `iobdisk://` URLs) is protected like `readDiskFile`: it needs the permission for `cmdExec`
 

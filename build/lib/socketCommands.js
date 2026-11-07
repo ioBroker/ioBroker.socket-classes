@@ -1305,13 +1305,16 @@ class SocketCommands {
             'checkLogging',
             'updateMultihost',
             'rebuildAdapter',
-            // hands out files from the data directories of the instances on the host
+            // hands out and deletes files in the data directories of the instances on the host (iobdisk:// URLs)
             'readDiskFile',
+            'deleteDiskFile',
+            // lists the directories on the disk of the host, everything the user of ioBroker may read
+            'readDiskDir',
         ];
         /**
          * #DOCUMENTATION commands
          * Send a message to the specific host.
-         * Host can answer to the following commands: `cmdExec, getRepository, getInstalled, getInstalledAdapter, getVersion, getDiagData, getLocationOnDisk, getDevList, getLogs, getHostInfo, delLogs, readDirAsZip, writeDirAsZip, readObjectsAsZip, writeObjectsAsZip, checkLogging, updateMultihost`.
+         * Host can answer to the following commands: `cmdExec, getRepository, getInstalled, getInstalledAdapter, getVersion, getDiagData, getLocationOnDisk, getDevList, getLogs, getHostInfo, delLogs, readDirAsZip, writeDirAsZip, readObjectsAsZip, writeObjectsAsZip, checkLogging, updateMultihost, readDiskDir`.
          *
          * @param socket Socket instance
          * @param host Host name. With or without 'system.host.' prefix
