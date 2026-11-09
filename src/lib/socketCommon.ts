@@ -301,7 +301,8 @@ export class SocketCommon {
         if (socket.connection) {
             address = socket.connection.remoteAddress;
         } else {
-            address = socket.ws._socket.remoteAddress;
+            // `_socket` is the net.Socket of `ws`, which its typings (if installed) do not declare
+            address = (socket.ws as unknown as { _socket: { remoteAddress?: string } })._socket.remoteAddress;
         }
 
         // @ts-expect-error socket.io

@@ -188,6 +188,7 @@ class SocketCommon {
             address = socket.connection.remoteAddress;
         }
         else {
+            // `_socket` is the net.Socket of `ws`, which its typings (if installed) do not declare
             address = socket.ws._socket.remoteAddress;
         }
         // @ts-expect-error socket.io
