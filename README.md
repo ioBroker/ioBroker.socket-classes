@@ -218,7 +218,8 @@ Read content of HTTP(s) page server-side (without CORS and stuff)
 * `callback` *(error: Error | null | undefined | string, result?: {status: number; statusText: string}, data?: string) => void*: callback `(error: Error | null, result?: { status: number; statusText: string }, data?: string) => void`
 
 #### <a name="sendto_w"></a>`sendTo(adapterInstance, command, message, callback)`
-Send the message to specific instance
+Send the message to specific instance.
+Needs the permission `other.sendto`, except for `checkLicense` to `vis.N` or `vis-2.N` and `dm:loadItems` to `devices.N`.
 * `adapterInstance` *string*: instance name, e.g. `history.0`
 * `command` *string*: command name
 * `message` *any*: the message is instance-dependent
@@ -622,7 +623,8 @@ Read content of HTTP(s) page server-side (without CORS and stuff)
 * `callback` *(error: Error | null | undefined | string, result?: {status: number; statusText: string}, data?: string) => void*: callback `(error: Error | null, result?: { status: number; statusText: string }, data?: string) => void`
 
 #### <a name="sendto_a"></a>`sendTo(adapterInstance, command, message, callback)`
-Send the message to specific instance
+Send the message to specific instance.
+Needs the permission `other.sendto`, except for `checkLicense` to `vis.N` or `vis-2.N` and `dm:loadItems` to `devices.N`.
 * `adapterInstance` *string*: instance name, e.g. `history.0`
 * `command` *string*: command name
 * `message` *any*: the message is instance-dependent
@@ -1069,6 +1071,9 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+- (@GermanBluefox) Two messages no longer need the permission `other.sendto` from a logged-in user: `checkLicense` to `vis.N` or `vis-2.N`, and `dm:loadItems` to `devices.N`. The pages of a user who may only look stayed empty without them
+
 ### 2.10.3 (2026-11-07)
 - (@GermanBluefox) The host command `readDiskDir` (lists directories on the disk of the host) is protected: it needs the permission for `cmdExec`
 - (@GermanBluefox) The host command `deleteDiskFile` (js-controller 8.0, deletes a file in the data directory of an instance, `iobdisk://` URLs) is protected like `readDiskFile`: it needs the permission for `cmdExec`

@@ -71,6 +71,45 @@ exports.COMMANDS_PERMISSIONS = {
 const pattern2RegEx = adapter_core_1.commonTools.pattern2RegEx;
 let axiosGet = null;
 let zipFiles = null;
+/**
+ * The messages a logged-in user may send without the permission `other.sendto`.
+ *
+ * That permission opens every command of every instance, which is too much for a user who may only look. But the
+ * pages of such a user need these two answers, and without them they stay empty:
+ * - `checkLicense` to vis: only says yes or no, widgets with a license ask it before they show anything
+ * - `dm:loadItems` to devices: the list of devices of its widgets, it reads no message
+ *
+ * A rule names the instances and what the message may be, so that nothing else comes through with the command:
+ * what an adapter does with a command it does not know is its own business.
+ */
+const MESSAGES_WITHOUT_PERMISSION = new Map([
+    [
+        'checkLicense',
+        {
+            instance: /^vis(-2)?\.\d+$/,
+            message: message => typeof message === 'string' && /^[a-z0-9_-]+$/i.test(message),
+        },
+    ],
+    ['dm:loadItems', { instance: /^devices\.\d+$/, message: message => message === undefined || message === null }],
+]);
+/**
+ * Whether this message needs no permission, see `MESSAGES_WITHOUT_PERMISSION`.
+ *
+ * A socket that still waits for its access token has an empty user: it is nobody yet, and gets nothing.
+ *
+ * @param socket the socket the command came in on
+ * @param adapterInstance the instance the message is for
+ * @param command the command of the message
+ * @param message the message
+ */
+function isMessageWithoutPermission(socket, adapterInstance, command, message) {
+    const rule = MESSAGES_WITHOUT_PERMISSION.get(command);
+    return (!!rule &&
+        !!socket._acl?.user &&
+        typeof adapterInstance === 'string' &&
+        rule.instance.test(adapterInstance) &&
+        rule.message(message));
+}
 class SocketCommands {
     static ERROR_PERMISSION = 'permissionError';
     /** Commands that must be executed even when the access token of the socket has expired */
@@ -1272,7 +1311,8 @@ class SocketCommands {
         };
         /**
          * #DOCUMENTATION commands
-         * Send the message to specific instance
+         * Send the message to specific instance.
+         * Needs the permission `other.sendto`, except for `checkLicense` to `vis.N` or `vis-2.N` and `dm:loadItems` to `devices.N`.
          *
          * @param socket Socket instance
          * @param adapterInstance instance name, e.g. `history.0`
@@ -1281,7 +1321,8 @@ class SocketCommands {
          * @param callback callback `(result: any) => void`
          */
         this.commands.sendTo = (socket, adapterInstance, command, message, callback) => {
-            if (this._checkPermissions(socket, 'sendTo', callback, command)) {
+            if (isMessageWithoutPermission(socket, adapterInstance, command, message) ||
+                this._checkPermissions(socket, 'sendTo', callback, command)) {
                 try {
                     this.adapter.sendTo(adapterInstance, command, message, res => typeof callback === 'function' && setImmediate(() => callback(res)), _a.sendOptionsOf(socket));
                 }

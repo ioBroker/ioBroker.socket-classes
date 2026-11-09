@@ -125,6 +125,74 @@ function call(commands, name, socket, ...args) {
 }
 
 describe('SocketCommands', () => {
+    describe('messages without the permission other.sendto', () => {
+        /** Send with a user who has no rights at all, and say what reached the adapter and what the user got */
+        async function send(acl, instance, command, message) {
+            const adapter = createAdapter();
+            const commands = createCommands(adapter);
+            const [result] = await call(commands, 'sendTo', createSocket(acl), instance, command, message);
+            return { delivered: adapter.calls.sendTo?.[0]?.slice(0, 3), result };
+        }
+
+        const allowed = [
+            ['vis-2.0', 'checkLicense', 'vis-2-widgets-jaeger-design'],
+            ['vis-2.12', 'checkLicense', 'vis-2-widgets-jaeger-design'],
+            ['vis.0', 'checkLicense', 'vis-2-widgets-jaeger-design'],
+            ['devices.0', 'dm:loadItems', undefined],
+            ['devices.3', 'dm:loadItems', null],
+        ];
+        for (const [instance, command, message] of allowed) {
+            it(`delivers ${command} to ${instance}`, async () => {
+                const { delivered, result } = await send(createAcl(), instance, command, message);
+                deepStrictEqual(delivered, [instance, command, message]);
+                deepStrictEqual(result, { accepted: true });
+            });
+        }
+
+        const denied = [
+            // the right command to another instance, written so that a loose comparison would let it through
+            ['another adapter', 'admin.0', 'checkLicense', 'x'],
+            ['a prefix of the name', 'vis-2-widgets.0', 'checkLicense', 'x'],
+            ['the long form of the ID', 'system.adapter.vis-2.0', 'checkLicense', 'x'],
+            ['no instance number', 'vis-2', 'checkLicense', 'x'],
+            ['a line after the name', 'vis-2.0\nadmin.0', 'checkLicense', 'x'],
+            ['an instance that is not a string', ['vis-2.0'], 'checkLicense', 'x'],
+            ['devices with a prefix', 'mydevices.0', 'dm:loadItems', undefined],
+            ['the other adapter of the other command', 'vis-2.0', 'dm:loadItems', undefined],
+            ['the other command to devices', 'devices.0', 'checkLicense', 'x'],
+            // what travels with the command
+            ['an object as the adapter name', 'vis-2.0', 'checkLicense', { name: 'x' }],
+            ['a path as the adapter name', 'vis-2.0', 'checkLicense', '../../x'],
+            ['no adapter name', 'vis-2.0', 'checkLicense', undefined],
+            ['a message for dm:loadItems', 'devices.0', 'dm:loadItems', { any: 'thing' }],
+            // the commands around it
+            ['an action of the device manager', 'devices.0', 'dm:deviceAction', {}],
+            ['the command of the device list', 'devices.0', 'dm:loadDevices', undefined],
+            ['a name that every object has', 'vis-2.0', 'constructor', 'x'],
+        ];
+        for (const [what, instance, command, message] of denied) {
+            it(`refuses ${what}`, async () => {
+                const { delivered, result } = await send(createAcl(), instance, command, message);
+                strictEqual(delivered, undefined);
+                strictEqual(result, SocketCommands.ERROR_PERMISSION);
+            });
+        }
+
+        it('refuses a socket that still waits for its access token', async () => {
+            for (const [instance, command, message] of allowed) {
+                const { delivered, result } = await send({ user: '', groups: [] }, instance, command, message);
+                strictEqual(delivered, undefined);
+                strictEqual(result, SocketCommands.ERROR_PERMISSION);
+            }
+        });
+
+        it('still delivers everything to a user with the permission', async () => {
+            const acl = createAcl({ other: ['sendto'] });
+            const { delivered } = await send(acl, 'admin.0', 'dm:deviceAction', { any: 'thing' });
+            deepStrictEqual(delivered, ['admin.0', 'dm:deviceAction', { any: 'thing' }]);
+        });
+    });
+
     describe('constructor', () => {
         it('reads the language from system.config when no context language is given', async () => {
             const adapter = createAdapter();
