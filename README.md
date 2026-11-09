@@ -1071,7 +1071,7 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 2.10.4 (2026-11-09)
 - (@GermanBluefox) Two messages no longer need the permission `other.sendto` from a logged-in user: `checkLicense` to `vis.N` or `vis-2.N`, and `dm:loadItems` to `devices.N`. The pages of a user who may only look stayed empty without them
 
 ### 2.10.3 (2026-11-07)
