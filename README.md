@@ -1071,6 +1071,9 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+- (@GermanBluefox) A user with two-factor authentication (`common.externalAuthentication.totp`, set by `@iobroker/webserver`) cannot connect with the password alone (basic authentication or `?user=&pass=`), because no code can be sent that way
+
 ### 2.10.4 (2026-11-09)
 - (@GermanBluefox) Two messages no longer need the permission `other.sendto` from a logged-in user: `checkLicense` to `vis.N` or `vis-2.N`, and `dm:loadItems` to `devices.N`. The pages of a user who may only look stayed empty without them
 
