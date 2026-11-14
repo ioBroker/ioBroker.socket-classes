@@ -1071,7 +1071,7 @@ Unsubscribe from file changes in ioBroker DB
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 2.11.0 (2026-11-14)
 - (@GermanBluefox) A user with two-factor authentication (`common.externalAuthentication.totp`, set by `@iobroker/webserver`) cannot connect with the password alone (basic authentication or `?user=&pass=`), because no code can be sent that way
 
 ### 2.10.4 (2026-11-09)

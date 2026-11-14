@@ -152,7 +152,13 @@ class SocketCommon {
             }
             if (user && typeof user === 'string' && pass && typeof pass === 'string') {
                 // Authentication by user/password
-                void this.adapter.checkPassword(user, pass, res => {
+                void this.adapter.checkPassword(user, pass, async (res) => {
+                    // Here no code of a second factor can be sent, so a user with one cannot log in this way
+                    if (res && (await this.#hasSecondFactor(user))) {
+                        this.adapter.log.warn(`The user "${user}" uses two-factor authentication and cannot log in with the password alone`);
+                        callback('unknown user');
+                        return;
+                    }
                     if (res) {
                         this.adapter.log.debug(`Logged in: ${user}`);
                         if (typeof callback === 'function') {
@@ -179,6 +185,24 @@ class SocketCommon {
         }
         else {
             callback('Cannot detect user');
+        }
+    }
+    /**
+     * Whether the user switched on the two-factor authentication of `@iobroker/webserver` (an authenticator app).
+     * If the user object cannot be read, the answer is yes: better no login than a login without the second factor.
+     *
+     * @param user user name or ID
+     */
+    async #hasSecondFactor(user) {
+        const id = `system.user.${user.replace(/^system\.user\./, '').toLowerCase()}`;
+        try {
+            const obj = await this.adapter.getForeignObjectAsync(id);
+            const totp = obj?.common?.externalAuthentication?.totp;
+            return !!totp?.secret;
+        }
+        catch (e) {
+            this.adapter.log.warn(`Cannot read "${id}" to check the two-factor authentication: ${e}`);
+            return true;
         }
     }
     /** Get the client address from the socket */
