@@ -49,6 +49,11 @@ function createAdapter(overrides) {
                 calls.getForeignObject.push(id);
                 cb(null, { _id: id, type: 'state', common: {}, native: {} });
             },
+            // users with the two-factor authentication of `@iobroker/webserver`: `common` by object ID
+            users: {},
+            getForeignObjectAsync(id) {
+                return Promise.resolve({ _id: id, type: 'user', common: adapter.users[id] || {}, native: {} });
+            },
             subscribeForeignObjectsAsync(pattern) {
                 calls.subscribeForeignObjects.push(pattern);
                 return Promise.resolve();
@@ -291,6 +296,31 @@ describe('SocketCommon __getUserFromSocket', () => {
         strictEqual(result.err, 'unknown user');
         strictEqual(adapter.logs.warn.length, 1);
         ok(!adapter.logs.warn[0].includes('wrongPassword'), 'password must not be logged');
+    });
+
+    it('refuses Basic auth and query credentials of a user with two-factor authentication', async () => {
+        const adapter = createAdapter();
+        adapter.users['system.user.admin'] = { externalAuthentication: { totp: { secret: 'encrypted' } } };
+        const common = new WsSocketCommon({ auth: true }, adapter);
+        const basic = Buffer.from('admin:pa:ss').toString('base64');
+
+        let result = await getUser(common, createSocket({ headers: { authorization: `Basic ${basic}` } }).socket);
+        strictEqual(result.err, 'unknown user');
+        strictEqual(result.user, undefined);
+
+        result = await getUser(common, createSocket({ query: { user: 'admin', pass: 'pa:ss' } }).socket);
+        strictEqual(result.err, 'unknown user');
+        ok(adapter.logs.warn.some(text => text.includes('two-factor')));
+    });
+
+    it('refuses the password login if the user object cannot be read', async () => {
+        const adapter = createAdapter({
+            getForeignObjectAsync: () => Promise.reject(new Error('no connection')),
+        });
+        const common = new WsSocketCommon({ auth: true }, adapter);
+        const { socket } = createSocket({ query: { user: 'admin', pass: 'pa:ss' } });
+
+        strictEqual((await getUser(common, socket)).err, 'unknown user');
     });
 
     it('does not check the password if user or password are missing', async () => {
@@ -726,12 +756,14 @@ describe('SocketCommon _initSocket', () => {
         deepStrictEqual(tokenInfo.args, [{ expiresAt: aExp }]);
     });
 
-    it('adds the system.user. prefix to a user from Basic auth', () => {
+    it('adds the system.user. prefix to a user from Basic auth', async () => {
         const adapter = createAdapter();
         const common = createCommon({ auth: true }, adapter);
         const { socket, emitted } = createSocket({ query: { user: 'admin', pass: 'pa:ss' } });
 
         common._initSocket(socket);
+        // the password login reads the user object (two-factor authentication) before it answers
+        await new Promise(resolve => setImmediate(resolve));
 
         deepStrictEqual(adapter.calls.calculatePermissions, ['system.user.admin']);
         ok(!emittedNames(emitted).includes('tokenInfo'), 'no tokenInfo without expiration');
